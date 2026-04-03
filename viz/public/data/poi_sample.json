@@ -1,0 +1,12 @@
+[
+  {"lon": 114.05, "lat": 22.53, "type": "food"},
+  {"lon": 114.07, "lat": 22.54, "type": "food"},
+  {"lon": 114.03, "lat": 22.52, "type": "retail"},
+  {"lon": 114.10, "lat": 22.55, "type": "medical"},
+  {"lon": 113.95, "lat": 22.56, "type": "office"},
+  {"lon": 114.00, "lat": 22.58, "type": "food"},
+  {"lon": 114.08, "lat": 22.60, "type": "retail"},
+  {"lon": 113.92, "lat": 22.62, "type": "education"},
+  {"lon": 114.15, "lat": 22.53, "type": "food"},
+  {"lon": 114.20, "lat": 22.57, "type": "scenic"}
+]

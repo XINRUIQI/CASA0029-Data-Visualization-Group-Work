@@ -1,0 +1,33 @@
+.p4c {
+  margin-top: 16px;
+}
+
+.p4c-section {
+  margin-bottom: 20px;
+}
+
+.p4c-section h4 {
+  font-size: 0.75rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.p4c-note {
+  font-size: 0.7rem;
+  color: #555;
+  margin-bottom: 8px;
+}
+
+.p4c-insight {
+  font-size: 0.72rem;
+  color: #c864ff;
+  font-style: italic;
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: rgba(200, 100, 255, 0.06);
+  border-left: 3px solid #c864ff;
+  border-radius: 0 6px 6px 0;
+  line-height: 1.4;
+}

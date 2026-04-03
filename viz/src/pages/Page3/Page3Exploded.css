@@ -1,0 +1,157 @@
+.p3e {
+  width: 100%;
+  height: 100%;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.p3e-header {
+  text-align: center;
+  margin-bottom: 32px;
+  position: relative;
+}
+
+.p3e-header h3 {
+  font-size: 1.6rem;
+  background: linear-gradient(135deg, #00ccff, #c864ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.p3e-header p {
+  font-size: 0.9rem;
+  color: #888;
+  margin-top: 6px;
+}
+
+.p3e-close {
+  position: absolute;
+  top: -20px;
+  right: -40px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #444;
+  background: rgba(255, 255, 255, 0.05);
+  color: #aaa;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.p3e-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+/* Stacked layers */
+.p3e-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 560px;
+  margin-bottom: 32px;
+}
+
+.p3e-layer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  animation: layerSlideIn 0.5s both;
+  transition: all 0.3s;
+}
+
+.p3e-layer:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--layer-color);
+  transform: translateX(6px);
+}
+
+@keyframes layerSlideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.p3e-layer-bar {
+  width: 4px;
+  height: 36px;
+  border-radius: 2px;
+  background: var(--layer-color);
+  flex-shrink: 0;
+}
+
+.p3e-layer-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+}
+
+.p3e-icon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.p3e-layer-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #e0e0f0;
+  margin-bottom: 2px;
+}
+
+.p3e-layer-desc {
+  font-size: 0.72rem;
+  color: #777;
+  line-height: 1.4;
+}
+
+/* Verdict */
+.p3e-verdict {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 28px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  max-width: 560px;
+  width: 100%;
+}
+
+.p3e-verdict-ground, .p3e-verdict-air {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: #888;
+}
+
+.p3e-v-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #555;
+}
+
+.p3e-v-time {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.p3e-verdict-vs {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #444;
+  padding: 0 8px;
+}

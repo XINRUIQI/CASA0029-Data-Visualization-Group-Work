@@ -1,0 +1,43 @@
+.narrative-panel {
+  position: absolute;
+  z-index: 10;
+  max-width: 380px;
+  padding: 28px 32px;
+  background: rgba(15, 15, 25, 0.88);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  color: #f0f0f5;
+  pointer-events: auto;
+}
+
+.narrative-left {
+  left: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.narrative-right {
+  right: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.narrative-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 8px;
+  line-height: 1.3;
+}
+
+.narrative-subtitle {
+  font-size: 0.95rem;
+  color: #a0a0b0;
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+.narrative-body {
+  font-size: 0.88rem;
+  color: #c8c8d8;
+  line-height: 1.6;
+}

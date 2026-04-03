@@ -1,0 +1,62 @@
+.p2c {
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px 0;
+}
+
+.p2c-metrics {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.p2c-metric {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 14px 10px;
+  text-align: center;
+}
+
+.m-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.m-label {
+  font-size: 0.68rem;
+  color: #666;
+  margin-top: 4px;
+}
+
+.p2c-section {
+  margin-bottom: 20px;
+}
+
+.p2c-section h4 {
+  font-size: 0.78rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+.p2c-note {
+  font-size: 0.72rem;
+  color: #666;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.p2c-insight {
+  font-size: 0.75rem;
+  color: #64c8ff;
+  font-style: italic;
+  margin-top: 8px;
+  line-height: 1.5;
+  padding: 8px 12px;
+  background: rgba(100, 200, 255, 0.06);
+  border-left: 3px solid #64c8ff;
+  border-radius: 0 8px 8px 0;
+}
