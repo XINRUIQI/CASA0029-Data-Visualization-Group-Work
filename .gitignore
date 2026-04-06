@@ -14,3 +14,5 @@ Data/03 Boundary/data_raw/None/shenzhen_boundary.geojson
 Data/03 Boundary/data_raw/None/geoBoundaries-Shenzhen_2920000803532.json
 Data/03 Boundary/data_raw/None/geoBoundaries-Shenzhen_2920000803532.csv
 Data/无人机方案20260324.1.docx
+*.dbf
+*.pbf
