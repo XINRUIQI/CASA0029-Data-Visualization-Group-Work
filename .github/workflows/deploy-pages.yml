@@ -6,7 +6,7 @@ name: Deploy GitHub Pages
 on:
   push:
     branches:
-      - main
+      - QXR
       - master
   workflow_dispatch:
 
