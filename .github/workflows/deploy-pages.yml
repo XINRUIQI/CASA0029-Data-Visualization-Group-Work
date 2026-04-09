@@ -6,7 +6,7 @@ name: Deploy GitHub Pages
 on:
   push:
     branches:
-      - QXR
+      - Test
   workflow_dispatch:
 
 permissions:
