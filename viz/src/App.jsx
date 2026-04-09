@@ -1,6 +1,6 @@
-import Page1Landing from './pages/Page1/Page1Landing';
-import Page2Friction from './pages/Page2/Page2Friction';
-import Page3Routes from './pages/Page3/Page3Routes';
+import Page1Landing from './pages/Page1 overview/Page1Landing';
+import Page2Friction from './pages/Page2 point/Page2Friction';
+import Page3Routes from './pages/Page3 analysis/Page3Routes';
 import Page4Demand from './pages/Page4/Page4Demand';
 import Page5Strategy from './pages/Page5/Page5Strategy';
 import Page6Summary from './pages/Page6/Page6Summary';
