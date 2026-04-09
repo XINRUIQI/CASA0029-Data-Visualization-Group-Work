@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Page1Map from './Page1Map';
 import { publicDataUrl } from '../../config';
 import './Page1.css';
@@ -41,8 +41,6 @@ export default function Page1Landing() {
   const [activeTimeline, setActiveTimeline] = useState(null);
   const [typeFilter, setTypeFilter] = useState('all');
   const [compoundFilter, setCompoundFilter] = useState('all');
-  const heroRef = useRef(null);
-
   useEffect(() => {
     fetch(publicDataUrl('data/vertiport_sites.json'))
       .then(r => r.json())
@@ -82,28 +80,7 @@ export default function Page1Landing() {
 
   return (
     <section id="page-1" className="page page-1">
-      {/* ═══ HERO ═══ */}
-      <div className="p1-hero" ref={heroRef}>
-        <div className="p1-hero-bg" />
-        <div className="p1-hero-content">
-          <div className="p1-badge">CASA0029 · Data Visualization</div>
-          <h1 className="p1-title">
-            <span className="p1-title-line">Where do drones</span>
-            <span className="p1-title-line accent">enter the city?</span>
-          </h1>
-          <p className="p1-subtitle">
-            Shenzhen is not imagining the future — it is already building it.<br />
-            483 launch pads. 250 routes. 776,000 cargo flights in 2024.
-          </p>
-          <a href="#p1-learning" className="p1-cta">
-            <span>Explore the story</span>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8l5 5 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </a>
-        </div>
-        <div className="p1-scroll-hint">scroll</div>
-      </div>
-
-      {/* ═══ LEARNING CITY (新增) ═══ */}
+      {/* ═══ LEARNING CITY ═══ */}
       <div className="p1-learning" id="p1-learning">
         <div className="p1-learning-content">
           <h2>Why Shenzhen?</h2>
