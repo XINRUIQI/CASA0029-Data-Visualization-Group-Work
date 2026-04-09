@@ -23,33 +23,49 @@ const CASES = [
 
 const SCENARIO_TYPES = ['all', 'meal_delivery', 'cross_border', 'park_internal', 'parcel_delivery'];
 
+export const COMPOUND_COLORS = {
+  residential: { rgb: [255, 107, 107], hex: '#ff6b6b', label: 'Residential' },
+  park:        { rgb: [0, 232, 150],   hex: '#00e896', label: 'Park' },
+  commercial:  { rgb: [255, 160, 40],  hex: '#ffa028', label: 'Commercial' },
+  campus:      { rgb: [200, 100, 255], hex: '#c864ff', label: 'Campus' },
+  industrial:  { rgb: [100, 200, 255], hex: '#64c8ff', label: 'Industrial' },
+};
+
+const COMPOUND_TYPES = ['all', ...Object.keys(COMPOUND_COLORS)];
+
 export default function Page1Landing() {
   const [showPlanned, setShowPlanned] = useState(true);
   const [showExisting, setShowExisting] = useState(true);
-  const [planned, setPlanned] = useState(null);
+  const [sites, setSites] = useState(null);
   const [activeCase, setActiveCase] = useState(null);
   const [activeTimeline, setActiveTimeline] = useState(null);
   const [typeFilter, setTypeFilter] = useState('all');
+  const [compoundFilter, setCompoundFilter] = useState('all');
   const heroRef = useRef(null);
 
   useEffect(() => {
-    fetch(publicDataUrl('data/planned_sites.json'))
+    fetch(publicDataUrl('data/vertiport_sites.json'))
       .then(r => r.json())
-      .then(setPlanned)
+      .then(setSites)
       .catch(() => {});
   }, []);
 
-  // 点位类型统计 + scenario_type 占比
+  const filteredSites = useMemo(() => {
+    if (!sites) return null;
+    if (compoundFilter === 'all') return sites;
+    return sites.filter(s => s.compound_type === compoundFilter);
+  }, [sites, compoundFilter]);
+
   const siteStats = useMemo(() => {
-    if (!planned) return null;
-    const byType = { hub: 0, endpoint: 0, station: 0 };
+    if (!sites) return null;
     const byStatus = { existing: 0, planned: 0 };
-    planned.forEach(s => {
-      byType[s.type] = (byType[s.type] || 0) + 1;
+    const byCompound = {};
+    sites.forEach(s => {
       byStatus[s.status] = (byStatus[s.status] || 0) + 1;
+      byCompound[s.compound_type] = (byCompound[s.compound_type] || 0) + 1;
     });
-    return { byType, byStatus, total: planned.length };
-  }, [planned]);
+    return { byStatus, byCompound, total: sites.length };
+  }, [sites]);
 
   const scenarioStats = useMemo(() => {
     const counts = {};
@@ -170,7 +186,6 @@ export default function Page1Landing() {
         <div className="p1-cases-panel">
           <h2>Case Studies</h2>
 
-          {/* 类型筛选 (新增) */}
           <div className="p1-type-filter">
             {SCENARIO_TYPES.map(t => (
               <button
@@ -203,32 +218,56 @@ export default function Page1Landing() {
         {/* Center: map */}
         <div className="p1-map-container">
           <Page1Map
-            data={planned}
+            data={filteredSites}
             showPlanned={showPlanned}
             showExisting={showExisting}
             flyTo={activeCase?.loc}
           />
         </div>
 
-        {/* Right: controls + stats (新增统计面板) */}
+        {/* Right: controls + stats */}
         <div className="p1-controls-panel">
           <h3>Infrastructure Layers</h3>
           <label className="p1-toggle">
             <input type="checkbox" checked={showExisting} onChange={e => setShowExisting(e.target.checked)} />
             <span className="toggle-label">
-              <span className="legend-dot" style={{ background: '#00c878' }} />
+              <span className="legend-dot existing" />
               Existing sites
             </span>
           </label>
           <label className="p1-toggle">
             <input type="checkbox" checked={showPlanned} onChange={e => setShowPlanned(e.target.checked)} />
             <span className="toggle-label">
-              <span className="legend-dot" style={{ background: '#ffa028' }} />
+              <span className="legend-dot planned" />
               Planned sites
             </span>
           </label>
 
-          {/* 点位类型统计 (新增) */}
+          {/* Compound type filter & legend */}
+          <div className="p1-compound-legend">
+            <h4>Site Context</h4>
+            {COMPOUND_TYPES.map(t => {
+              const info = COMPOUND_COLORS[t];
+              const isActive = compoundFilter === t;
+              return (
+                <button
+                  key={t}
+                  className={`p1-compound-btn ${isActive ? 'active' : ''}`}
+                  onClick={() => setCompoundFilter(isActive ? 'all' : t)}
+                >
+                  {t !== 'all' && (
+                    <span className="legend-dot" style={{ background: info.hex }} />
+                  )}
+                  <span>{t === 'all' ? 'All types' : info.label}</span>
+                  {siteStats && t !== 'all' && (
+                    <span className="compound-count">{siteStats.byCompound[t] || 0}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Site statistics */}
           {siteStats && (
             <div className="p1-site-stats">
               <h4>Site Statistics</h4>
@@ -237,19 +276,30 @@ export default function Page1Landing() {
                 <span className="ss-val">{siteStats.total}</span>
               </div>
               <div className="ss-row">
-                <span><span className="legend-dot" style={{ background: '#00c878' }} /> Existing</span>
+                <span><span className="legend-dot existing" /> Existing</span>
                 <span className="ss-val">{siteStats.byStatus.existing}</span>
               </div>
               <div className="ss-row">
-                <span><span className="legend-dot" style={{ background: '#ffa028' }} /> Planned</span>
+                <span><span className="legend-dot planned" /> Planned</span>
                 <span className="ss-val">{siteStats.byStatus.planned}</span>
               </div>
               <div className="ss-divider" />
-              {Object.entries(siteStats.byType).filter(([,v]) => v > 0).map(([k, v]) => (
+              {Object.entries(siteStats.byCompound)
+                .sort(([,a], [,b]) => b - a)
+                .map(([k, v]) => (
                 <div className="ss-row" key={k}>
-                  <span>{k}</span>
+                  <span>
+                    <span className="legend-dot" style={{ background: COMPOUND_COLORS[k]?.hex || '#888' }} />
+                    {' '}{COMPOUND_COLORS[k]?.label || k}
+                  </span>
                   <div className="ss-bar-wrap">
-                    <div className="ss-bar" style={{ width: `${(v / siteStats.total) * 100}%` }} />
+                    <div
+                      className="ss-bar"
+                      style={{
+                        width: `${(v / siteStats.total) * 100}%`,
+                        background: COMPOUND_COLORS[k]?.hex || '#888',
+                      }}
+                    />
                     <span className="ss-val">{v}</span>
                   </div>
                 </div>
@@ -257,7 +307,6 @@ export default function Page1Landing() {
             </div>
           )}
 
-          {/* scenario_type 占比 (新增) */}
           <div className="p1-scenario-stats">
             <h4>Scenario Types</h4>
             {Object.entries(scenarioStats).map(([k, v]) => (
