@@ -54,22 +54,12 @@ const INFO_ITEMS = [
   },
 ];
 
-const NAV_LINKS = [
-  { href: '#page-1', label: 'Overview' },
-  { href: '#page-2', label: 'Status Quo' },
-  { href: '#page-3', label: 'Analysis' },
-  { href: '#page-4', label: 'Optimization' },
-  { href: '#page-5', label: 'Strategy' },
-  { href: '#page-6', label: 'Summary' },
-];
-
 export default function Page0Cover() {
   const sectionRef = useRef(null);
   const cursorRef = useRef(null);
   const cursorDotRef = useRef(null);
   const heroContentRef = useRef(null);
   const [activeInfo, setActiveInfo] = useState(null);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   /* ── custom cursor ── */
   useEffect(() => {
@@ -122,8 +112,7 @@ export default function Page0Cover() {
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
 
-      tl.from('.p0-topbar', { y: -40, opacity: 0, duration: 0.8 }, 0.2)
-        .from('.p0-char-small', {
+      tl.from('.p0-char-small', {
           y: 30,
           opacity: 0,
           rotateX: 90,
@@ -175,17 +164,6 @@ export default function Page0Cover() {
         },
       });
 
-      gsap.to('.p0-topbar', {
-        y: -60,
-        opacity: 0,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: '#page-0',
-          start: '20% top',
-          end: '50% top',
-          scrub: true,
-        },
-      });
     }, sectionRef);
 
     return () => ctx.revert();
@@ -229,28 +207,6 @@ export default function Page0Cover() {
         <div className="p0-bg-grain" />
       </div>
       ── END VIDEO VERSION ── */}
-
-      {/* ── top bar ── */}
-      <header className="p0-topbar">
-        <div className="p0-topbar-logo">
-          <span className="p0-logo-mark">◈</span>
-          <span className="p0-logo-text">CASA0029</span>
-        </div>
-        <nav className={`p0-topbar-nav ${menuOpen ? 'open' : ''}`}>
-          {NAV_LINKS.map((link) => (
-            <a key={link.href} href={link.href} onClick={() => setMenuOpen(false)}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-        <button
-          className={`p0-menu-toggle ${menuOpen ? 'open' : ''}`}
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Toggle menu"
-        >
-          <span /><span /><span />
-        </button>
-      </header>
 
       {/* ── sidebar info buttons ── */}
       <aside className="p0-sidebar">
@@ -302,7 +258,14 @@ export default function Page0Cover() {
           483 launch pads &middot; 250 routes &middot; 776 k cargo flights in 2024
         </p>
 
-        <a href="#page-1" className="p0-cta">
+        <a
+          href="#page-1"
+          className="p0-cta"
+          onClick={(e) => {
+            e.preventDefault();
+            document.getElementById('page-1')?.scrollIntoView({ behavior: 'smooth' });
+          }}
+        >
           <span>Explore the story</span>
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <path

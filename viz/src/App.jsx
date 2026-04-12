@@ -1,3 +1,4 @@
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Page0Cover from './pages/Page0/Page0Cover';
 import Page1Landing from './pages/Page1 overview/Page1Landing';
@@ -19,21 +20,109 @@ const NAV_PAGES = [
   { id: 6, label: 'Summary' },
 ];
 
-function scrollToPage(id) {
-  const el = document.getElementById(`page-${id}`);
-  if (el) el.scrollIntoView({ behavior: 'smooth' });
+const NAV_LINKS = [
+  { target: 'page-1', label: 'Overview' },
+  { target: 'page-2', label: 'Status Quo' },
+  { target: 'page-3', label: 'Analysis' },
+  { target: 'page-4', label: 'Optimization' },
+  { target: 'page-5', label: 'Strategy' },
+  { target: 'page-6', label: 'Summary' },
+];
+
+function GlobalTopbar() {
+  const [isOnPage0, setIsOnPage0] = useState(true);
+  const [hovered, setHovered] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const hideTimer = useRef(null);
+
+  useEffect(() => {
+    const page0 = document.getElementById('page-0');
+    if (!page0) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsOnPage0(entry.intersectionRatio > 0.5),
+      { threshold: [0, 0.5, 1] }
+    );
+    observer.observe(page0);
+    return () => observer.disconnect();
+  }, []);
+
+  const visible = isOnPage0 || hovered || menuOpen;
+
+  const handleMouseEnter = () => {
+    clearTimeout(hideTimer.current);
+    setHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    hideTimer.current = setTimeout(() => setHovered(false), 300);
+  };
+
+  return (
+    <>
+      {!isOnPage0 && (
+        <div
+          className="topbar-trigger-zone"
+          onMouseEnter={handleMouseEnter}
+        />
+      )}
+      <header
+        className={`global-topbar ${visible ? 'visible' : ''} ${isOnPage0 ? 'on-page0' : ''}`}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <div className="global-topbar-spacer" />
+        <nav className={`global-topbar-nav ${menuOpen ? 'open' : ''}`}>
+          {NAV_LINKS.map((link) => (
+            <a
+              key={link.target}
+              href={`#${link.target}`}
+              onClick={(e) => {
+                e.preventDefault();
+                setMenuOpen(false);
+                document.getElementById(link.target)?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              {link.label}
+            </a>
+          ))}
+        </nav>
+        <button
+          className={`global-menu-toggle ${menuOpen ? 'open' : ''}`}
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Toggle menu"
+        >
+          <span /><span /><span />
+        </button>
+      </header>
+    </>
+  );
 }
 
 function MainNarrative() {
+  const [p3Key, setP3Key] = useState(0);
+
+  const handleNavClick = useCallback((id) => {
+    if (id === 3) {
+      setP3Key(k => k + 1);
+    }
+    setTimeout(() => {
+      const el = document.getElementById(`page-${id}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }, 50);
+  }, []);
+
   return (
     <div className="app">
+      <GlobalTopbar />
+
       <nav className="page-nav">
         {NAV_PAGES.map(p => (
           <button
             key={p.id}
             className="nav-dot"
             title={p.label}
-            onClick={() => scrollToPage(p.id)}
+            onClick={() => handleNavClick(p.id)}
           >
             <span>{p.id}</span>
           </button>
@@ -43,7 +132,7 @@ function MainNarrative() {
       <Page0Cover />
       <Page1Landing />
       <Page2Sites />
-      <Page3Entry />
+      <Page3Entry key={p3Key} />
       <Page4Demand />
       <Page5Strategy />
       <Page6Summary />

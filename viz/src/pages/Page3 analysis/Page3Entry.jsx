@@ -1,5 +1,10 @@
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import IsometricCityBg from './IsometricCityBg';
+import CloudDiveBg from './CloudDiveBg';
+// ── Alternative backgrounds (uncomment one to switch) ──
+// import IsometricCityBg from './IsometricCityBg';  // Option B: 3D isometric colorful city (Three.js)
+// import HexGridBg from './HexGridBg';               // Option C: Canvas hex grid pulse
+// import GridScrollBg from './GridScrollBg';          // Option D: PostNew-style scrolling tile grid
 import './Page3Entry.css';
 
 const STATS = [
@@ -10,13 +15,27 @@ const STATS = [
 
 export default function Page3Entry() {
   const navigate = useNavigate();
+  const [showContent, setShowContent] = useState(false);
+
+  const handleIntroComplete = useCallback(() => {
+    setShowContent(true);
+  }, []);
 
   return (
     <section id="page-3" className="page page-3-entry">
+      {/* ── Current: Cloud dive animation (sky → clouds → city → text fade in) ── */}
+      <CloudDiveBg onIntroComplete={handleIntroComplete} />
+      {/* ── Option B: 3D isometric city. Use with showContent=true, remove CloudDiveBg ──
       <IsometricCityBg />
-      <div className="p3e-overlay" />
+      */}
+      {/* ── Option C: Hex grid pulse. Use with showContent=true ──
+      <HexGridBg />
+      */}
+      {/* ── Option D: Scrolling tile grid. Use with showContent=true ──
+      <GridScrollBg />
+      */}
 
-      <div className="p3e-content">
+      <div className={`p3e-content ${showContent ? 'p3e-visible' : ''}`}>
         <p className="p3e-kicker">Chapter 3</p>
         <h1 className="p3e-title">Ground Delivery Analysis</h1>
         <p className="p3e-subtitle">

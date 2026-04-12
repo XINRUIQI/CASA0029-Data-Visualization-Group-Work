@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
-         RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
+         RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+         ScatterChart, Scatter, ZAxis, CartesianGrid, ReferenceArea } from 'recharts';
 import './Page3FrictionCharts.css';
 
 const BARRIER_STATS = [
@@ -25,7 +27,46 @@ const SCENARIO_COMPARE = [
   { name: 'medical', observed: 0.48, random: 0.36 },
 ];
 
-export default function Page3FrictionCharts({ activeMode, hoveredHex }) {
+function buildDetourBins(odData) {
+  if (!odData?.length) return [];
+  const BIN_WIDTH = 0.1;
+  const bins = {};
+  odData.forEach(d => {
+    const dr = d.detour_ratio ?? 0;
+    const bin = Math.floor(dr / BIN_WIDTH) * BIN_WIDTH;
+    const key = bin.toFixed(1);
+    bins[key] = (bins[key] || 0) + 1;
+  });
+  return Object.entries(bins)
+    .map(([k, v]) => ({ range: k, count: v }))
+    .sort((a, b) => parseFloat(a.range) - parseFloat(b.range));
+}
+
+export default function Page3FrictionCharts({ activeMode, hoveredHex, h3Gap, odAnalysis }) {
+  const scatterData = useMemo(() => {
+    if (!h3Gap?.length) return [];
+    return h3Gap
+      .filter(d => d.demand_pressure > 0 || d.avg_friction > 0)
+      .map(d => ({
+        demand: +(d.demand_pressure ?? 0).toFixed(2),
+        friction: +(d.avg_friction ?? 0).toFixed(3),
+        gap: +(d.gap_index ?? 0).toFixed(4),
+      }));
+  }, [h3Gap]);
+
+  const detourBins = useMemo(() => buildDetourBins(odAnalysis), [odAnalysis]);
+
+  const detourStats = useMemo(() => {
+    if (!odAnalysis?.length) return null;
+    const ratios = odAnalysis.map(d => d.detour_ratio).filter(Boolean).sort((a, b) => a - b);
+    const n = ratios.length;
+    return {
+      median: ratios[Math.floor(n / 2)]?.toFixed(2),
+      p90: ratios[Math.floor(n * 0.9)]?.toFixed(2),
+      max: ratios[n - 1]?.toFixed(2),
+    };
+  }, [odAnalysis]);
+
   return (
     <div className="p2c">
       {/* Section 1: key metrics */}
@@ -108,7 +149,79 @@ export default function Page3FrictionCharts({ activeMode, hoveredHex }) {
         <p className="p2c-note">What drives ground friction most? Detour and barrier crossings dominate.</p>
       </div>
 
-      {/* Section 5: observed vs random */}
+      {/* Section 5: Demand–Friction scatter */}
+      {scatterData.length > 0 && (
+        <div className="p2c-section">
+          <h4>Demand vs Friction (per hex)</h4>
+          <ResponsiveContainer width="100%" height={200}>
+            <ScatterChart margin={{ left: 5, right: 10, top: 5, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e2040" />
+              <XAxis
+                dataKey="demand" type="number" name="Demand"
+                tick={{ fill: '#666', fontSize: 9 }} axisLine={{ stroke: '#2a2a4a' }}
+                label={{ value: 'Demand', position: 'bottom', fill: '#555', fontSize: 10, offset: -2 }}
+              />
+              <YAxis
+                dataKey="friction" type="number" name="Friction"
+                tick={{ fill: '#666', fontSize: 9 }} axisLine={{ stroke: '#2a2a4a' }}
+                label={{ value: 'Friction', angle: -90, position: 'insideLeft', fill: '#555', fontSize: 10 }}
+              />
+              <ZAxis dataKey="gap" range={[8, 8]} />
+              <Tooltip
+                contentStyle={{ background: '#1a1a2e', border: '1px solid #333', borderRadius: 8, fontSize: 11 }}
+                formatter={(v, name) => [typeof v === 'number' ? v.toFixed(3) : v, name]}
+              />
+              <ReferenceArea
+                x1={scatterData.reduce((m, d) => Math.max(m, d.demand), 0) * 0.5}
+                x2={scatterData.reduce((m, d) => Math.max(m, d.demand), 0)}
+                y1={scatterData.reduce((m, d) => Math.max(m, d.friction), 0) * 0.5}
+                y2={scatterData.reduce((m, d) => Math.max(m, d.friction), 0)}
+                fill="#c864ff" fillOpacity={0.06}
+                stroke="#c864ff" strokeOpacity={0.2} strokeDasharray="4 4"
+                label={{ value: 'Pain Zone', fill: '#c864ff', fontSize: 9, position: 'insideTopRight' }}
+              />
+              <Scatter data={scatterData} fill="#ff8c00" fillOpacity={0.5} r={2} />
+            </ScatterChart>
+          </ResponsiveContainer>
+          <p className="p2c-note">
+            Top-right = high demand + high friction. Purple zone marks the strongest drone substitution candidates.
+          </p>
+        </div>
+      )}
+
+      {/* Section 6: Detour ratio histogram */}
+      {detourBins.length > 0 && (
+        <div className="p2c-section">
+          <h4>Detour Ratio Distribution ({odAnalysis?.length} OD pairs)</h4>
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={detourBins} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
+              <XAxis
+                dataKey="range" tick={{ fill: '#666', fontSize: 9 }}
+                label={{ value: 'Detour Ratio', position: 'bottom', fill: '#555', fontSize: 10, offset: -2 }}
+              />
+              <YAxis tick={{ fill: '#555', fontSize: 9 }} />
+              <Tooltip
+                contentStyle={{ background: '#1a1a2e', border: '1px solid #333', borderRadius: 8, fontSize: 11 }}
+                formatter={(v) => [v, 'OD pairs']}
+                labelFormatter={(l) => `Detour ${l}×–${(parseFloat(l) + 0.1).toFixed(1)}×`}
+              />
+              <Bar dataKey="count" fill="#ff3264" fillOpacity={0.7} radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+          {detourStats && (
+            <div className="p2c-detour-stats">
+              <span>Median <strong>{detourStats.median}×</strong></span>
+              <span>P90 <strong>{detourStats.p90}×</strong></span>
+              <span>Max <strong>{detourStats.max}×</strong></span>
+            </div>
+          )}
+          <p className="p2c-note">
+            How much longer is the ground route vs straight-line? Higher = more detour due to barriers.
+          </p>
+        </div>
+      )}
+
+      {/* Section 7: observed vs random */}
       <div className="p2c-section">
         <h4>Observed vs Random (Gap Index)</h4>
         <ResponsiveContainer width="100%" height={140}>

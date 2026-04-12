@@ -43,6 +43,8 @@ export default function Page3FullMap() {
   const navigate = useNavigate();
   const [barriers, setBarriers] = useState({});
   const [demandGrid, setDemandGrid] = useState(null);
+  const [h3Gap, setH3Gap] = useState(null);
+  const [odAnalysis, setOdAnalysis] = useState(null);
   const [activeMode, setActiveMode] = useState('overlap');
   const [activeBarriers, setActiveBarriers] = useState(new Set(['water', 'railway', 'highway_major']));
   const [hoveredHex, setHoveredHex] = useState(null);
@@ -59,6 +61,14 @@ export default function Page3FullMap() {
     fetch(publicDataUrl('data/h3_demand.json'))
       .then(r => r.json())
       .then(setDemandGrid)
+      .catch(() => {});
+    fetch(publicDataUrl('data/page3_h3_gap.json'))
+      .then(r => r.json())
+      .then(setH3Gap)
+      .catch(() => {});
+    fetch(publicDataUrl('data/page3_od_analysis.json'))
+      .then(r => r.json())
+      .then(data => setOdAnalysis(data?.features?.map(f => f.properties) || []))
       .catch(() => {});
   }, []);
 
@@ -119,7 +129,8 @@ export default function Page3FullMap() {
             activeBarriers={activeBarriers}
             showBarriers={showBarriers}
             activeMode={activeMode}
-            demandGrid={demandGrid}
+            h3Demand={demandGrid}
+            h3Gap={h3Gap}
             observedSites={OBSERVED_SITES}
             scenarioFilter={scenarioFilter}
             onHoverHex={setHoveredHex}
@@ -162,7 +173,7 @@ export default function Page3FullMap() {
 
         {/* Right panel — charts */}
         <div className="p3f-panel">
-          <Page3FrictionCharts activeMode={activeMode} hoveredHex={hoveredHex} />
+          <Page3FrictionCharts activeMode={activeMode} hoveredHex={hoveredHex} h3Gap={h3Gap} odAnalysis={odAnalysis} />
         </div>
       </div>
     </div>

@@ -24,6 +24,7 @@ export default function Page3Friction() {
   const [barriers, setBarriers] = useState({});
   const [h3Demand, setH3Demand] = useState(null);
   const [h3Gap, setH3Gap] = useState(null);
+  const [odAnalysis, setOdAnalysis] = useState(null);
   const [observedSites, setObservedSites] = useState([]);
   const [activeMode, setActiveMode] = useState('overlap');
   const [activeBarriers, setActiveBarriers] = useState(new Set(['water', 'railway', 'highway_major']));
@@ -49,6 +50,10 @@ export default function Page3Friction() {
     fetch(publicDataUrl('data/page2_sites.json'))
       .then(r => r.json())
       .then(setObservedSites)
+      .catch(() => {});
+    fetch(publicDataUrl('data/page3_od_analysis.json'))
+      .then(r => r.json())
+      .then(data => setOdAnalysis(data?.features?.map(f => f.properties) || []))
       .catch(() => {});
   }, []);
 
@@ -149,7 +154,7 @@ export default function Page3Friction() {
         </div>
 
         <div className="p2-analysis-panel">
-          <Page3FrictionCharts activeMode={activeMode} hoveredHex={hoveredHex} />
+          <Page3FrictionCharts activeMode={activeMode} hoveredHex={hoveredHex} h3Gap={h3Gap} odAnalysis={odAnalysis} />
         </div>
       </div>
     </section>
