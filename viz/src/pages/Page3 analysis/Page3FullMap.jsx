@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Page2Map from '../Page2 point/Page2Map';
-import Page2Charts from '../Page2 point/Page2Charts';
+import Page3FrictionMap from './Page3FrictionMap';
+import Page3FrictionCharts from './Page3FrictionCharts';
 import { publicDataUrl } from '../../config';
 import './Page3FullMap.css';
 
@@ -33,10 +33,10 @@ const OBSERVED_SITES = [
 ];
 
 const MODE_DESC = {
-  demand: '490K+ POI 揭示配送压力——颜色越深需求越高',
-  friction: '绕行、障碍、拥堵叠加形成地面配送摩擦',
-  overlap: '高需求 × 高摩擦 = 无人机创造最大价值的区域',
-  observed: '现有站点集中在高摩擦叠置区，而非仅高需求区',
+  demand: '490K+ POIs reveal delivery pressure — darker = higher demand',
+  friction: 'Detour, barriers, congestion compound into ground friction',
+  overlap: 'High demand × high friction = where drones create the most value',
+  observed: 'Observed sites cluster in high-friction overlap zones, not in demand-only areas',
 };
 
 export default function Page3FullMap() {
@@ -51,12 +51,12 @@ export default function Page3FullMap() {
 
   useEffect(() => {
     ['water', 'waterway', 'railway', 'highway_major'].forEach(t => {
-      fetch(publicDataUrl(`data/barrier_${t}.json`))
+      fetch(publicDataUrl(`data/page3_barrier_${t}.json`))
         .then(r => r.json())
         .then(data => setBarriers(prev => ({ ...prev, [t]: data })))
         .catch(() => {});
     });
-    fetch(publicDataUrl('data/demand_grid.json'))
+    fetch(publicDataUrl('data/h3_demand.json'))
       .then(r => r.json())
       .then(setDemandGrid)
       .catch(() => {});
@@ -77,7 +77,7 @@ export default function Page3FullMap() {
         className="p3f-back"
         onClick={() => navigate('/', { state: { scrollTo: 'page-3' } })}
       >
-        ← 返回主页
+        ← Back to Main
       </button>
 
       {/* Top bar */}
@@ -114,7 +114,7 @@ export default function Page3FullMap() {
       {/* Main layout */}
       <div className="p3f-main">
         <div className="p3f-map-area">
-          <Page2Map
+          <Page3FrictionMap
             barriers={barriers}
             activeBarriers={activeBarriers}
             showBarriers={showBarriers}
@@ -162,7 +162,7 @@ export default function Page3FullMap() {
 
         {/* Right panel — charts */}
         <div className="p3f-panel">
-          <Page2Charts activeMode={activeMode} hoveredHex={hoveredHex} />
+          <Page3FrictionCharts activeMode={activeMode} hoveredHex={hoveredHex} />
         </div>
       </div>
     </div>

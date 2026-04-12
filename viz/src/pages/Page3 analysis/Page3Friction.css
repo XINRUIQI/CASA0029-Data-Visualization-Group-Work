@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════
-   Page 2 — Demand or Friction?
+   Page 3 — Demand & Friction Analysis
    Dashboard-style analytical map page
    ═══════════════════════════════════════════ */
 
-.page-2 {
+.page-3-friction {
   display: flex;
   flex-direction: column;
   min-height: 100vh;

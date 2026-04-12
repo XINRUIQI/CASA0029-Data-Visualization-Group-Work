@@ -55,7 +55,7 @@ export default function Page3Routes() {
 
   useEffect(() => {
     ['water', 'waterway', 'railway', 'highway_major'].forEach(t => {
-      fetch(publicDataUrl(`data/barrier_${t}.json`))
+      fetch(publicDataUrl(`data/page3_barrier_${t}.json`))
         .then(r => r.json())
         .then(data => setBarriers(prev => ({ ...prev, [t]: data })))
         .catch(() => {});

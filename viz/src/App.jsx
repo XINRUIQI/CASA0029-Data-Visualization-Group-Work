@@ -1,7 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import Page0Cover from './pages/Page0/Page0Cover';
 import Page1Landing from './pages/Page1 overview/Page1Landing';
-import Page2Friction from './pages/Page2 point/Page2Friction';
+import Page2Sites from './pages/Page2 sites/Page2Sites';
 import Page3Entry from './pages/Page3 analysis/Page3Entry';
 import Page3FullMap from './pages/Page3 analysis/Page3FullMap';
 import Page4Demand from './pages/Page4/Page4Demand';
@@ -12,8 +12,8 @@ import './App.css';
 const NAV_PAGES = [
   { id: 0, label: 'Cover' },
   { id: 1, label: 'Overview' },
-  { id: 2, label: 'Points' },
-  { id: 3, label: 'Analysis' },
+  { id: 2, label: 'Sites' },
+  { id: 3, label: 'Friction' },
   { id: 4, label: 'Demand' },
   { id: 5, label: 'Strategy' },
   { id: 6, label: 'Summary' },
@@ -42,7 +42,7 @@ function MainNarrative() {
 
       <Page0Cover />
       <Page1Landing />
-      <Page2Friction />
+      <Page2Sites />
       <Page3Entry />
       <Page4Demand />
       <Page5Strategy />

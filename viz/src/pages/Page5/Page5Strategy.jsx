@@ -163,11 +163,11 @@ export default function Page5Strategy() {
       .then(r => r.json())
       .then(setH3Demand)
       .catch(() => {});
-    fetch(publicDataUrl('data/h3_population.json'))
+    fetch(publicDataUrl('data/page5_h3_population.json'))
       .then(r => r.json())
       .then(setH3Pop)
       .catch(() => {});
-    fetch(publicDataUrl('data/h3_building.json'))
+    fetch(publicDataUrl('data/page5_h3_building.json'))
       .then(r => r.json())
       .then(setH3Build)
       .catch(() => {});

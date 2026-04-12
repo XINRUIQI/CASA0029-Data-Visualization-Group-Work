@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import Page2Map from './Page2Map';
-import Page2Charts from './Page2Charts';
+import Page3FrictionMap from './Page3FrictionMap';
+import Page3FrictionCharts from './Page3FrictionCharts';
 import { publicDataUrl } from '../../config';
-import './Page2.css';
+import './Page3Friction.css';
 
 const LAYER_MODES = [
   { id: 'demand', label: 'Demand', color: '#ff8c00' },
@@ -18,23 +18,13 @@ const BARRIER_TYPES = [
   { id: 'highway_major', label: 'Expressway', color: '#dc3c3c' },
 ];
 
-const SCENARIO_FILTERS = ['all', 'meal_delivery', 'parcel_delivery', 'park_internal', 'cross_border', 'medical'];
+const SCENARIO_FILTERS = ['all', 'meal_delivery', 'parcel_delivery', 'park', 'cross_border', 'medical'];
 
-const OBSERVED_SITES = [
-  { lon: 114.00, lat: 22.52, scenario: 'meal_delivery', name: 'Shenzhen Bay' },
-  { lon: 114.06, lat: 22.52, scenario: 'cross_border', name: 'Futian Port' },
-  { lon: 114.06, lat: 22.56, scenario: 'park_internal', name: 'Lianhua Mountain' },
-  { lon: 114.03, lat: 22.65, scenario: 'parcel_delivery', name: 'Longhua' },
-  { lon: 114.12, lat: 22.55, scenario: 'meal_delivery', name: 'Luohu CBD' },
-  { lon: 113.93, lat: 22.56, scenario: 'parcel_delivery', name: 'Nanshan' },
-  { lon: 114.25, lat: 22.72, scenario: 'medical', name: 'Longgang Hospital' },
-  { lon: 113.88, lat: 22.72, scenario: 'meal_delivery', name: 'Bao\'an Center' },
-];
-
-export default function Page2Friction() {
+export default function Page3Friction() {
   const [barriers, setBarriers] = useState({});
   const [h3Demand, setH3Demand] = useState(null);
   const [h3Gap, setH3Gap] = useState(null);
+  const [observedSites, setObservedSites] = useState([]);
   const [activeMode, setActiveMode] = useState('overlap');
   const [activeBarriers, setActiveBarriers] = useState(new Set(['water', 'railway', 'highway_major']));
   const [hoveredHex, setHoveredHex] = useState(null);
@@ -43,7 +33,7 @@ export default function Page2Friction() {
 
   useEffect(() => {
     ['water', 'waterway', 'railway', 'highway_major'].forEach(t => {
-      fetch(publicDataUrl(`data/barrier_${t}.json`))
+      fetch(publicDataUrl(`data/page3_barrier_${t}.json`))
         .then(r => r.json())
         .then(data => setBarriers(prev => ({ ...prev, [t]: data })))
         .catch(() => {});
@@ -52,9 +42,13 @@ export default function Page2Friction() {
       .then(r => r.json())
       .then(setH3Demand)
       .catch(() => {});
-    fetch(publicDataUrl('data/h3_gap.json'))
+    fetch(publicDataUrl('data/page3_h3_gap.json'))
       .then(r => r.json())
       .then(setH3Gap)
+      .catch(() => {});
+    fetch(publicDataUrl('data/page2_sites.json'))
+      .then(r => r.json())
+      .then(setObservedSites)
       .catch(() => {});
   }, []);
 
@@ -67,7 +61,7 @@ export default function Page2Friction() {
   };
 
   return (
-    <section id="page-2" className="page page-2">
+    <section id="page-3" className="page page-3-friction">
       {/* ═══ TOP BAR ═══ */}
       <div className="p2-topbar">
         <div className="p2-tab-group">
@@ -84,7 +78,7 @@ export default function Page2Friction() {
           ))}
         </div>
 
-        {/* Scenario type filter (新增) */}
+        {/* Scenario type filter */}
         {(activeMode === 'observed' || activeMode === 'overlap') && (
           <div className="p2-scenario-filter">
             {SCENARIO_FILTERS.map(s => (
@@ -103,14 +97,14 @@ export default function Page2Friction() {
       {/* ═══ MAIN ═══ */}
       <div className="p2-main">
         <div className="p2-map-area">
-          <Page2Map
+          <Page3FrictionMap
             barriers={barriers}
             activeBarriers={activeBarriers}
             showBarriers={showBarriers}
             activeMode={activeMode}
             h3Demand={h3Demand}
             h3Gap={h3Gap}
-            observedSites={OBSERVED_SITES}
+            observedSites={observedSites}
             scenarioFilter={scenarioFilter}
             onHoverHex={setHoveredHex}
           />
@@ -155,7 +149,7 @@ export default function Page2Friction() {
         </div>
 
         <div className="p2-analysis-panel">
-          <Page2Charts activeMode={activeMode} hoveredHex={hoveredHex} />
+          <Page3FrictionCharts activeMode={activeMode} hoveredHex={hoveredHex} />
         </div>
       </div>
     </section>

@@ -17,6 +17,8 @@
     "@deck.gl/layers": "^9.2.11",
     "@deck.gl/mapbox": "^9.2.11",
     "@deck.gl/react": "^9.2.11",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
     "gsap": "^3.14.2",
     "mapbox-gl": "^3.21.0",
     "react": "^19.2.4",
@@ -25,7 +27,8 @@
     "react-router-dom": "^7.14.0",
     "react-scrollama": "^2.4.2",
     "recharts": "^3.8.1",
-    "scrollama": "^3.2.0"
+    "scrollama": "^3.2.0",
+    "three": "^0.183.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

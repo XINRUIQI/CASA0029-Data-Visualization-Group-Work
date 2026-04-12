@@ -1,6 +1,6 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
          RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
-import './Page2Charts.css';
+import './Page3FrictionCharts.css';
 
 const BARRIER_STATS = [
   { name: 'Water', rate: 93.6, crossings: 6.78, color: '#4688dc' },
@@ -25,7 +25,7 @@ const SCENARIO_COMPARE = [
   { name: 'medical', observed: 0.48, random: 0.36 },
 ];
 
-export default function Page2Charts({ activeMode, hoveredHex }) {
+export default function Page3FrictionCharts({ activeMode, hoveredHex }) {
   return (
     <div className="p2c">
       {/* Section 1: key metrics */}
@@ -77,7 +77,7 @@ export default function Page2Charts({ activeMode, hoveredHex }) {
         </ResponsiveContainer>
       </div>
 
-      {/* Section 4: feature importance (新增) */}
+      {/* Section 4: feature importance */}
       <div className="p2c-section">
         <h4>Feature Importance</h4>
         <ResponsiveContainer width="100%" height={130}>

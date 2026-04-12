@@ -28,7 +28,7 @@ export default function Page4Demand() {
     let cancelled = false;
     setDataStatus('loading');
     Promise.allSettled([
-      fetch(publicDataUrl('data/candidate_sites.json')).then(r => {
+      fetch(publicDataUrl('data/page4_candidate_sites.json')).then(r => {
         if (!r.ok) throw new Error(String(r.status));
         return r.json();
       }),

@@ -42,7 +42,7 @@ function hexColor(mode, d) {
   return [80, 80, 80, 40];
 }
 
-export default function Page2Map({
+export default function Page3FrictionMap({
   barriers, activeBarriers, showBarriers, activeMode,
   h3Demand, h3Gap, observedSites, scenarioFilter, onHoverHex
 }) {
