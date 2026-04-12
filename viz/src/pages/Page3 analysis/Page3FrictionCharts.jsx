@@ -4,37 +4,12 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
          ScatterChart, Scatter, ZAxis, CartesianGrid, ReferenceArea } from 'recharts';
 import './Page3FrictionCharts.css';
 
-const BARRIER_STATS = [
-  { name: 'Water', rate: 93.6, crossings: 6.78, color: '#4688dc' },
-  { name: 'Waterway', rate: 96.3, crossings: 8.60, color: '#64a0f0' },
-  { name: 'Railway', rate: 77.4, crossings: 10.42, color: '#aaa' },
-  { name: 'Highway', rate: 96.5, crossings: 18.97, color: '#dc3c3c' },
-];
+const TT_STYLE = { background: '#1a1a2e', border: '1px solid #333', borderRadius: 8, fontSize: 11 };
 
-const FRICTION_COMPONENTS = [
-  { axis: 'Detour', value: 0.72 },
-  { axis: 'Barrier', value: 0.85 },
-  { axis: 'Bridge dep.', value: 0.99 },
-  { axis: 'Tunnel dep.', value: 0.72 },
-  { axis: 'Congestion', value: 0.82 },
-];
-
-const SCENARIO_COMPARE = [
-  { name: 'meal', observed: 0.62, random: 0.35 },
-  { name: 'parcel', observed: 0.58, random: 0.33 },
-  { name: 'park', observed: 0.71, random: 0.29 },
-  { name: 'campus', observed: 0.55, random: 0.31 },
-  { name: 'medical', observed: 0.48, random: 0.36 },
-];
-
-function buildDetourBins(odData) {
-  if (!odData?.length) return [];
-  const BIN_WIDTH = 0.1;
+function buildBins(values, binWidth) {
   const bins = {};
-  odData.forEach(d => {
-    const dr = d.detour_ratio ?? 0;
-    const bin = Math.floor(dr / BIN_WIDTH) * BIN_WIDTH;
-    const key = bin.toFixed(1);
+  values.forEach(v => {
+    const key = (Math.floor(v / binWidth) * binWidth).toFixed(1);
     bins[key] = (bins[key] || 0) + 1;
   });
   return Object.entries(bins)
@@ -42,7 +17,9 @@ function buildDetourBins(odData) {
     .sort((a, b) => parseFloat(a.range) - parseFloat(b.range));
 }
 
-export default function Page3FrictionCharts({ activeMode, hoveredHex, h3Gap, odAnalysis }) {
+export default function Page3FrictionCharts({
+  activeMode, hoveredHex, h3Gap, odAnalysis, liveMetrics, onHighlight
+}) {
   const scatterData = useMemo(() => {
     if (!h3Gap?.length) return [];
     return h3Gap
@@ -54,7 +31,10 @@ export default function Page3FrictionCharts({ activeMode, hoveredHex, h3Gap, odA
       }));
   }, [h3Gap]);
 
-  const detourBins = useMemo(() => buildDetourBins(odAnalysis), [odAnalysis]);
+  const detourBins = useMemo(() => {
+    if (!odAnalysis?.length) return [];
+    return buildBins(odAnalysis.map(d => d.detour_ratio).filter(Boolean), 0.1);
+  }, [odAnalysis]);
 
   const detourStats = useMemo(() => {
     if (!odAnalysis?.length) return null;
@@ -67,108 +47,150 @@ export default function Page3FrictionCharts({ activeMode, hoveredHex, h3Gap, odA
     };
   }, [odAnalysis]);
 
+  const congestionBins = useMemo(() => {
+    if (!odAnalysis?.length) return [];
+    return buildBins(odAnalysis.map(d => d.congestion_amplifier).filter(Boolean), 0.1);
+  }, [odAnalysis]);
+
+  const barrierCrossings = useMemo(() => {
+    if (!odAnalysis?.length) return null;
+    const n = odAnalysis.length;
+    const avg = (key) => +(odAnalysis.reduce((s, d) => s + (d[key] || 0), 0) / n).toFixed(2);
+    return [
+      { type: 'Water', avg: avg('n_water_crossings'), color: '#4688dc' },
+      { type: 'Waterway', avg: avg('n_waterway_crossings'), color: '#64a0f0' },
+      { type: 'Railway', avg: avg('n_railway_crossings'), color: '#aaa' },
+      { type: 'Highway', avg: avg('n_highway_major_crossings'), color: '#dc3c3c' },
+    ];
+  }, [odAnalysis]);
+
+  const distCompare = useMemo(() => {
+    if (!odAnalysis?.length) return [];
+    return odAnalysis.filter((_, i) => i % 6 === 0).map((d, i) => ({
+      idx: i,
+      ground: +((d.net_m || 0) / 1000).toFixed(1),
+      air: +((d.fly_m || 0) / 1000).toFixed(1),
+    }));
+  }, [odAnalysis]);
+
+  const barrierRates = useMemo(() => {
+    if (!odAnalysis?.length) return null;
+    const n = odAnalysis.length;
+    const pct = (key) => +((odAnalysis.filter(d => d[key]).length / n) * 100).toFixed(1);
+    return [
+      { name: 'Water', rate: pct('crosses_water'), color: '#4688dc' },
+      { name: 'Waterway', rate: pct('crosses_waterway'), color: '#64a0f0' },
+      { name: 'Railway', rate: pct('crosses_railway'), color: '#aaa' },
+      { name: 'Highway', rate: pct('crosses_highway_major'), color: '#dc3c3c' },
+    ];
+  }, [odAnalysis]);
+
+  const frictionComposition = useMemo(() => {
+    if (!odAnalysis?.length) return null;
+    const avg = (key) => {
+      const vals = odAnalysis.map(d => d[key]).filter(v => v != null && v > 0);
+      return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+    };
+    return [
+      { axis: 'Detour', value: +avg('detour_norm').toFixed(3) },
+      { axis: 'Barrier', value: +avg('barrier_norm').toFixed(3) },
+      { axis: 'Bridge dep.', value: +avg('bridge_score').toFixed(3) },
+      { axis: 'Tunnel dep.', value: +avg('tunnel_score').toFixed(3) },
+      { axis: 'Congestion', value: +avg('congestion_norm').toFixed(3) },
+    ];
+  }, [odAnalysis]);
+
+  const featureImportance = useMemo(() => {
+    if (!odAnalysis?.length) return null;
+    const fields = [
+      { key: 'detour_norm', name: 'Detour ratio', color: '#ff8c00' },
+      { key: 'barrier_norm', name: 'Barrier cross.', color: '#4688dc' },
+      { key: 'congestion_norm', name: 'Congestion', color: '#ff3264' },
+      { key: 'bridge_score', name: 'Bridge dep.', color: '#aaa' },
+      { key: 'tunnel_score', name: 'Tunnel dep.', color: '#888' },
+    ];
+    const frictions = odAnalysis.map(d => d.ground_friction || 0);
+    const mean = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
+    const fMean = mean(frictions);
+    const fVar = mean(frictions.map(v => (v - fMean) ** 2));
+    if (fVar === 0) return null;
+
+    const corrs = fields.map(f => {
+      const vals = odAnalysis.map(d => d[f.key] || 0);
+      const vMean = mean(vals);
+      const cov = mean(vals.map((v, i) => (v - vMean) * (frictions[i] - fMean)));
+      const vStd = Math.sqrt(mean(vals.map(v => (v - vMean) ** 2)));
+      const r = vStd > 0 ? Math.abs(cov / (vStd * Math.sqrt(fVar))) : 0;
+      return { ...f, imp: +r.toFixed(3) };
+    });
+
+    const total = corrs.reduce((s, c) => s + c.imp, 0) || 1;
+    return corrs.map(c => ({ ...c, imp: +(c.imp / total).toFixed(3) }));
+  }, [odAnalysis]);
+
+  const handleScatterClick = (entry) => {
+    const pt = entry?.payload ?? entry;
+    if (!pt?.demand && pt?.demand !== 0) return;
+    const d = pt.demand;
+    const f = pt.friction;
+    onHighlight?.((hex) => {
+      const dp = hex.dp || 0;
+      const fr = hex.avg_friction || 0;
+      if (Math.abs(dp - d) < 1 && Math.abs(fr - f) < 0.05) return true;
+      return false;
+    });
+  };
+
+  const handleDetourBinClick = (data) => {
+    if (!data?.range) return;
+    const lo = parseFloat(data.range);
+    const hi = lo + 0.1;
+    onHighlight?.((hex) => {
+      const fr = hex.avg_friction || 0;
+      if (fr >= (lo - 1) * 0.15 && fr < hi * 0.15) return true;
+      return false;
+    });
+  };
+
+  const isDemand = activeMode === 'demand';
+  const isFriction = activeMode === 'friction';
+  const isOverlap = activeMode === 'overlap';
+
   return (
     <div className="p2c">
-      {/* Section 1: key metrics */}
+      {/* Key metrics — live from data */}
       <div className="p2c-metrics">
         <div className="p2c-metric">
-          <div className="m-value" style={{ color: '#ff8c00' }}>1.50</div>
+          <div className="m-value" style={{ color: '#ff8c00' }}>{liveMetrics?.avgDetour ?? '—'}</div>
           <div className="m-label">Avg detour ratio</div>
         </div>
         <div className="p2c-metric">
-          <div className="m-value" style={{ color: '#ff3264' }}>1.82x</div>
+          <div className="m-value" style={{ color: '#ff3264' }}>{liveMetrics?.peakCong ? `${liveMetrics.peakCong}×` : '—'}</div>
           <div className="m-label">Peak congestion</div>
         </div>
         <div className="p2c-metric">
-          <div className="m-value" style={{ color: '#c864ff' }}>93.6%</div>
+          <div className="m-value" style={{ color: '#c864ff' }}>{liveMetrics?.waterPct ? `${liveMetrics.waterPct}%` : '—'}</div>
           <div className="m-label">ODs cross water</div>
         </div>
       </div>
 
-      {/* Section 2: barrier crossing rates */}
-      <div className="p2c-section">
-        <h4>Barrier Crossing Rate (%)</h4>
-        <ResponsiveContainer width="100%" height={140}>
-          <BarChart data={BARRIER_STATS} layout="vertical" margin={{ left: 60, right: 10, top: 5, bottom: 5 }}>
-            <XAxis type="number" domain={[0, 100]} tick={{ fill: '#555', fontSize: 10 }} />
-            <YAxis type="category" dataKey="name" tick={{ fill: '#999', fontSize: 11 }} width={60} />
-            <Tooltip
-              contentStyle={{ background: '#1a1a2e', border: '1px solid #333', borderRadius: 8, fontSize: 12 }}
-              labelStyle={{ color: '#aaa' }}
-            />
-            <Bar dataKey="rate" radius={[0, 4, 4, 0]}>
-              {BARRIER_STATS.map((s, i) => (
-                <Cell key={i} fill={s.color} fillOpacity={0.8} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Section 3: friction radar */}
-      <div className="p2c-section">
-        <h4>Friction Composition</h4>
-        <ResponsiveContainer width="100%" height={180}>
-          <RadarChart data={FRICTION_COMPONENTS} cx="50%" cy="50%" outerRadius="70%">
-            <PolarGrid stroke="#2a2a4a" />
-            <PolarAngleAxis dataKey="axis" tick={{ fill: '#888', fontSize: 10 }} />
-            <PolarRadiusAxis tick={false} axisLine={false} domain={[0, 1]} />
-            <Radar dataKey="value" stroke="#c864ff" fill="#c864ff" fillOpacity={0.25} strokeWidth={2} />
-          </RadarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Section 4: feature importance */}
-      <div className="p2c-section">
-        <h4>Feature Importance</h4>
-        <ResponsiveContainer width="100%" height={130}>
-          <BarChart
-            data={[
-              { name: 'Detour ratio', imp: 0.28, color: '#ff8c00' },
-              { name: 'Barrier crossings', imp: 0.24, color: '#4688dc' },
-              { name: 'Congestion', imp: 0.22, color: '#ff3264' },
-              { name: 'Bridge depend.', imp: 0.14, color: '#aaa' },
-              { name: 'Tunnel depend.', imp: 0.12, color: '#888' },
-            ]}
-            layout="vertical"
-            margin={{ left: 90, right: 10, top: 5, bottom: 5 }}
-          >
-            <XAxis type="number" domain={[0, 0.35]} tick={{ fill: '#555', fontSize: 10 }} />
-            <YAxis type="category" dataKey="name" tick={{ fill: '#999', fontSize: 10 }} width={85} />
-            <Tooltip contentStyle={{ background: '#1a1a2e', border: '1px solid #333', borderRadius: 8, fontSize: 12 }} />
-            <Bar dataKey="imp" radius={[0, 4, 4, 0]} name="Importance">
-              {[
-                { color: '#ff8c00' }, { color: '#4688dc' }, { color: '#ff3264' },
-                { color: '#aaa' }, { color: '#888' },
-              ].map((s, i) => (
-                <Cell key={i} fill={s.color} fillOpacity={0.8} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-        <p className="p2c-note">What drives ground friction most? Detour and barrier crossings dominate.</p>
-      </div>
-
-      {/* Section 5: Demand–Friction scatter */}
-      {scatterData.length > 0 && (
+      {/* Demand mode charts */}
+      {(isDemand || isOverlap) && scatterData.length > 0 && (
         <div className="p2c-section">
-          <h4>Demand vs Friction (per hex)</h4>
+          <h4>Demand vs Friction (per hex) <span className="p2c-click-hint">click to highlight</span></h4>
           <ResponsiveContainer width="100%" height={200}>
             <ScatterChart margin={{ left: 5, right: 10, top: 5, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e2040" />
-              <XAxis
-                dataKey="demand" type="number" name="Demand"
+              <XAxis dataKey="demand" type="number" name="Demand"
                 tick={{ fill: '#666', fontSize: 9 }} axisLine={{ stroke: '#2a2a4a' }}
                 label={{ value: 'Demand', position: 'bottom', fill: '#555', fontSize: 10, offset: -2 }}
               />
-              <YAxis
-                dataKey="friction" type="number" name="Friction"
+              <YAxis dataKey="friction" type="number" name="Friction"
                 tick={{ fill: '#666', fontSize: 9 }} axisLine={{ stroke: '#2a2a4a' }}
                 label={{ value: 'Friction', angle: -90, position: 'insideLeft', fill: '#555', fontSize: 10 }}
               />
               <ZAxis dataKey="gap" range={[8, 8]} />
-              <Tooltip
-                contentStyle={{ background: '#1a1a2e', border: '1px solid #333', borderRadius: 8, fontSize: 11 }}
+              <Tooltip contentStyle={TT_STYLE}
                 formatter={(v, name) => [typeof v === 'number' ? v.toFixed(3) : v, name]}
               />
               <ReferenceArea
@@ -176,69 +198,163 @@ export default function Page3FrictionCharts({ activeMode, hoveredHex, h3Gap, odA
                 x2={scatterData.reduce((m, d) => Math.max(m, d.demand), 0)}
                 y1={scatterData.reduce((m, d) => Math.max(m, d.friction), 0) * 0.5}
                 y2={scatterData.reduce((m, d) => Math.max(m, d.friction), 0)}
-                fill="#c864ff" fillOpacity={0.06}
-                stroke="#c864ff" strokeOpacity={0.2} strokeDasharray="4 4"
+                fill="#c864ff" fillOpacity={0.06} stroke="#c864ff" strokeOpacity={0.2} strokeDasharray="4 4"
                 label={{ value: 'Pain Zone', fill: '#c864ff', fontSize: 9, position: 'insideTopRight' }}
               />
-              <Scatter data={scatterData} fill="#ff8c00" fillOpacity={0.5} r={2} />
+              <Scatter data={scatterData} fill="#ff8c00" fillOpacity={0.5} r={2}
+                onClick={handleScatterClick} cursor="pointer"
+              />
             </ScatterChart>
           </ResponsiveContainer>
-          <p className="p2c-note">
-            Top-right = high demand + high friction. Purple zone marks the strongest drone substitution candidates.
-          </p>
+          <p className="p2c-note">Top-right = high demand + high friction. Click a point to highlight its hex on the map.</p>
         </div>
       )}
 
-      {/* Section 6: Detour ratio histogram */}
-      {detourBins.length > 0 && (
-        <div className="p2c-section">
-          <h4>Detour Ratio Distribution ({odAnalysis?.length} OD pairs)</h4>
-          <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={detourBins} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
-              <XAxis
-                dataKey="range" tick={{ fill: '#666', fontSize: 9 }}
-                label={{ value: 'Detour Ratio', position: 'bottom', fill: '#555', fontSize: 10, offset: -2 }}
-              />
-              <YAxis tick={{ fill: '#555', fontSize: 9 }} />
-              <Tooltip
-                contentStyle={{ background: '#1a1a2e', border: '1px solid #333', borderRadius: 8, fontSize: 11 }}
-                formatter={(v) => [v, 'OD pairs']}
-                labelFormatter={(l) => `Detour ${l}×–${(parseFloat(l) + 0.1).toFixed(1)}×`}
-              />
-              <Bar dataKey="count" fill="#ff3264" fillOpacity={0.7} radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-          {detourStats && (
-            <div className="p2c-detour-stats">
-              <span>Median <strong>{detourStats.median}×</strong></span>
-              <span>P90 <strong>{detourStats.p90}×</strong></span>
-              <span>Max <strong>{detourStats.max}×</strong></span>
+      {/* Friction mode charts */}
+      {(isFriction || isOverlap) && (
+        <>
+          {barrierRates && (
+            <div className="p2c-section">
+              <h4>Barrier Crossing Rate (%)</h4>
+              <ResponsiveContainer width="100%" height={140}>
+                <BarChart data={barrierRates} layout="vertical" margin={{ left: 60, right: 10, top: 5, bottom: 5 }}>
+                  <XAxis type="number" domain={[0, 100]} tick={{ fill: '#555', fontSize: 10 }} />
+                  <YAxis type="category" dataKey="name" tick={{ fill: '#999', fontSize: 11 }} width={60} />
+                  <Tooltip contentStyle={TT_STYLE} labelStyle={{ color: '#aaa' }} />
+                  <Bar dataKey="rate" radius={[0, 4, 4, 0]}>
+                    {barrierRates.map((s, i) => <Cell key={i} fill={s.color} fillOpacity={0.8} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           )}
-          <p className="p2c-note">
-            How much longer is the ground route vs straight-line? Higher = more detour due to barriers.
-          </p>
-        </div>
+
+          {frictionComposition && (
+            <div className="p2c-section">
+              <h4>Friction Composition</h4>
+              <ResponsiveContainer width="100%" height={180}>
+                <RadarChart data={frictionComposition} cx="50%" cy="50%" outerRadius="70%">
+                  <PolarGrid stroke="#2a2a4a" />
+                  <PolarAngleAxis dataKey="axis" tick={{ fill: '#888', fontSize: 10 }} />
+                  <PolarRadiusAxis tick={false} axisLine={false} domain={[0, 1]} />
+                  <Radar dataKey="value" stroke="#c864ff" fill="#c864ff" fillOpacity={0.25} strokeWidth={2} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {featureImportance && (
+            <div className="p2c-section">
+              <h4>Feature Importance</h4>
+              <ResponsiveContainer width="100%" height={130}>
+                <BarChart data={featureImportance} layout="vertical" margin={{ left: 85, right: 10, top: 5, bottom: 5 }}>
+                  <XAxis type="number" domain={[0, 'auto']} tick={{ fill: '#555', fontSize: 10 }} />
+                  <YAxis type="category" dataKey="name" tick={{ fill: '#999', fontSize: 10 }} width={80} />
+                  <Tooltip contentStyle={TT_STYLE} />
+                  <Bar dataKey="imp" radius={[0, 4, 4, 0]} name="Importance">
+                    {featureImportance.map((s, i) => <Cell key={i} fill={s.color} fillOpacity={0.8} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {detourBins.length > 0 && (
+            <div className="p2c-section">
+              <h4>Detour Ratio Distribution <span className="p2c-click-hint">click bin to highlight</span></h4>
+              <ResponsiveContainer width="100%" height={140}>
+                <BarChart data={detourBins} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}
+                  onClick={(e) => e?.activePayload?.[0] && handleDetourBinClick(e.activePayload[0].payload)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <XAxis dataKey="range" tick={{ fill: '#666', fontSize: 9 }} />
+                  <YAxis tick={{ fill: '#555', fontSize: 9 }} />
+                  <Tooltip contentStyle={TT_STYLE}
+                    formatter={(v) => [v, 'OD pairs']}
+                    labelFormatter={(l) => `Detour ${l}×–${(parseFloat(l) + 0.1).toFixed(1)}×`}
+                  />
+                  <Bar dataKey="count" fill="#ff3264" fillOpacity={0.7} radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+              {detourStats && (
+                <div className="p2c-detour-stats">
+                  <span>Median <strong>{detourStats.median}×</strong></span>
+                  <span>P90 <strong>{detourStats.p90}×</strong></span>
+                  <span>Max <strong>{detourStats.max}×</strong></span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {congestionBins.length > 0 && (
+            <div className="p2c-section">
+              <h4>Congestion Amplifier Distribution</h4>
+              <ResponsiveContainer width="100%" height={140}>
+                <BarChart data={congestionBins} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
+                  <XAxis dataKey="range" tick={{ fill: '#666', fontSize: 9 }}
+                    label={{ value: 'Peak / Free-flow', position: 'bottom', fill: '#555', fontSize: 10, offset: -2 }}
+                  />
+                  <YAxis tick={{ fill: '#555', fontSize: 9 }} />
+                  <Tooltip contentStyle={TT_STYLE}
+                    formatter={(v) => [v, 'OD pairs']}
+                    labelFormatter={(l) => `${l}×–${(parseFloat(l) + 0.1).toFixed(1)}× slowdown`}
+                  />
+                  <Bar dataKey="count" fill="#ffa028" fillOpacity={0.7} radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {barrierCrossings && (
+            <div className="p2c-section">
+              <h4>Avg Barrier Crossings per Trip</h4>
+              <ResponsiveContainer width="100%" height={140}>
+                <BarChart data={barrierCrossings} layout="vertical" margin={{ left: 65, right: 10, top: 5, bottom: 5 }}>
+                  <XAxis type="number" tick={{ fill: '#555', fontSize: 10 }} />
+                  <YAxis type="category" dataKey="type" tick={{ fill: '#999', fontSize: 11 }} width={62} />
+                  <Tooltip contentStyle={TT_STYLE} formatter={(v) => [v, 'avg crossings']} />
+                  <Bar dataKey="avg" radius={[0, 4, 4, 0]}>
+                    {barrierCrossings.map((b, i) => <Cell key={i} fill={b.color} fillOpacity={0.8} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              <p className="p2c-note">
+                Each delivery crosses ~{barrierCrossings.reduce((s, b) => s + b.avg, 0).toFixed(1)} barriers on average.
+              </p>
+            </div>
+          )}
+        </>
       )}
 
-      {/* Section 7: observed vs random */}
-      <div className="p2c-section">
-        <h4>Observed vs Random (Gap Index)</h4>
-        <ResponsiveContainer width="100%" height={140}>
-          <BarChart data={SCENARIO_COMPARE} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
-            <XAxis dataKey="name" tick={{ fill: '#777', fontSize: 10 }} />
-            <YAxis tick={{ fill: '#555', fontSize: 10 }} domain={[0, 0.8]} />
-            <Tooltip
-              contentStyle={{ background: '#1a1a2e', border: '1px solid #333', borderRadius: 8, fontSize: 12 }}
-            />
-            <Bar dataKey="observed" fill="#00e896" fillOpacity={0.8} radius={[3, 3, 0, 0]} name="Observed" />
-            <Bar dataKey="random" fill="#444" fillOpacity={0.6} radius={[3, 3, 0, 0]} name="Random" />
-          </BarChart>
-        </ResponsiveContainer>
-        <p className="p2c-insight">
-          Observed sites cluster in high-friction overlap zones — not in demand-only areas.
-        </p>
-      </div>
+      {/* Ground vs Air — shown in all modes */}
+      {distCompare.length > 0 && (
+        <div className="p2c-section">
+          <h4>Ground vs Air Distance (km)</h4>
+          <ResponsiveContainer width="100%" height={160}>
+            <ScatterChart margin={{ left: 5, right: 10, top: 5, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e2040" />
+              <XAxis dataKey="air" type="number" name="Air (km)"
+                tick={{ fill: '#666', fontSize: 9 }} axisLine={{ stroke: '#2a2a4a' }}
+                label={{ value: 'Straight-line (km)', position: 'bottom', fill: '#555', fontSize: 10, offset: -2 }}
+              />
+              <YAxis dataKey="ground" type="number" name="Ground (km)"
+                tick={{ fill: '#666', fontSize: 9 }} axisLine={{ stroke: '#2a2a4a' }}
+                label={{ value: 'Ground (km)', angle: -90, position: 'insideLeft', fill: '#555', fontSize: 10 }}
+              />
+              <ZAxis range={[10, 10]} />
+              <Tooltip contentStyle={TT_STYLE} formatter={(v, name) => [`${v} km`, name]} />
+              <Scatter data={distCompare} fill="#64c8ff" fillOpacity={0.45} r={2.5} />
+              <ReferenceArea
+                x1={0} x2={Math.max(...distCompare.map(d => d.air))}
+                y1={0} y2={Math.max(...distCompare.map(d => d.air))}
+                fill="transparent" stroke="#444" strokeDasharray="4 4"
+                label={{ value: 'y = x', fill: '#555', fontSize: 8, position: 'insideTopLeft' }}
+              />
+            </ScatterChart>
+          </ResponsiveContainer>
+          <p className="p2c-note">Points above y=x = ground detour. Gap = distance drones save.</p>
+        </div>
+      )}
     </div>
   );
 }

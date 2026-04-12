@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Page3FrictionMap from './Page3FrictionMap';
 import Page3FrictionCharts from './Page3FrictionCharts';
@@ -9,7 +9,6 @@ const LAYER_MODES = [
   { id: 'demand', label: 'Demand', color: '#ff8c00' },
   { id: 'friction', label: 'Friction', color: '#ff3264' },
   { id: 'overlap', label: 'Overlap', color: '#c864ff' },
-  { id: 'observed', label: 'Observed vs Random', color: '#00e896' },
 ];
 
 const BARRIER_TYPES = [
@@ -19,25 +18,20 @@ const BARRIER_TYPES = [
   { id: 'highway_major', label: 'Expressway', color: '#dc3c3c' },
 ];
 
-const SCENARIO_FILTERS = ['all', 'meal_delivery', 'parcel_delivery', 'park_internal', 'cross_border', 'medical'];
-
-const OBSERVED_SITES = [
-  { lon: 114.00, lat: 22.52, scenario: 'meal_delivery', name: 'Shenzhen Bay' },
-  { lon: 114.06, lat: 22.52, scenario: 'cross_border', name: 'Futian Port' },
-  { lon: 114.06, lat: 22.56, scenario: 'park_internal', name: 'Lianhua Mountain' },
-  { lon: 114.03, lat: 22.65, scenario: 'parcel_delivery', name: 'Longhua' },
-  { lon: 114.12, lat: 22.55, scenario: 'meal_delivery', name: 'Luohu CBD' },
-  { lon: 113.93, lat: 22.56, scenario: 'parcel_delivery', name: 'Nanshan' },
-  { lon: 114.25, lat: 22.72, scenario: 'medical', name: 'Longgang Hospital' },
-  { lon: 113.88, lat: 22.72, scenario: 'meal_delivery', name: "Bao'an Center" },
-];
-
 const MODE_DESC = {
   demand: '490K+ POIs reveal delivery pressure — darker = higher demand',
   friction: 'Detour, barriers, congestion compound into ground friction',
   overlap: 'High demand × high friction = where drones create the most value',
-  observed: 'Observed sites cluster in high-friction overlap zones, not in demand-only areas',
 };
+
+const POI_ITEMS = [
+  { key: 'food_count', label: 'Food', color: '#ff8c00' },
+  { key: 'retail_count', label: 'Retail', color: '#ff3264' },
+  { key: 'edu_count', label: 'Education', color: '#64c8ff' },
+  { key: 'med_count', label: 'Medical', color: '#00e896' },
+  { key: 'scenic_count', label: 'Scenic', color: '#c864ff' },
+  { key: 'leisure_count', label: 'Leisure', color: '#ffa028' },
+];
 
 export default function Page3FullMap() {
   const navigate = useNavigate();
@@ -45,11 +39,13 @@ export default function Page3FullMap() {
   const [demandGrid, setDemandGrid] = useState(null);
   const [h3Gap, setH3Gap] = useState(null);
   const [odAnalysis, setOdAnalysis] = useState(null);
+  const [routes, setRoutes] = useState(null);
   const [activeMode, setActiveMode] = useState('overlap');
   const [activeBarriers, setActiveBarriers] = useState(new Set(['water', 'railway', 'highway_major']));
   const [hoveredHex, setHoveredHex] = useState(null);
   const [showBarriers, setShowBarriers] = useState(true);
-  const [scenarioFilter, setScenarioFilter] = useState('all');
+  const [showRoutes, setShowRoutes] = useState(false);
+  const [highlightFilter, setHighlightFilter] = useState(null);
 
   useEffect(() => {
     ['water', 'waterway', 'railway', 'highway_major'].forEach(t => {
@@ -70,7 +66,23 @@ export default function Page3FullMap() {
       .then(r => r.json())
       .then(data => setOdAnalysis(data?.features?.map(f => f.properties) || []))
       .catch(() => {});
+    fetch(publicDataUrl('data/page3_routes.json'))
+      .then(r => r.json())
+      .then(setRoutes)
+      .catch(() => {});
   }, []);
+
+  const liveMetrics = useMemo(() => {
+    if (!odAnalysis?.length) return null;
+    const ratios = odAnalysis.map(d => d.detour_ratio).filter(Boolean);
+    const cong = odAnalysis.map(d => d.congestion_amplifier).filter(Boolean);
+    const waterCross = odAnalysis.filter(d => d.crosses_water).length;
+    return {
+      avgDetour: (ratios.reduce((a, b) => a + b, 0) / ratios.length).toFixed(2),
+      peakCong: Math.max(...cong).toFixed(2),
+      waterPct: ((waterCross / odAnalysis.length) * 100).toFixed(1),
+    };
+  }, [odAnalysis]);
 
   const toggleBarrier = (id) => {
     setActiveBarriers(prev => {
@@ -80,9 +92,16 @@ export default function Page3FullMap() {
     });
   };
 
+  const handleChartHighlight = useCallback((filter) => {
+    setHighlightFilter(() => filter);
+  }, []);
+
+  const poiMax = hoveredHex
+    ? Math.max(...POI_ITEMS.map(p => hoveredHex[p.key] || 0), 1)
+    : 1;
+
   return (
     <div className="p3f">
-      {/* Back button */}
       <button
         className="p3f-back"
         onClick={() => navigate('/', { state: { scrollTo: 'page-3' } })}
@@ -90,14 +109,13 @@ export default function Page3FullMap() {
         ← Back to Main
       </button>
 
-      {/* Top bar */}
       <div className="p3f-topbar">
         <div className="p3f-tab-group">
           {LAYER_MODES.map(m => (
             <button
               key={m.id}
               className={`p3f-tab ${activeMode === m.id ? 'active' : ''}`}
-              onClick={() => setActiveMode(m.id)}
+              onClick={() => { setActiveMode(m.id); setHighlightFilter(null); }}
               style={{ '--tab-color': m.color }}
             >
               <span className="p3f-tab-dot" />
@@ -105,23 +123,13 @@ export default function Page3FullMap() {
             </button>
           ))}
         </div>
-
-        {(activeMode === 'observed' || activeMode === 'overlap') && (
-          <div className="p3f-scenario-filter">
-            {SCENARIO_FILTERS.map(s => (
-              <button
-                key={s}
-                className={`p3f-sf-btn ${scenarioFilter === s ? 'active' : ''}`}
-                onClick={() => setScenarioFilter(s)}
-              >
-                {s === 'all' ? 'All' : s.replace('_', ' ')}
-              </button>
-            ))}
-          </div>
+        {highlightFilter && (
+          <button className="p3f-clear-hl" onClick={() => setHighlightFilter(null)}>
+            Clear highlight ×
+          </button>
         )}
       </div>
 
-      {/* Main layout */}
       <div className="p3f-main">
         <div className="p3f-map-area">
           <Page3FrictionMap
@@ -131,20 +139,42 @@ export default function Page3FullMap() {
             activeMode={activeMode}
             h3Demand={demandGrid}
             h3Gap={h3Gap}
-            observedSites={OBSERVED_SITES}
-            scenarioFilter={scenarioFilter}
+            routes={routes}
+            showRoutes={showRoutes}
             onHoverHex={setHoveredHex}
+            highlightFilter={highlightFilter}
           />
 
+          {/* Hover tooltip — expanded with POI + pop */}
           {hoveredHex && (
             <div className="p3f-hex-tooltip">
-              <div className="p3f-hv"><span>Demand</span> {hoveredHex.demand?.toFixed(1) ?? '—'}</div>
-              <div className="p3f-hv"><span>Friction</span> {hoveredHex.friction?.toFixed(3) ?? '—'}</div>
-              <div className="p3f-hv"><span>Gap</span> {hoveredHex.gap?.toFixed(4) ?? '—'}</div>
+              <div className="p3f-hv-row">
+                <div className="p3f-hv"><span>Demand</span> {hoveredHex.dp?.toFixed(1) ?? '—'}</div>
+                <div className="p3f-hv"><span>Friction</span> {hoveredHex.avg_friction?.toFixed(3) ?? '—'}</div>
+                <div className="p3f-hv"><span>Gap</span> {hoveredHex.gap_index?.toFixed(4) ?? '—'}</div>
+                <div className="p3f-hv"><span>Pop</span> {hoveredHex.pop_count?.toFixed(0) ?? '—'}</div>
+              </div>
+              <div className="p3f-hv-poi">
+                {POI_ITEMS.map(p => {
+                  const v = hoveredHex[p.key] || 0;
+                  if (v === 0) return null;
+                  return (
+                    <div key={p.key} className="p3f-poi-bar">
+                      <span className="p3f-poi-label">{p.label}</span>
+                      <div className="p3f-poi-track">
+                        <div
+                          className="p3f-poi-fill"
+                          style={{ width: `${(v / poiMax) * 100}%`, background: p.color }}
+                        />
+                      </div>
+                      <span className="p3f-poi-val">{v}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
-          {/* Barrier controls */}
           <div className="p3f-barrier-float">
             <div className="p3f-bf-title">
               <label>
@@ -163,17 +193,28 @@ export default function Page3FullMap() {
                 {b.label}
               </button>
             ))}
+            <div className="p3f-bf-title" style={{ marginTop: 8 }}>
+              <label>
+                <input type="checkbox" checked={showRoutes} onChange={e => setShowRoutes(e.target.checked)} />
+                OD Routes ({routes?.features?.length ?? 0})
+              </label>
+            </div>
           </div>
 
-          {/* Bottom description */}
           <div className="p3f-summary-bar">
             {MODE_DESC[activeMode]}
           </div>
         </div>
 
-        {/* Right panel — charts */}
         <div className="p3f-panel">
-          <Page3FrictionCharts activeMode={activeMode} hoveredHex={hoveredHex} h3Gap={h3Gap} odAnalysis={odAnalysis} />
+          <Page3FrictionCharts
+            activeMode={activeMode}
+            hoveredHex={hoveredHex}
+            h3Gap={h3Gap}
+            odAnalysis={odAnalysis}
+            liveMetrics={liveMetrics}
+            onHighlight={handleChartHighlight}
+          />
         </div>
       </div>
     </div>

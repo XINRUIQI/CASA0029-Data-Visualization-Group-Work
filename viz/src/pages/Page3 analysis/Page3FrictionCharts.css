@@ -73,3 +73,13 @@
   color: #ff3264;
   margin-left: 4px;
 }
+
+.p2c-click-hint {
+  font-size: 0.6rem;
+  color: #555;
+  font-style: italic;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: 6px;
+}

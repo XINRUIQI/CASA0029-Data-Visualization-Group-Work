@@ -17,7 +17,6 @@ export const SHENZHEN_MAX_BOUNDS = [
  */
 export function publicDataUrl(relativePath) {
   const path = relativePath.replace(/^\//, '');
-  if (import.meta.env.DEV) return `/${path}`;
   const base = import.meta.env.BASE_URL ?? '/';
   return `${base}${path}`;
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Map from 'react-map-gl/mapbox';
 import DeckGL from '@deck.gl/react';
 import { GeoJsonLayer, ScatterplotLayer } from '@deck.gl/layers';
@@ -21,8 +21,15 @@ const VIEW = {
   bearing: 0,
 };
 
-function hexColor(mode, d) {
+function hexColor(mode, d, highlight) {
   if (!d) return [80, 80, 80, 40];
+
+  if (highlight) {
+    const match = highlight(d);
+    if (match === false) return [40, 40, 50, 15];
+    if (match === true) return [0, 255, 200, 220];
+  }
+
   const dp = d.dp || 0;
   const fr = d.avg_friction || 0;
   if (mode === 'demand') {
@@ -44,97 +51,95 @@ function hexColor(mode, d) {
 
 export default function Page3FrictionMap({
   barriers, activeBarriers, showBarriers, activeMode,
-  h3Demand, h3Gap, observedSites, scenarioFilter, onHoverHex
+  h3Demand, h3Gap, routes, showRoutes, onHoverHex, highlightFilter
 }) {
   const [viewState, setViewState] = useState(VIEW);
 
-  const layers = [];
-
-  if (showBarriers && barriers) {
-    Object.entries(barriers)
-      .filter(([type]) => activeBarriers.has(type))
-      .forEach(([type, data]) => {
-        layers.push(
-          new GeoJsonLayer({
-            id: `barrier-${type}`,
-            data,
-            getFillColor: BARRIER_COLORS[type] || [128, 128, 128, 100],
-            getLineColor: BARRIER_COLORS[type] || [128, 128, 128, 160],
-            getLineWidth: type === 'railway' ? 3 : 2,
-            lineWidthMinPixels: 1,
-            opacity: 0.6,
-          })
-        );
-      });
-  }
-
-  // H3 hex grid layer — merged demand + gap data
-  if (activeMode !== 'observed' && h3Demand) {
+  const mergedHex = useMemo(() => {
+    if (!h3Demand) return null;
     const gapMap = new window.Map((h3Gap || []).map(g => [g.h3, g]));
-    const merged = h3Demand.map(d => ({
-      ...d,
-      avg_friction: gapMap.get(d.h3)?.avg_friction || 0,
-      gap_index: gapMap.get(d.h3)?.gap_index || 0,
-    }));
+    return h3Demand.map(d => {
+      const gap = gapMap.get(d.h3);
+      return {
+        ...d,
+        avg_friction: gap?.avg_friction || 0,
+        gap_index: gap?.gap_index || 0,
+        food_count: d.food || gap?.food_count || 0,
+        retail_count: d.retail || gap?.retail_count || 0,
+        edu_count: d.edu || gap?.education_count || 0,
+        med_count: d.med || gap?.medical_count || 0,
+        scenic_count: d.scenic || gap?.scenic_count || 0,
+        leisure_count: d.leisure || gap?.leisure_count || 0,
+        pop_count: gap?.pop_count || 0,
+      };
+    });
+  }, [h3Demand, h3Gap]);
 
-    layers.push(
-      new H3HexagonLayer({
-        id: 'analysis-hex',
-        data: merged,
-        getHexagon: d => d.h3,
-        getFillColor: d => hexColor(activeMode, d),
-        getElevation: 0,
-        extruded: false,
-        pickable: true,
-        stroked: true,
-        getLineColor: [255, 255, 255, 15],
-        getLineWidth: 1,
-        lineWidthMinPixels: 0.5,
-        updateTriggers: { getFillColor: [activeMode] },
-        onHover: info => {
-          if (info.object) {
-            onHoverHex?.({
-              demand: info.object.dp,
-              friction: info.object.avg_friction,
-              gap: info.object.gap_index,
-            });
-          } else {
-            onHoverHex?.(null);
-          }
-        },
-      })
-    );
-  }
+  const layers = useMemo(() => {
+    const result = [];
 
-  if (observedSites && (activeMode === 'observed' || activeMode === 'overlap')) {
-    const filtered = scenarioFilter === 'all'
-      ? observedSites
-      : observedSites.filter(s => s.scenario === scenarioFilter);
+    if (showBarriers && barriers) {
+      Object.entries(barriers)
+        .filter(([type]) => activeBarriers.has(type))
+        .forEach(([type, data]) => {
+          result.push(
+            new GeoJsonLayer({
+              id: `barrier-${type}`,
+              data,
+              getFillColor: BARRIER_COLORS[type] || [128, 128, 128, 100],
+              getLineColor: BARRIER_COLORS[type] || [128, 128, 128, 160],
+              getLineWidth: type === 'railway' ? 3 : 2,
+              lineWidthMinPixels: 1,
+              opacity: 0.6,
+              pickable: false,
+            })
+          );
+        });
+    }
 
-    layers.push(
-      new ScatterplotLayer({
-        id: 'observed-glow',
-        data: filtered,
-        getPosition: d => [d.lon, d.lat],
-        getRadius: 600,
-        getFillColor: [0, 232, 150, 40],
-        radiusMinPixels: 10,
-        radiusMaxPixels: 40,
-      })
-    );
-    layers.push(
-      new ScatterplotLayer({
-        id: 'observed-dots',
-        data: filtered,
-        getPosition: d => [d.lon, d.lat],
-        getRadius: 150,
-        getFillColor: [0, 232, 150, 220],
-        radiusMinPixels: 4,
-        radiusMaxPixels: 14,
-        pickable: true,
-      })
-    );
-  }
+    if (mergedHex) {
+      result.push(
+        new H3HexagonLayer({
+          id: 'analysis-hex',
+          data: mergedHex,
+          getHexagon: d => d.h3,
+          getFillColor: d => hexColor(activeMode, d, highlightFilter),
+          getElevation: 0,
+          extruded: false,
+          pickable: true,
+          stroked: false,
+          updateTriggers: { getFillColor: [activeMode, highlightFilter] },
+          onHover: info => {
+            if (info.object) {
+              onHoverHex?.(info.object);
+            } else {
+              onHoverHex?.(null);
+            }
+          },
+        })
+      );
+    }
+
+    if (showRoutes && routes) {
+      result.push(
+        new GeoJsonLayer({
+          id: 'od-routes',
+          data: routes,
+          getLineColor: f => {
+            const fr = f.properties?.ground_friction ?? 0;
+            const v = Math.min(fr / 0.6, 1);
+            return [0, Math.round(255 * (1 - v * 0.6)), Math.round(220 - 100 * v), 50 + Math.round(130 * v)];
+          },
+          getLineWidth: 1.5,
+          lineWidthMinPixels: 0.5,
+          lineWidthMaxPixels: 3,
+          pickable: false,
+        })
+      );
+    }
+
+    return result;
+  }, [barriers, activeBarriers, showBarriers, activeMode, mergedHex, routes, showRoutes, onHoverHex, highlightFilter]);
 
   return (
     <DeckGL
@@ -143,6 +148,7 @@ export default function Page3FrictionMap({
       controller={true}
       layers={layers}
       style={{ width: '100%', height: '100%' }}
+      useDevicePixels={false}
     >
       <Map
         mapboxAccessToken={MAPBOX_TOKEN}
