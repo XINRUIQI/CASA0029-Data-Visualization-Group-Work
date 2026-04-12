@@ -6,6 +6,18 @@ import './Page0.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
+function SplitChars({ text, className }) {
+  return text.split('').map((char, i) => (
+    <span
+      key={i}
+      className={`p0-char ${className || ''}`}
+      style={{ display: char === ' ' ? 'inline' : 'inline-block' }}
+    >
+      {char === ' ' ? '\u00A0' : char}
+    </span>
+  ));
+}
+
 const INFO_ITEMS = [
   {
     icon: (
@@ -111,18 +123,33 @@ export default function Page0Cover() {
       const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
 
       tl.from('.p0-topbar', { y: -40, opacity: 0, duration: 0.8 }, 0.2)
-        .from('.p0-title-small', { y: 40, opacity: 0, duration: 0.9 }, 0.4)
-        .from('.p0-title-big', { y: 60, opacity: 0, duration: 1 }, 0.6)
-        .from('.p0-divider', { scaleX: 0, opacity: 0, duration: 0.8 }, 0.9)
-        .from('.p0-subtitle', { y: 30, opacity: 0, duration: 0.8 }, 1.0)
-        .from('.p0-cta', { y: 20, opacity: 0, duration: 0.7 }, 1.2)
+        .from('.p0-char-small', {
+          y: 30,
+          opacity: 0,
+          rotateX: 90,
+          duration: 0.6,
+          ease: 'back.out(1.7)',
+          stagger: 0.02,
+        }, 0.4)
+        .from('.p0-title-big .p0-char', {
+          y: 80,
+          opacity: 0,
+          rotateX: 90,
+          scale: 0.5,
+          duration: 0.8,
+          ease: 'back.out(2)',
+          stagger: 0.03,
+        }, 0.7)
+        .from('.p0-divider', { scaleX: 0, opacity: 0, duration: 0.8 }, 1.4)
+        .from('.p0-subtitle', { y: 30, opacity: 0, duration: 0.8 }, 1.5)
+        .from('.p0-cta', { y: 20, opacity: 0, duration: 0.7 }, 1.7)
         .from('.p0-sidebar-btn', {
           x: -30,
           opacity: 0,
           duration: 0.5,
           stagger: 0.12,
-        }, 1.0)
-        .from('.p0-scroll-hint', { opacity: 0, duration: 0.6 }, 1.5);
+        }, 1.2)
+        .from('.p0-scroll-hint', { opacity: 0, duration: 0.6 }, 2.0);
 
       /* ── ScrollTrigger: parallax + fade on scroll ── */
       gsap.to('.p0-hero-content', {
@@ -174,10 +201,15 @@ export default function Page0Cover() {
       />
       <div className="p0-cursor-dot" ref={cursorDotRef} />
 
-      {/* ── particle background (active) ── */}
+      {/* ── background layers ── */}
       <div className="p0-bg-wrap">
-        <DroneParticles />
+        <img
+          className="p0-bg-city"
+          src={`${import.meta.env.BASE_URL}city-aerial-bg.png`}
+          alt=""
+        />
         <div className="p0-bg-overlay" />
+        <DroneParticles />
         <div className="p0-bg-grain" />
       </div>
 
@@ -252,9 +284,13 @@ export default function Page0Cover() {
       {/* ── hero content ── */}
       <div className="p0-hero-content" ref={heroContentRef}>
         <h1 className="p0-title">
-          <span className="p0-title-small">When the sky becomes infrastructure</span>
+          <span className="p0-title-small">
+            <SplitChars text="When the sky becomes infrastructure" className="p0-char-small" />
+          </span>
           <span className="p0-title-big">
-            Drones <span className="p0-accent">Reshape</span> the City
+            <SplitChars text="Drones " />
+            <SplitChars text="Reshape" className="p0-char-accent" />
+            <SplitChars text=" the City" />
           </span>
         </h1>
 

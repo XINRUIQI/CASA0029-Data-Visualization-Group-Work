@@ -45,36 +45,50 @@
   inset: 0;
   z-index: 0;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse 80% 50% at 50% 45%, rgba(20, 60, 120, 0.12) 0%, transparent 70%),
-    linear-gradient(180deg, #050518 0%, #0a0a1e 50%, #06061a 100%);
+  background: #050518;
 }
 
-.p0-particles-canvas {
+/* city aerial photo — bottom layer */
+.p0-bg-city {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-}
-
-.p0-bg-video {
-  width: 100%;
-  height: 100%;
   object-fit: cover;
-  transform-origin: center center;
+  object-position: center 40%;
+  filter: brightness(0.55) saturate(0.7);
+  z-index: 0;
 }
 
+/* dark gradient overlay — between photo and particles */
 .p0-bg-overlay {
   position: absolute;
   inset: 0;
   background:
     linear-gradient(180deg,
-      rgba(6, 6, 26, 0.70) 0%,
-      rgba(6, 6, 26, 0.35) 40%,
-      rgba(6, 6, 26, 0.50) 70%,
-      rgba(6, 6, 26, 0.85) 100%
+      rgba(6, 6, 26, 0.4) 0%,
+      rgba(6, 6, 26, 0.15) 35%,
+      rgba(6, 6, 26, 0.2) 65%,
+      rgba(6, 6, 26, 0.7) 100%
     );
   z-index: 1;
+}
+
+/* particles float above the overlay */
+.p0-particles-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+/* keep video styles for switching */
+.p0-bg-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform-origin: center center;
 }
 
 .p0-bg-grain {
@@ -297,6 +311,7 @@
 
 .p0-title {
   margin: 0;
+  perspective: 600px;
 }
 
 .p0-title-small {
@@ -316,13 +331,39 @@
   line-height: 1.08;
   letter-spacing: -2px;
   color: #f0f0f5;
+  perspective: 800px;
 }
 
-.p0-accent {
+/* individual character spans */
+.p0-char {
+  will-change: transform, opacity;
+  transform-origin: center bottom;
+}
+
+.p0-char-accent {
   background: linear-gradient(135deg, #64c8ff 0%, #00e896 50%, #ffa028 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* hover bounce on each character */
+.p0-title-big .p0-char:hover {
+  animation: p0-charBounce 0.4s ease;
+  color: #64c8ff;
+}
+
+.p0-title-big .p0-char-accent:hover {
+  animation: p0-charBounce 0.4s ease;
+  filter: brightness(1.3);
+}
+
+@keyframes p0-charBounce {
+  0%   { transform: translateY(0); }
+  30%  { transform: translateY(-12px) scale(1.1); }
+  50%  { transform: translateY(3px); }
+  70%  { transform: translateY(-4px); }
+  100% { transform: translateY(0); }
 }
 
 .p0-divider {
