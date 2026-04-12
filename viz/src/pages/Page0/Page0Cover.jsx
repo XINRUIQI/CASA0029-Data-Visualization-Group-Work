@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import DroneParticles from './DroneParticles';
 import './Page0.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -136,13 +137,13 @@ export default function Page0Cover() {
         },
       });
 
-      gsap.to('.p0-bg-video', {
-        scale: 1.15,
+      gsap.to('.p0-particles-canvas', {
+        opacity: 0,
         ease: 'none',
         scrollTrigger: {
           trigger: '#page-0',
-          start: 'top top',
-          end: 'bottom top',
+          start: '30% top',
+          end: '70% top',
           scrub: true,
         },
       });
@@ -166,10 +167,21 @@ export default function Page0Cover() {
   return (
     <section id="page-0" className="page page-0" ref={sectionRef}>
       {/* ── custom cursor ── */}
-      <div className="p0-cursor" ref={cursorRef} />
+      <div
+        className="p0-cursor"
+        ref={cursorRef}
+        style={{ background: `url(${import.meta.env.BASE_URL}drone-cursor.svg) center/60% no-repeat` }}
+      />
       <div className="p0-cursor-dot" ref={cursorDotRef} />
 
-      {/* ── background video ── */}
+      {/* ── particle background (active) ── */}
+      <div className="p0-bg-wrap">
+        <DroneParticles />
+        <div className="p0-bg-overlay" />
+        <div className="p0-bg-grain" />
+      </div>
+
+      {/* ── VIDEO VERSION (commented out — uncomment to switch) ──
       <div className="p0-bg-wrap">
         <video
           className="p0-bg-video"
@@ -177,13 +189,14 @@ export default function Page0Cover() {
           muted
           loop
           playsInline
-          poster="/shenzhen-poster.jpg"
+          poster={`${import.meta.env.BASE_URL}shenzhen-poster.jpg`}
         >
-          <source src="/shenzhen-drone-bg.mp4" type="video/mp4" />
+          <source src={`${import.meta.env.BASE_URL}shenzhen-drone-bg.mp4`} type="video/mp4" />
         </video>
         <div className="p0-bg-overlay" />
         <div className="p0-bg-grain" />
       </div>
+      ── END VIDEO VERSION ── */}
 
       {/* ── top bar ── */}
       <header className="p0-topbar">
