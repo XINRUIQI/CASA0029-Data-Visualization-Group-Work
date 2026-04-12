@@ -19,14 +19,24 @@ const NAV_PAGES = [
   { id: 6, label: 'Summary' },
 ];
 
+function scrollToPage(id) {
+  const el = document.getElementById(`page-${id}`);
+  if (el) el.scrollIntoView({ behavior: 'smooth' });
+}
+
 function MainNarrative() {
   return (
     <div className="app">
       <nav className="page-nav">
         {NAV_PAGES.map(p => (
-          <a key={p.id} href={`#page-${p.id}`} className="nav-dot" title={p.label}>
+          <button
+            key={p.id}
+            className="nav-dot"
+            title={p.label}
+            onClick={() => scrollToPage(p.id)}
+          >
             <span>{p.id}</span>
-          </a>
+          </button>
         ))}
       </nav>
 

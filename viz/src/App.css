@@ -41,6 +41,9 @@ body {
   text-decoration: none;
   color: #aaa;
   font-size: 0.7rem;
+  font-family: inherit;
+  padding: 0;
+  cursor: pointer;
   transition: all 0.2s;
 }
 

@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import HexGridBg from './HexGridBg';
 import './Page3Entry.css';
 
 const STATS = [
@@ -12,13 +13,7 @@ export default function Page3Entry() {
 
   return (
     <section id="page-3" className="page page-3-entry">
-      <div className="p3e-heat-bg" aria-hidden="true">
-        <div className="p3e-blob p3e-blob-1" />
-        <div className="p3e-blob p3e-blob-2" />
-        <div className="p3e-blob p3e-blob-3" />
-        <div className="p3e-blob p3e-blob-4" />
-      </div>
-
+      <HexGridBg />
       <div className="p3e-overlay" />
 
       <div className="p3e-content">

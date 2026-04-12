@@ -1,0 +1,240 @@
+/* ── Page 3 Full‑screen Analysis Map ── */
+.p3f {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: #0a0a1a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Back button ── */
+.p3f-back {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 20;
+  padding: 0.5rem 1.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(10, 10, 26, 0.85);
+  backdrop-filter: blur(10px);
+  color: #ccc;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.p3f-back:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* ── Top bar ── */
+.p3f-topbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 0.6rem 1rem;
+  padding-left: 160px;
+  background: rgba(10, 10, 26, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  z-index: 10;
+}
+
+.p3f-tab-group {
+  display: flex;
+  gap: 4px;
+}
+
+.p3f-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.4rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  background: transparent;
+  color: #888;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.p3f-tab:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #bbb;
+}
+
+.p3f-tab.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--tab-color, #fff);
+  border-color: var(--tab-color, #fff);
+}
+
+.p3f-tab-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tab-color, #888);
+  opacity: 0.6;
+}
+
+.p3f-tab.active .p3f-tab-dot {
+  opacity: 1;
+  box-shadow: 0 0 6px var(--tab-color);
+}
+
+.p3f-scenario-filter {
+  display: flex;
+  gap: 4px;
+}
+
+.p3f-sf-btn {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  background: transparent;
+  color: #666;
+  font-size: 0.7rem;
+  cursor: pointer;
+  text-transform: capitalize;
+  transition: all 0.2s;
+}
+
+.p3f-sf-btn:hover { color: #aaa; }
+.p3f-sf-btn.active {
+  background: rgba(0, 232, 150, 0.12);
+  color: #00e896;
+  border-color: rgba(0, 232, 150, 0.3);
+}
+
+/* ── Main layout ── */
+.p3f-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.p3f-map-area {
+  flex: 1;
+  position: relative;
+}
+
+/* ── Hex tooltip ── */
+.p3f-hex-tooltip {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.5rem 1.2rem;
+  background: rgba(10, 10, 26, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  z-index: 5;
+}
+
+.p3f-hv {
+  font-size: 0.8rem;
+  color: #ddd;
+}
+
+.p3f-hv span {
+  color: #777;
+  margin-right: 0.4rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+/* ── Barrier float ── */
+.p3f-barrier-float {
+  position: absolute;
+  bottom: 60px;
+  left: 16px;
+  background: rgba(10, 10, 26, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  z-index: 5;
+}
+
+.p3f-bf-title {
+  font-size: 0.75rem;
+  color: #888;
+  margin-bottom: 0.4rem;
+}
+
+.p3f-bf-title label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.p3f-bf-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 0.3rem 0.5rem;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #666;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.p3f-bf-chip:hover { color: #aaa; }
+
+.p3f-bf-chip.on {
+  color: var(--chip-color, #888);
+}
+
+.p3f-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--chip-color, #888);
+  opacity: 0.3;
+}
+
+.p3f-bf-chip.on .p3f-chip-dot { opacity: 1; }
+
+/* ── Summary bar ── */
+.p3f-summary-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.6rem 1.5rem;
+  background: rgba(10, 10, 26, 0.88);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  color: #999;
+  font-size: 0.8rem;
+  text-align: center;
+  z-index: 5;
+}
+
+/* ── Right panel ── */
+.p3f-panel {
+  flex-shrink: 0;
+  width: 360px;
+  overflow-y: auto;
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(10, 10, 26, 0.95);
+  padding: 1rem;
+}
+
+/* ── Scrollbar ── */
+.p3f-panel::-webkit-scrollbar { width: 4px; }
+.p3f-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
