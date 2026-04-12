@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import Map from 'react-map-gl/mapbox';
 import DeckGL from '@deck.gl/react';
 import { GeoJsonLayer, ScatterplotLayer } from '@deck.gl/layers';
-import { HeatmapLayer } from '@deck.gl/aggregation-layers';
+import { H3HexagonLayer } from '@deck.gl/geo-layers';
 import { MAPBOX_TOKEN, SHENZHEN_CENTER } from '../../config';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -21,10 +21,10 @@ const VIEW = {
   bearing: 0,
 };
 
-function gridColor(mode, props) {
-  if (!props) return [80, 80, 80, 40];
-  const dp = props.demand_pressure || 0;
-  const fr = props.avg_friction || props.ground_friction || 0;
+function hexColor(mode, d) {
+  if (!d) return [80, 80, 80, 40];
+  const dp = d.dp || 0;
+  const fr = d.avg_friction || 0;
   if (mode === 'demand') {
     const v = Math.min(dp / 200, 1);
     return [255, 160 * (1 - v), 0, 30 + 200 * v];
@@ -34,9 +34,9 @@ function gridColor(mode, props) {
     return [255, 50 * (1 - v), 100 * (1 - v), 30 + 200 * v];
   }
   if (mode === 'overlap') {
-    const d = Math.min(dp / 200, 1);
-    const f = Math.min(fr, 1);
-    const v = d * f;
+    const dv = Math.min(dp / 200, 1);
+    const fv = Math.min(fr, 1);
+    const v = dv * fv;
     return [120 + 135 * v, 40 * (1 - v), 180 + 75 * v, 30 + 200 * v];
   }
   return [80, 80, 80, 40];
@@ -44,13 +44,12 @@ function gridColor(mode, props) {
 
 export default function Page2Map({
   barriers, activeBarriers, showBarriers, activeMode,
-  demandGrid, frictionGrid, observedSites, scenarioFilter, onHoverHex
+  h3Demand, h3Gap, observedSites, scenarioFilter, onHoverHex
 }) {
   const [viewState, setViewState] = useState(VIEW);
 
   const layers = [];
 
-  // Barrier layers
   if (showBarriers && barriers) {
     Object.entries(barriers)
       .filter(([type]) => activeBarriers.has(type))
@@ -69,24 +68,35 @@ export default function Page2Map({
       });
   }
 
-  // Demand / Friction / Overlap grid layer
-  if (activeMode !== 'observed' && demandGrid) {
+  // H3 hex grid layer — merged demand + gap data
+  if (activeMode !== 'observed' && h3Demand) {
+    const gapMap = new window.Map((h3Gap || []).map(g => [g.h3, g]));
+    const merged = h3Demand.map(d => ({
+      ...d,
+      avg_friction: gapMap.get(d.h3)?.avg_friction || 0,
+      gap_index: gapMap.get(d.h3)?.gap_index || 0,
+    }));
+
     layers.push(
-      new GeoJsonLayer({
-        id: 'analysis-grid',
-        data: demandGrid,
-        getFillColor: f => gridColor(activeMode, f.properties),
-        getLineColor: [255, 255, 255, 15],
-        getLineWidth: 0.5,
-        lineWidthMinPixels: 0.5,
+      new H3HexagonLayer({
+        id: 'analysis-hex',
+        data: merged,
+        getHexagon: d => d.h3,
+        getFillColor: d => hexColor(activeMode, d),
+        getElevation: 0,
+        extruded: false,
         pickable: true,
+        stroked: true,
+        getLineColor: [255, 255, 255, 15],
+        getLineWidth: 1,
+        lineWidthMinPixels: 0.5,
+        updateTriggers: { getFillColor: [activeMode] },
         onHover: info => {
           if (info.object) {
             onHoverHex?.({
-              demand: info.object.properties?.demand_pressure,
-              friction: info.object.properties?.avg_friction || info.object.properties?.ground_friction,
-              gap: (info.object.properties?.demand_pressure || 0) / 200 *
-                   (info.object.properties?.avg_friction || info.object.properties?.ground_friction || 0),
+              demand: info.object.dp,
+              friction: info.object.avg_friction,
+              gap: info.object.gap_index,
             });
           } else {
             onHoverHex?.(null);
@@ -96,7 +106,6 @@ export default function Page2Map({
     );
   }
 
-  // Observed sites overlay (新增)
   if (observedSites && (activeMode === 'observed' || activeMode === 'overlap')) {
     const filtered = scenarioFilter === 'all'
       ? observedSites

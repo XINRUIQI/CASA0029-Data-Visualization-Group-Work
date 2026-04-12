@@ -33,7 +33,8 @@ const OBSERVED_SITES = [
 
 export default function Page2Friction() {
   const [barriers, setBarriers] = useState({});
-  const [demandGrid, setDemandGrid] = useState(null);
+  const [h3Demand, setH3Demand] = useState(null);
+  const [h3Gap, setH3Gap] = useState(null);
   const [activeMode, setActiveMode] = useState('overlap');
   const [activeBarriers, setActiveBarriers] = useState(new Set(['water', 'railway', 'highway_major']));
   const [hoveredHex, setHoveredHex] = useState(null);
@@ -47,9 +48,13 @@ export default function Page2Friction() {
         .then(data => setBarriers(prev => ({ ...prev, [t]: data })))
         .catch(() => {});
     });
-    fetch(publicDataUrl('data/demand_grid.json'))
+    fetch(publicDataUrl('data/h3_demand.json'))
       .then(r => r.json())
-      .then(setDemandGrid)
+      .then(setH3Demand)
+      .catch(() => {});
+    fetch(publicDataUrl('data/h3_gap.json'))
+      .then(r => r.json())
+      .then(setH3Gap)
       .catch(() => {});
   }, []);
 
@@ -103,7 +108,8 @@ export default function Page2Friction() {
             activeBarriers={activeBarriers}
             showBarriers={showBarriers}
             activeMode={activeMode}
-            demandGrid={demandGrid}
+            h3Demand={h3Demand}
+            h3Gap={h3Gap}
             observedSites={OBSERVED_SITES}
             scenarioFilter={scenarioFilter}
             onHoverHex={setHoveredHex}

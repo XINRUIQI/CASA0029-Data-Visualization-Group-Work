@@ -16,7 +16,7 @@ export default function Page4Demand() {
   const [strategy, setStrategy] = useState('gap');
   const [budget, setBudget] = useState(5);
   const [sites, setSites] = useState(null);
-  const [demandGrid, setDemandGrid] = useState(null);
+  const [h3Demand, setH3Demand] = useState(null);
   const [hoveredSite, setHoveredSite] = useState(null);
   const [selectedSiteDetail, setSelectedSiteDetail] = useState(null);
   const [showCoverage, setShowCoverage] = useState(true);
@@ -32,7 +32,7 @@ export default function Page4Demand() {
         if (!r.ok) throw new Error(String(r.status));
         return r.json();
       }),
-      fetch(publicDataUrl('data/demand_grid.json')).then(r => {
+      fetch(publicDataUrl('data/h3_demand.json')).then(r => {
         if (!r.ok) throw new Error(String(r.status));
         return r.json();
       }),
@@ -43,8 +43,8 @@ export default function Page4Demand() {
       } else {
         setSites([]);
       }
-      if (gridRes.status === 'fulfilled') setDemandGrid(gridRes.value);
-      else setDemandGrid(null);
+      if (gridRes.status === 'fulfilled') setH3Demand(gridRes.value);
+      else setH3Demand(null);
       const sitesFailed = sitesRes.status !== 'fulfilled';
       setDataStatus(sitesFailed ? 'error' : 'ready');
     });
@@ -117,7 +117,7 @@ export default function Page4Demand() {
           <Page4Map
             sites={currentSites}
             allSites={rankedSites}
-            demandGrid={demandGrid}
+            h3Demand={h3Demand}
             showCoverage={showCoverage}
             showCoveredOnly={showCoveredOnly}
             showBeforeAfter={showBeforeAfter}

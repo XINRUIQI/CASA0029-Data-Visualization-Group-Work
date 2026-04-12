@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import Map from 'react-map-gl/mapbox';
 import DeckGL from '@deck.gl/react';
-import { GeoJsonLayer } from '@deck.gl/layers';
+import { H3HexagonLayer } from '@deck.gl/geo-layers';
 import { MAPBOX_TOKEN, SHENZHEN_CENTER, SHENZHEN_ZOOM } from '../../config';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -22,13 +22,13 @@ function lerpColor(a, b, t) {
 }
 
 export default function Page5Map({
-  gridGeoJson,
+  h3Data,
   mode,
   selectedTask,
   highPriorityOnly,
   priorityThreshold,
   onPick,
-  selectedGridId,
+  selectedH3,
 }) {
   const [viewState, setViewState] = useState(VIEW);
   const [hover, setHover] = useState(null);
@@ -41,48 +41,46 @@ export default function Page5Map({
   );
 
   const layers = [];
-  if (gridGeoJson?.features?.length) {
+  if (h3Data?.length) {
     layers.push(
-      new GeoJsonLayer({
-        id: 'relief-grid',
-        data: gridGeoJson,
+      new H3HexagonLayer({
+        id: 'relief-hex',
+        data: h3Data,
+        getHexagon: d => d.h3,
         pickable: true,
         autoHighlight: true,
         highlightColor: [255, 255, 255, 100],
-        getFillColor: f => {
-          const p = f.properties || {};
-          const relief = p.relief_vulnerability ?? 0;
-          const taskW = p.task_weight ?? 1;
+        extruded: false,
+        stroked: true,
+        getFillColor: d => {
+          const relief = d.relief_vulnerability ?? 0;
+          const taskW = d.task_weight ?? 1;
           let v = relief * (selectedTask === 'all' ? 1 : 0.35 + 0.65 * taskW);
-          if (highPriorityOnly && (p.relief_vulnerability ?? 0) < priorityThreshold) {
+          if (highPriorityOnly && (d.relief_vulnerability ?? 0) < priorityThreshold) {
             return [20, 22, 40, 20];
           }
           if (mode === 'ground') {
             const ease = 1 - v;
             const rgb = lerpColor([40, 48, 70], [120, 220, 160], ease);
-            const a = Math.round(30 + 140 * ease);
-            return [...rgb, a];
+            return [...rgb, Math.round(30 + 140 * ease)];
           }
           if (mode === 'hybrid') {
             const rgb = lerpColor([60, 80, 120], [255, 120, 60], v);
-            const a = Math.round(35 + 110 * v);
-            return [...rgb, a];
+            return [...rgb, Math.round(35 + 110 * v)];
           }
           const rgb = lerpColor([30, 40, 80], [255, 70, 120], v);
-          const a = Math.round(40 + 130 * v);
-          return [...rgb, a];
+          return [...rgb, Math.round(40 + 130 * v)];
         },
-        getLineColor: f => {
-          const id = f.properties?.grid_id;
-          if (selectedGridId != null && id === selectedGridId) return [255, 255, 255, 220];
+        getLineColor: d => {
+          if (selectedH3 != null && d.h3 === selectedH3) return [255, 255, 255, 220];
           return [255, 255, 255, 12];
         },
-        getLineWidth: f => (selectedGridId != null && f.properties?.grid_id === selectedGridId ? 2 : 0.4),
+        getLineWidth: d => (selectedH3 != null && d.h3 === selectedH3 ? 2 : 0.4),
         lineWidthUnits: 'pixels',
         updateTriggers: {
           getFillColor: [mode, selectedTask, highPriorityOnly, priorityThreshold],
-          getLineColor: [selectedGridId],
-          getLineWidth: [selectedGridId],
+          getLineColor: [selectedH3],
+          getLineWidth: [selectedH3],
         },
         onHover: info => setHover(info.object ? info : null),
         onClick: handleClick,
@@ -104,11 +102,11 @@ export default function Page5Map({
       </DeckGL>
       {hover?.object && (
         <div className="p5-map-tooltip">
-          <div className="p5-tt-id">Grid #{hover.object.properties?.grid_id}</div>
+          <div className="p5-tt-id">Hex {hover.object.h3?.slice(-8)}</div>
           <div className="p5-tt-row">
-            缓解脆弱度 <strong>{(hover.object.properties?.relief_vulnerability ?? 0).toFixed(2)}</strong>
+            缓解脆弱度 <strong>{(hover.object.relief_vulnerability ?? 0).toFixed(2)}</strong>
           </div>
-          <div className="p5-tt-row">替代潜力（排序用）{(hover.object.properties?.substitution_potential ?? 0).toFixed(2)}</div>
+          <div className="p5-tt-row">替代潜力 {(hover.object.substitution_potential ?? 0).toFixed(2)}</div>
         </div>
       )}
     </div>

@@ -76,26 +76,23 @@ function minMaxNorm(values) {
   return values.map(v => (Number.isFinite(v) ? (v - lo) / span : 0));
 }
 
-function buildMergedCollection(demandFc, popFc, buildFc) {
-  if (!demandFc?.features?.length) return null;
-  const popById = new Map((popFc?.features || []).map(f => [f.properties.grid_id, f.properties]));
-  const buildById = new Map((buildFc?.features || []).map(f => [f.properties.grid_id, f.properties]));
+function buildMergedH3(demandArr, popArr, buildArr) {
+  if (!demandArr?.length) return null;
+  const popById = new window.Map((popArr || []).map(r => [r.h3, r]));
+  const buildById = new window.Map((buildArr || []).map(r => [r.h3, r]));
 
-  const rows = demandFc.features.map(f => {
-    const id = f.properties.grid_id;
-    const d = f.properties || {};
-    const p = popById.get(id) || {};
-    const b = buildById.get(id) || {};
+  const rows = demandArr.map(d => {
+    const p = popById.get(d.h3) || {};
+    const b = buildById.get(d.h3) || {};
     return {
-      geometry: f.geometry,
-      grid_id: id,
-      demand_pressure_norm: d.demand_pressure_norm ?? 0,
-      demand_pressure: d.demand_pressure ?? 0,
-      scenic_count: d.scenic_count ?? 0,
-      leisure_count: d.leisure_count ?? 0,
-      education_count: d.education_count ?? 0,
-      retail_count: d.retail_count ?? 0,
-      food_count: d.food_count ?? 0,
+      h3: d.h3,
+      demand_pressure_norm: d.dpn ?? 0,
+      demand_pressure: d.dp ?? 0,
+      scenic_count: d.scenic ?? 0,
+      leisure_count: d.leisure ?? 0,
+      education_count: d.edu ?? 0,
+      retail_count: d.retail ?? 0,
+      food_count: d.food ?? 0,
       intensity_index: p.intensity_index ?? 0,
       commercial_activity: p.commercial_activity ?? 0,
       employment_proxy: p.employment_proxy ?? 0,
@@ -120,74 +117,26 @@ function buildMergedCollection(demandFc, popFc, buildFc) {
   const volN = minMaxNorm(rows.map(r => r.volume_density));
   const ntN = minMaxNorm(rows.map(r => r.n_tall));
 
-  const features = rows.map((r, i) => {
+  const merged = rows.map((r, i) => {
     const relief =
-      dpN[i] *
-      intN[i] *
-      (0.45 + 0.55 * divN[i]) *
-      (0.55 + 0.45 * bdnN[i]);
-
-    const wPark = 0.5 * scN[i] + 0.5 * leN[i];
-    const wCampus = 0.55 * edN[i] + 0.45 * divN[i];
-    const wMall = 0.34 * rtN[i] + 0.33 * fdN[i] + 0.33 * caN[i];
-    const wBarrier = 0.42 * volN[i] + 0.33 * bdnN[i] + 0.25 * ntN[i];
-
-    const {
-      geometry,
-      grid_id,
-      demand_pressure_norm,
-      demand_pressure,
-      scenic_count,
-      leisure_count,
-      education_count,
-      retail_count,
-      food_count,
-      intensity_index,
-      commercial_activity,
-      employment_proxy,
-      usage_diversity,
-      building_density,
-      volume_density,
-      n_tall,
-      avg_height,
-    } = r;
+      dpN[i] * intN[i] * (0.45 + 0.55 * divN[i]) * (0.55 + 0.45 * bdnN[i]);
 
     return {
-      type: 'Feature',
-      properties: {
-        grid_id,
-        demand_pressure_norm,
-        demand_pressure,
-        scenic_count,
-        leisure_count,
-        education_count,
-        retail_count,
-        food_count,
-        intensity_index,
-        commercial_activity,
-        employment_proxy,
-        usage_diversity,
-        building_density,
-        volume_density,
-        n_tall,
-        avg_height,
-        relief_vulnerability: relief,
-        w_park: wPark,
-        w_campus: wCampus,
-        w_mall: wMall,
-        w_barrier: wBarrier,
-        substitution_potential: relief,
-      },
-      geometry,
+      ...r,
+      relief_vulnerability: relief,
+      w_park: 0.5 * scN[i] + 0.5 * leN[i],
+      w_campus: 0.55 * edN[i] + 0.45 * divN[i],
+      w_mall: 0.34 * rtN[i] + 0.33 * fdN[i] + 0.33 * caN[i],
+      w_barrier: 0.42 * volN[i] + 0.33 * bdnN[i] + 0.25 * ntN[i],
     };
   });
 
-  const pot = minMaxNorm(features.map(f => f.properties.relief_vulnerability));
-  features.forEach((f, i) => {
-    f.properties.substitution_potential = pot[i];
+  const pot = minMaxNorm(merged.map(r => r.relief_vulnerability));
+  merged.forEach((r, i) => {
+    r.substitution_potential = pot[i];
   });
 
-  return { type: 'FeatureCollection', features };
+  return merged;
 }
 
 function taskWeightFor(props, taskId) {
@@ -200,9 +149,9 @@ function taskWeightFor(props, taskId) {
 }
 
 export default function Page5Strategy() {
-  const [demandGrid, setDemandGrid] = useState(null);
-  const [popGrid, setPopGrid] = useState(null);
-  const [buildGrid, setBuildGrid] = useState(null);
+  const [h3Demand, setH3Demand] = useState(null);
+  const [h3Pop, setH3Pop] = useState(null);
+  const [h3Build, setH3Build] = useState(null);
   const [selectedTask, setSelectedTask] = useState('all');
   const [mode, setMode] = useState('hybrid');
   const [highPriorityOnly, setHighPriorityOnly] = useState(false);
@@ -210,59 +159,54 @@ export default function Page5Strategy() {
   const [sortByPotential, setSortByPotential] = useState(true);
 
   useEffect(() => {
-    fetch(publicDataUrl('data/demand_grid.json'))
+    fetch(publicDataUrl('data/h3_demand.json'))
       .then(r => r.json())
-      .then(setDemandGrid)
+      .then(setH3Demand)
       .catch(() => {});
-    fetch(publicDataUrl('data/population_grid.json'))
+    fetch(publicDataUrl('data/h3_population.json'))
       .then(r => r.json())
-      .then(setPopGrid)
+      .then(setH3Pop)
       .catch(() => {});
-    fetch(publicDataUrl('data/building_grid.json'))
+    fetch(publicDataUrl('data/h3_building.json'))
       .then(r => r.json())
-      .then(setBuildGrid)
+      .then(setH3Build)
       .catch(() => {});
   }, []);
 
   const mergedRaw = useMemo(
-    () => buildMergedCollection(demandGrid, popGrid, buildGrid),
-    [demandGrid, popGrid, buildGrid]
+    () => buildMergedH3(h3Demand, h3Pop, h3Build),
+    [h3Demand, h3Pop, h3Build]
   );
 
   const priorityThreshold = useMemo(() => {
-    if (!mergedRaw?.features?.length) return 0;
-    const vals = mergedRaw.features.map(f => f.properties.relief_vulnerability).sort((a, b) => a - b);
+    if (!mergedRaw?.length) return 0;
+    const vals = mergedRaw.map(r => r.relief_vulnerability).sort((a, b) => a - b);
     const idx = Math.floor(vals.length * 0.66);
     return vals[idx] ?? 0;
   }, [mergedRaw]);
 
-  const gridGeoJson = useMemo(() => {
+  const h3GridData = useMemo(() => {
     if (!mergedRaw) return null;
-    const features = mergedRaw.features.map(f => {
-      const tw = taskWeightFor(f.properties, selectedTask);
-      return {
-        ...f,
-        properties: { ...f.properties, task_weight: tw },
-      };
-    });
-    return { type: 'FeatureCollection', features };
+    return mergedRaw.map(r => ({
+      ...r,
+      task_weight: taskWeightFor(r, selectedTask),
+    }));
   }, [mergedRaw, selectedTask]);
 
   const rankedCells = useMemo(() => {
-    if (!mergedRaw?.features) return [];
-    const list = mergedRaw.features.map(f => {
-      const p = f.properties;
-      const tw = taskWeightFor(p, selectedTask);
-      const potential = p.relief_vulnerability * (selectedTask === 'all' ? 1 : 0.4 + 0.6 * tw);
-      return { ...p, _potential: potential };
+    if (!mergedRaw) return [];
+    const list = mergedRaw.map(r => {
+      const tw = taskWeightFor(r, selectedTask);
+      const potential = r.relief_vulnerability * (selectedTask === 'all' ? 1 : 0.4 + 0.6 * tw);
+      return { ...r, _potential: potential };
     });
-    list.sort((a, b) => (sortByPotential ? b._potential - a._potential : a.grid_id - b.grid_id));
+    list.sort((a, b) => (sortByPotential ? b._potential - a._potential : (a.h3 < b.h3 ? -1 : 1)));
     return list.slice(0, 14);
   }, [mergedRaw, selectedTask, sortByPotential]);
 
   const composition = selectedCell
     ? [
-        { name: '需求压力', value: selectedCell.demand_pressure_norm ?? 0 },
+        { name: '需求压力', value: selectedCell.demand_pressure_norm ?? selectedCell.dpn ?? 0 },
         { name: '活动强度', value: selectedCell.intensity_index ?? 0 },
         { name: '用途混合', value: selectedCell.usage_diversity ?? 0 },
         { name: '建筑密度', value: selectedCell.building_density ?? 0 },
@@ -331,14 +275,14 @@ export default function Page5Strategy() {
             <h3>栅格速览</h3>
             <ul>
               {rankedCells.map((c, i) => (
-                <li key={c.grid_id}>
+                <li key={c.h3}>
                   <button
                     type="button"
-                    className={selectedCell?.grid_id === c.grid_id ? 'active' : ''}
+                    className={selectedCell?.h3 === c.h3 ? 'active' : ''}
                     onClick={() => setSelectedCell(c)}
                   >
                     <span className="p5-rank-i">#{i + 1}</span>
-                    <span className="p5-rank-id">grid {c.grid_id}</span>
+                    <span className="p5-rank-id">{c.h3.slice(-6)}</span>
                     <span className="p5-rank-v">{c._potential.toFixed(3)}</span>
                   </button>
                 </li>
@@ -350,13 +294,13 @@ export default function Page5Strategy() {
         <main className="p5-center">
           <div className="p5-map-wrap">
             <Page5Map
-              gridGeoJson={gridGeoJson}
+              h3Data={h3GridData}
               mode={mode}
               selectedTask={selectedTask}
               highPriorityOnly={highPriorityOnly}
               priorityThreshold={priorityThreshold}
-              selectedGridId={selectedCell?.grid_id ?? null}
-              onPick={obj => setSelectedCell(obj.properties)}
+              selectedH3={selectedCell?.h3 ?? null}
+              onPick={setSelectedCell}
             />
             <div className="p5-map-legend">
               <span className="leg low">低脆弱</span>
@@ -389,7 +333,7 @@ export default function Page5Strategy() {
             {selectedCell && (
               <>
                 <p className="p5-detail-meta">
-                  Grid <strong>{selectedCell.grid_id}</strong> · 脆弱度{' '}
+                  Hex <strong>{selectedCell.h3?.slice(-8)}</strong> · 脆弱度{' '}
                   <strong>{(selectedCell.relief_vulnerability ?? 0).toFixed(3)}</strong>
                 </p>
                 <div className="p5-bars">

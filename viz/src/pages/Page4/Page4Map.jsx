@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Map from 'react-map-gl/mapbox';
 import DeckGL from '@deck.gl/react';
-import { ScatterplotLayer, GeoJsonLayer } from '@deck.gl/layers';
+import { ScatterplotLayer } from '@deck.gl/layers';
+import { H3HexagonLayer } from '@deck.gl/geo-layers';
 import { MAPBOX_TOKEN, SHENZHEN_CENTER, SHENZHEN_ZOOM, SHENZHEN_MAX_BOUNDS } from '../../config';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -19,51 +20,55 @@ const VIEW = {
   bearing: 0,
 };
 
-export default function Page4Map({ sites, allSites, demandGrid, showCoverage, showCoveredOnly, showBeforeAfter, onHoverSite, onClickSite }) {
+export default function Page4Map({ sites, allSites, h3Demand, showCoverage, showCoveredOnly, showBeforeAfter, onHoverSite, onClickSite }) {
   const [viewState, setViewState] = useState(VIEW);
 
   const layers = [];
 
-  // Background grid — full opacity in Before; dimmed under coverage in After (so map never looks "empty")
-  if (demandGrid && showBeforeAfter === 'before') {
+  if (h3Demand && showBeforeAfter === 'before') {
     layers.push(
-      new GeoJsonLayer({
+      new H3HexagonLayer({
         id: 'demand-bg',
-        data: demandGrid,
-        getFillColor: f => {
-          const dp = f.properties?.demand_pressure || 0;
+        data: h3Demand,
+        getHexagon: d => d.h3,
+        getFillColor: d => {
+          const dp = d.dp || 0;
           if (showCoveredOnly && dp < 30) return [0, 0, 0, 0];
           const v = Math.min(dp / 200, 1);
           return [255, 160 * (1 - v), 0, 25 + 120 * v];
         },
+        extruded: false,
+        stroked: true,
         getLineColor: [255, 255, 255, 8],
-        getLineWidth: 0.3,
+        getLineWidth: 1,
         lineWidthMinPixels: 0,
         updateTriggers: { getFillColor: [showCoveredOnly] },
       })
     );
   }
 
-  if (demandGrid && showBeforeAfter === 'after') {
+  if (h3Demand && showBeforeAfter === 'after') {
     layers.push(
-      new GeoJsonLayer({
+      new H3HexagonLayer({
         id: 'demand-bg-after',
-        data: demandGrid,
-        getFillColor: f => {
-          const dp = f.properties?.demand_pressure || 0;
+        data: h3Demand,
+        getHexagon: d => d.h3,
+        getFillColor: d => {
+          const dp = d.dp || 0;
           if (showCoveredOnly && dp < 30) return [0, 0, 0, 0];
           const v = Math.min(dp / 200, 1);
           return [255, 140 * (1 - v), 30, 10 + 45 * v];
         },
+        extruded: false,
+        stroked: true,
         getLineColor: [255, 255, 255, 5],
-        getLineWidth: 0.2,
+        getLineWidth: 1,
         lineWidthMinPixels: 0,
         updateTriggers: { getFillColor: [showCoveredOnly] },
       })
     );
   }
 
-  // Coverage circles (after)
   if (showCoverage && showBeforeAfter === 'after' && sites?.length) {
     layers.push(
       new ScatterplotLayer({
@@ -79,32 +84,25 @@ export default function Page4Map({ sites, allSites, demandGrid, showCoverage, sh
       })
     );
 
-    if (demandGrid) {
+    if (h3Demand) {
       layers.push(
-        new GeoJsonLayer({
+        new H3HexagonLayer({
           id: 'newly-covered',
-          data: demandGrid,
-          getFillColor: f => {
-            const dp = f.properties?.demand_pressure || 0;
-            const cx = f.properties?.cx || (f.geometry?.coordinates?.[0]?.[0]?.[0] ?? 0);
-            const cy = f.properties?.cy || (f.geometry?.coordinates?.[0]?.[0]?.[1] ?? 0);
-            const covered = sites?.some(s =>
-              Math.abs(s.lon - cx) < 0.027 && Math.abs(s.lat - cy) < 0.027
-            );
-            if (showCoveredOnly && !covered) return [0, 0, 0, 0];
-            if (!covered) return [0, 0, 0, 0];
-            if (dp < 20) return [0, 232, 150, 20];
+          data: h3Demand,
+          getHexagon: d => d.h3,
+          getFillColor: d => {
+            const dp = d.dp || 0;
+            if (dp < 20 && showCoveredOnly) return [0, 0, 0, 0];
             return [0, 232, 150, 40 + Math.min(dp / 100, 1) * 100];
           },
-          getLineColor: [0, 0, 0, 0],
-          getLineWidth: 0,
+          extruded: false,
+          stroked: false,
           updateTriggers: { getFillColor: [showCoveredOnly, sites] },
         })
       );
     }
   }
 
-  // Ghost sites (unselected, dimmed)
   if (allSites?.length) {
     const unselected = allSites.filter(s => !sites?.some(sel => sel.lon === s.lon && sel.lat === s.lat));
     layers.push(
@@ -120,7 +118,6 @@ export default function Page4Map({ sites, allSites, demandGrid, showCoverage, sh
     );
   }
 
-  // Selected sites
   if (sites?.length) {
     layers.push(
       new ScatterplotLayer({
