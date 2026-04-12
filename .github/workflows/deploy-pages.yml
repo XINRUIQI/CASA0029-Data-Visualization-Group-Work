@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - Test
+      - QXR
   workflow_dispatch:
 
 permissions:
