@@ -21,7 +21,7 @@ const VIEW = {
   bearing: 0,
 };
 
-function hexColor(mode, d, highlight) {
+function hexColor(mode, d, highlight, tw) {
   if (!d) return [80, 80, 80, 40];
 
   if (highlight) {
@@ -33,8 +33,8 @@ function hexColor(mode, d, highlight) {
   const dp = d.dp || 0;
   const fr = d.avg_friction || 0;
   if (mode === 'demand') {
-    const v = Math.min(dp / 200, 1);
-    return [255, 160 * (1 - v), 0, 30 + 200 * v];
+    const v = Math.min(dp / 200, 1) * tw;
+    return [255, Math.round(160 * (1 - v)), 0, Math.round(10 + 220 * v)];
   }
   if (mode === 'friction') {
     const v = Math.min(fr, 1);
@@ -51,7 +51,8 @@ function hexColor(mode, d, highlight) {
 
 export default function Page3FrictionMap({
   barriers, activeBarriers, showBarriers, activeMode,
-  h3Demand, h3Gap, routes, showRoutes, onHoverHex, highlightFilter
+  h3Demand, h3Gap, routes, showRoutes, onHoverHex, highlightFilter,
+  timeWeight = 1
 }) {
   const [viewState, setViewState] = useState(VIEW);
 
@@ -103,12 +104,12 @@ export default function Page3FrictionMap({
           id: 'analysis-hex',
           data: mergedHex,
           getHexagon: d => d.h3,
-          getFillColor: d => hexColor(activeMode, d, highlightFilter),
+          getFillColor: d => hexColor(activeMode, d, highlightFilter, timeWeight),
           getElevation: 0,
           extruded: false,
           pickable: true,
           stroked: false,
-          updateTriggers: { getFillColor: [activeMode, highlightFilter] },
+          updateTriggers: { getFillColor: [activeMode, highlightFilter, timeWeight] },
           onHover: info => {
             if (info.object) {
               onHoverHex?.(info.object);
@@ -139,7 +140,7 @@ export default function Page3FrictionMap({
     }
 
     return result;
-  }, [barriers, activeBarriers, showBarriers, activeMode, mergedHex, routes, showRoutes, onHoverHex, highlightFilter]);
+  }, [barriers, activeBarriers, showBarriers, activeMode, mergedHex, routes, showRoutes, onHoverHex, highlightFilter, timeWeight]);
 
   return (
     <DeckGL

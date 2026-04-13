@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceArea } from 'recharts';
 import Page3FrictionMap from './Page3FrictionMap';
 import Page3FrictionCharts from './Page3FrictionCharts';
 import { publicDataUrl } from '../../config';
@@ -46,6 +47,10 @@ export default function Page3FullMap() {
   const [showBarriers, setShowBarriers] = useState(true);
   const [showRoutes, setShowRoutes] = useState(false);
   const [highlightFilter, setHighlightFilter] = useState(null);
+  const [hourlyDemand, setHourlyDemand] = useState(null);
+  const [selectedHour, setSelectedHour] = useState(11);
+  const [playing, setPlaying] = useState(false);
+  const playRef = useRef(null);
 
   useEffect(() => {
     ['water', 'waterway', 'railway', 'highway_major'].forEach(t => {
@@ -70,7 +75,34 @@ export default function Page3FullMap() {
       .then(r => r.json())
       .then(setRoutes)
       .catch(() => {});
+    fetch(publicDataUrl('data/page3_hourly_demand.json'))
+      .then(r => r.json())
+      .then(data => {
+        const total = data.reduce((s, d) => s + d.orders, 0);
+        setHourlyDemand(data.map(d => ({
+          ...d,
+          label: `${String(d.hour).padStart(2, '0')}:00`,
+          pct: +((d.orders / total) * 100).toFixed(2),
+        })));
+      })
+      .catch(() => {});
   }, []);
+
+  const timeWeight = useMemo(() => {
+    if (!hourlyDemand || activeMode !== 'demand') return 1;
+    const maxOrders = Math.max(...hourlyDemand.map(d => d.orders));
+    if (maxOrders === 0) return 1;
+    const entry = hourlyDemand.find(d => d.hour === selectedHour);
+    return entry ? entry.orders / maxOrders : 1;
+  }, [hourlyDemand, selectedHour, activeMode]);
+
+  useEffect(() => {
+    if (!playing) { clearInterval(playRef.current); return; }
+    playRef.current = setInterval(() => {
+      setSelectedHour(h => (h + 1) % 24);
+    }, 600);
+    return () => clearInterval(playRef.current);
+  }, [playing]);
 
   const liveMetrics = useMemo(() => {
     if (!odAnalysis?.length) return null;
@@ -143,6 +175,7 @@ export default function Page3FullMap() {
             showRoutes={showRoutes}
             onHoverHex={setHoveredHex}
             highlightFilter={highlightFilter}
+            timeWeight={timeWeight}
           />
 
           {/* Hover tooltip — expanded with POI + pop */}
@@ -200,6 +233,60 @@ export default function Page3FullMap() {
               </label>
             </div>
           </div>
+
+          {/* Demand mode: 24h timeline with slider */}
+          {activeMode === 'demand' && hourlyDemand && (
+            <div className="p3f-timeline">
+              <div className="p3f-tl-header">
+                <button
+                  className={`p3f-tl-play ${playing ? 'active' : ''}`}
+                  onClick={() => setPlaying(p => !p)}
+                >
+                  {playing ? '⏸' : '▶'}
+                </button>
+                <span className="p3f-tl-time">{String(selectedHour).padStart(2, '0')}:00</span>
+                <span className="p3f-tl-weight">weight: {timeWeight.toFixed(3)}</span>
+                <span className="p3f-tl-label">Meituan 654K orders</span>
+              </div>
+              <ResponsiveContainer width="100%" height={60}>
+                <AreaChart data={hourlyDemand} margin={{ left: 0, right: 0, top: 2, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="demandGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#ff8c00" stopOpacity={0.6} />
+                      <stop offset="100%" stopColor="#ff8c00" stopOpacity={0.05} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="label" tick={{ fill: '#666', fontSize: 8 }}
+                    axisLine={false} tickLine={false}
+                    interval={3}
+                  />
+                  <YAxis hide />
+                  <Tooltip
+                    contentStyle={{ background: '#1a1a2e', border: '1px solid #333', borderRadius: 8, fontSize: 11 }}
+                    formatter={(v) => [`${v}%`, 'Share']}
+                    labelFormatter={(l) => l}
+                  />
+                  <ReferenceArea
+                    x1={`${String(selectedHour).padStart(2, '0')}:00`}
+                    x2={`${String(selectedHour).padStart(2, '0')}:00`}
+                    stroke="#00ffc8" strokeWidth={2} strokeOpacity={0.8}
+                  />
+                  <Area
+                    type="monotone" dataKey="pct"
+                    stroke="#ff8c00" strokeWidth={1.5}
+                    fill="url(#demandGrad)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+              <input
+                type="range" min={0} max={23} step={1}
+                value={selectedHour}
+                onChange={(e) => { setSelectedHour(+e.target.value); setPlaying(false); }}
+                className="p3f-tl-slider"
+              />
+            </div>
+          )}
 
           <div className="p3f-summary-bar">
             {MODE_DESC[activeMode]}

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
          RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
          ScatterChart, Scatter, ZAxis, CartesianGrid, ReferenceArea } from 'recharts';
@@ -152,6 +152,57 @@ export default function Page3FrictionCharts({
     });
   };
 
+  const poiRanking = useMemo(() => {
+    if (!h3Gap?.length) return [];
+    const cats = [
+      { key: 'food_count', name: 'Food & Dining', color: '#ff8c00' },
+      { key: 'retail_count', name: 'Retail', color: '#ff3264' },
+      { key: 'service_count', name: 'Service', color: '#64c8ff' },
+      { key: 'office_count', name: 'Office', color: '#6c8cff' },
+      { key: 'education_count', name: 'Education', color: '#00e896' },
+      { key: 'medical_count', name: 'Medical', color: '#ffa028' },
+      { key: 'scenic_count', name: 'Scenic', color: '#c864ff' },
+      { key: 'leisure_count', name: 'Leisure', color: '#50b0ff' },
+    ];
+    return cats
+      .map(c => ({
+        ...c,
+        total: h3Gap.reduce((s, d) => s + (d[c.key] || 0), 0),
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [h3Gap]);
+
+  const topHexagons = useMemo(() => {
+    if (!h3Gap?.length) return [];
+    const POI_KEYS = [
+      { key: 'food_count', label: 'Food', color: '#ff8c00' },
+      { key: 'retail_count', label: 'Retail', color: '#ff3264' },
+      { key: 'education_count', label: 'Edu', color: '#00e896' },
+      { key: 'medical_count', label: 'Med', color: '#ffa028' },
+      { key: 'scenic_count', label: 'Scenic', color: '#c864ff' },
+      { key: 'office_count', label: 'Office', color: '#6c8cff' },
+    ];
+    return [...h3Gap]
+      .sort((a, b) => (b.demand_pressure || 0) - (a.demand_pressure || 0))
+      .slice(0, 10)
+      .map((d, i) => {
+        const pois = POI_KEYS
+          .map(p => ({ ...p, count: d[p.key] || 0 }))
+          .filter(p => p.count > 0)
+          .sort((a, b) => b.count - a.count);
+        const maxPoi = pois.length > 0 ? pois[0].count : 1;
+        return {
+          rank: i + 1,
+          h3: d.h3,
+          dp: d.demand_pressure || 0,
+          pois,
+          maxPoi,
+        };
+      });
+  }, [h3Gap]);
+
+  const [selectedHex, setSelectedHex] = useState(null);
+
   const isDemand = activeMode === 'demand';
   const isFriction = activeMode === 'friction';
   const isOverlap = activeMode === 'overlap';
@@ -174,7 +225,82 @@ export default function Page3FrictionCharts({
         </div>
       </div>
 
-      {/* Demand mode charts */}
+      {/* Demand mode: POI ranking */}
+      {isDemand && poiRanking.length > 0 && (
+        <div className="p2c-section">
+          <h4>POI Demand Contribution</h4>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={poiRanking} layout="vertical" margin={{ left: 80, right: 10, top: 5, bottom: 5 }}>
+              <XAxis type="number" tick={{ fill: '#555', fontSize: 9 }}
+                tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v}
+              />
+              <YAxis type="category" dataKey="name" tick={{ fill: '#999', fontSize: 10 }} width={75} />
+              <Tooltip
+                contentStyle={TT_STYLE}
+                formatter={(v) => [v.toLocaleString(), 'Total POIs']}
+              />
+              <Bar dataKey="total" radius={[0, 4, 4, 0]}>
+                {poiRanking.map((c, i) => <Cell key={i} fill={c.color} fillOpacity={0.8} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          <p className="p2c-note">
+            Which POI category drives the most delivery demand across Shenzhen?
+          </p>
+        </div>
+      )}
+
+      {/* Demand mode: Top 10 hexagons */}
+      {isDemand && topHexagons.length > 0 && (
+        <div className="p2c-section">
+          <h4>Top 10 Demand Hexagons <span className="p2c-click-hint">click for detail</span></h4>
+          <div className="p2c-hex-rank">
+            {topHexagons.map(hex => {
+              const barW = (hex.dp / topHexagons[0].dp) * 100;
+              return (
+                <div
+                  key={hex.h3}
+                  className={`p2c-hr-row ${selectedHex?.h3 === hex.h3 ? 'active' : ''}`}
+                  onClick={() => {
+                    setSelectedHex(selectedHex?.h3 === hex.h3 ? null : hex);
+                    const target = hex.h3;
+                    onHighlight?.((d) => d.h3 === target);
+                  }}
+                >
+                  <span className="p2c-hr-rank">#{hex.rank}</span>
+                  <div className="p2c-hr-body">
+                    <div className="p2c-hr-bar-wrap">
+                      <div className="p2c-hr-bar" style={{ width: `${barW}%` }} />
+                      <span className="p2c-hr-dp">{hex.dp.toFixed(1)}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Detail popup */}
+          {selectedHex && (
+            <div className="p2c-hex-detail">
+              <div className="p2c-hd-header">
+                <span className="p2c-hd-rank">#{selectedHex.rank}</span>
+                <span className="p2c-hd-dp">Demand Pressure: <strong>{selectedHex.dp.toFixed(2)}</strong></span>
+                <button className="p2c-hd-close" onClick={() => { setSelectedHex(null); onHighlight?.(null); }}>×</button>
+              </div>
+              <div className="p2c-hd-top-pois">
+                Top POI: {selectedHex.pois.slice(0, 2).map((p, i) => (
+                  <span key={p.key} style={{ color: p.color, fontWeight: 600 }}>
+                    {i > 0 && ', '}{p.label} ({p.count})
+                  </span>
+                ))}
+              </div>
+              <div className="p2c-hd-id">H3: {selectedHex.h3}</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Demand + Overlap: scatter */}
       {(isDemand || isOverlap) && scatterData.length > 0 && (
         <div className="p2c-section">
           <h4>Demand vs Friction (per hex) <span className="p2c-click-hint">click to highlight</span></h4>
