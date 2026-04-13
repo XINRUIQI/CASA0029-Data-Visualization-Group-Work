@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════
-   Page 3 — Demand & Friction Analysis
+   Page 2 — Demand & Friction Analysis
    Dashboard-style analytical map page
    ═══════════════════════════════════════════ */
 
-.page-3-friction {
+.page-2-friction {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -22,7 +22,7 @@
   flex-shrink: 0;
 }
 
-.p2-tab-group {
+.p2f-tab-group {
   display: flex;
   gap: 4px;
   background: rgba(255, 255, 255, 0.04);
@@ -30,7 +30,7 @@
   padding: 4px;
 }
 
-.p2-tab {
+.p2f-tab {
   position: relative;
   padding: 8px 22px;
   border: none;
@@ -43,16 +43,16 @@
   transition: all 0.3s;
 }
 
-.p2-tab:hover {
+.p2f-tab:hover {
   color: #bbb;
 }
 
-.p2-tab.active {
+.p2f-tab.active {
   color: #fff;
   background: rgba(255, 255, 255, 0.08);
 }
 
-.p2-tab.active .tab-indicator {
+.p2f-tab.active .tab-indicator {
   display: block;
 }
 
@@ -69,7 +69,7 @@
 }
 
 /* ─── SCENARIO FILTER ─── */
-.p2-scenario-filter {
+.p2f-scenario-filter {
   display: flex;
   gap: 4px;
   margin-left: 16px;
@@ -77,7 +77,7 @@
   border-left: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.p2-sf-btn {
+.p2f-sf-btn {
   padding: 5px 12px;
   border: 1px solid #333;
   border-radius: 12px;
@@ -89,28 +89,28 @@
   text-transform: capitalize;
 }
 
-.p2-sf-btn.active {
+.p2f-sf-btn.active {
   border-color: #00e896;
   color: #00e896;
   background: rgba(0, 232, 150, 0.08);
 }
 
 /* ─── MAIN ─── */
-.p2-main {
+.p2f-main {
   flex: 1;
   display: flex;
   min-height: 0;
 }
 
 /* Map area */
-.p2-map-area {
+.p2f-map-area {
   flex: 1;
   position: relative;
   min-height: calc(100vh - 56px);
 }
 
 /* Hex tooltip */
-.p2-hex-tooltip {
+.p2f  -hex-tooltip {
   position: absolute;
   top: 80px;
   left: 50%;

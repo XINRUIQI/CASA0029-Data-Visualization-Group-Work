@@ -1,4 +1,4 @@
-import './Page3Exploded.css';
+import './Page2Exploded.css';
 
 const LAYERS = [
   { id: 'flight', label: 'Flight Path', color: '#00ccff', icon: '✈',
@@ -15,49 +15,49 @@ const LAYERS = [
     desc: 'POI demand zone — restaurants, offices, residences needing delivery.' },
 ];
 
-export default function Page3Exploded({ activeCase, onClose }) {
+export default function Page2Exploded({ activeCase, onClose }) {
   return (
     <div className="p3e">
-      <div className="p3e-header">
+      <div className="p2e-header">
         <h3>Exploded Layer View</h3>
         <p>Why ground loses, why air wins — layer by layer.</p>
-        <button className="p3e-close" onClick={onClose}>×</button>
+        <button className="p2e-close" onClick={onClose}>×</button>
       </div>
 
-      <div className="p3e-stack">
+      <div className="p2e-stack">
         {LAYERS.map((layer, i) => (
           <div
             key={layer.id}
-            className="p3e-layer"
+            className="p2e-layer"
             style={{
               '--layer-color': layer.color,
               '--layer-offset': `${i * 64}px`,
               animationDelay: `${i * 0.12}s`,
             }}
           >
-            <div className="p3e-layer-bar" />
-            <div className="p3e-layer-content">
-              <span className="p3e-icon">{layer.icon}</span>
+            <div className="p2e-layer-bar" />
+            <div className="p2e-layer-content">
+              <span className="p2e-icon">{layer.icon}</span>
               <div>
-                <div className="p3e-layer-name">{layer.label}</div>
-                <div className="p3e-layer-desc">{layer.desc}</div>
+                <div className="p2e-layer-name">{layer.label}</div>
+                <div className="p2e-layer-desc">{layer.desc}</div>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="p3e-verdict">
-        <div className="p3e-verdict-ground">
-          <span className="p3e-v-label">Ground</span>
+      <div className="p2e-verdict">
+        <div className="p2e-verdict-ground">
+          <span className="p2e-v-label">Ground</span>
           <span>Must navigate layers 3→4→5 sequentially</span>
-          <span className="p3e-v-time" style={{ color: '#ff5050' }}>{activeCase?.tt_ground || '?'} min</span>
+          <span className="p2e-v-time" style={{ color: '#ff5050' }}>{activeCase?.tt_ground || '?'} min</span>
         </div>
-        <div className="p3e-verdict-vs">VS</div>
-        <div className="p3e-verdict-air">
-          <span className="p3e-v-label">Air</span>
+        <div className="p2e-verdict-vs">VS</div>
+        <div className="p2e-verdict-air">
+          <span className="p2e-v-label">Air</span>
           <span>Bypasses layers 3-5, direct from 6→1</span>
-          <span className="p3e-v-time" style={{ color: '#00ccff' }}>{activeCase?.tt_air || '?'} min</span>
+          <span className="p2e-v-time" style={{ color: '#00ccff' }}>{activeCase?.tt_air || '?'} min</span>
         </div>
       </div>
     </div>

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import Page3Map from './Page3Map';
-import Page3Exploded from './Page3Exploded';
+import Page2Map from './Page2Map';
+import Page2Exploded from './Page2Exploded';
 import { publicDataUrl } from '../../config';
-import './Page3.css';
+import './Page2.css';
 
 const ROUTE_CASES = [
   {
@@ -41,7 +41,7 @@ const JUDGMENT_STYLES = {
   'ground-preferred': { color: '#888', label: 'Ground OK' },
 };
 
-export default function Page3Routes() {
+export default function Page2Routes() {
   const [activeCase, setActiveCase] = useState(ROUTE_CASES[0]);
   const [showGround, setShowGround] = useState(true);
   const [showAir, setShowAir] = useState(true);
@@ -55,7 +55,7 @@ export default function Page3Routes() {
 
   useEffect(() => {
     ['water', 'waterway', 'railway', 'highway_major'].forEach(t => {
-      fetch(publicDataUrl(`data/page3_barrier_${t}.json`))
+      fetch(publicDataUrl(`data/page2_barrier_${t}.json`))
         .then(r => r.json())
         .then(data => setBarriers(prev => ({ ...prev, [t]: data })))
         .catch(() => {});
@@ -83,77 +83,77 @@ export default function Page3Routes() {
   const jStyle = JUDGMENT_STYLES[activeCase.judgment];
 
   return (
-    <section id="page-3" className="page page-3">
+    <section id="page-2" className="page page-2">
       {/* ═══ LEFT SIDEBAR ═══ */}
-      <div className="p3-sidebar">
+      <div className="p2-sidebar">
         <h2>Route Relief Simulation</h2>
-        <p className="p3-intro">Where does air outperform ground?</p>
+        <p className="p2-intro">Where does air outperform ground?</p>
 
-        <div className="p3-case-list">
+        <div className="p2-case-list">
           {ROUTE_CASES.map(c => (
             <button
               key={c.id}
-              className={`p3-case-btn ${activeCase.id === c.id ? 'active' : ''}`}
+              className={`p2-case-btn ${activeCase.id === c.id ? 'active' : ''}`}
               onClick={() => { setActiveCase(c); setReversed(false); setAnimating(false); setAnimProgress(0); }}
             >
-              <span className={`p3-case-dot ${c.judgment}`} />
+              <span className={`p2-case-dot ${c.judgment}`} />
               {c.label}
             </button>
           ))}
         </div>
 
-        <div className="p3-case-detail">
+        <div className="p2-case-detail">
           <h3>{activeCase.title}</h3>
-          <p className="p3-case-desc">{activeCase.description}</p>
-          <div className="p3-judgment" style={{ borderColor: jStyle.color }}>
+          <p className="p2-case-desc">{activeCase.description}</p>
+          <div className="p2-judgment" style={{ borderColor: jStyle.color }}>
             <span style={{ color: jStyle.color }}>{jStyle.label}</span>
           </div>
         </div>
 
         {/* Toggles */}
-        <div className="p3-toggles">
-          <label className="p3-toggle">
+        <div className="p2-toggles">
+          <label className="p2-toggle">
             <input type="checkbox" checked={showGround} onChange={e => setShowGround(e.target.checked)} />
-            <span className="p3-tg-line" style={{ background: '#ff5050' }} />
+            <span className="p2-tg-line" style={{ background: '#ff5050' }} />
             Ground route
           </label>
-          <label className="p3-toggle">
+          <label className="p2-toggle">
             <input type="checkbox" checked={showAir} onChange={e => setShowAir(e.target.checked)} />
-            <span className="p3-tg-line" style={{ background: '#00ccff' }} />
+            <span className="p2-tg-line" style={{ background: '#00ccff' }} />
             Air route
           </label>
-          <label className="p3-toggle">
+          <label className="p2-toggle">
             <input type="checkbox" checked={showBarriers} onChange={e => setShowBarriers(e.target.checked)} />
-            <span className="p3-tg-line" style={{ background: '#ffa028' }} />
+            <span className="p2-tg-line" style={{ background: '#ffa028' }} />
             Barriers
           </label>
-          <label className="p3-toggle">
+          <label className="p2-toggle">
             <input type="checkbox" checked={showBuildings} onChange={e => setShowBuildings(e.target.checked)} />
-            <span className="p3-tg-line" style={{ background: '#666' }} />
+            <span className="p2-tg-line" style={{ background: '#666' }} />
             3D Buildings
           </label>
         </div>
 
         {/* O/D swap + animation */}
-        <div className="p3-actions">
-          <button className="p3-action-btn" onClick={() => setReversed(r => !r)}>
+        <div className="p2-actions">
+          <button className="p2-action-btn" onClick={() => setReversed(r => !r)}>
             <span>⇄</span> Swap O / D
           </button>
           <button
-            className={`p3-action-btn ${animating ? 'playing' : ''}`}
+            className={`p2-action-btn ${animating ? 'playing' : ''}`}
             onClick={() => { setAnimProgress(0); setAnimating(true); }}
           >
             <span>{animating ? '⏸' : '▶'}</span> {animating ? 'Flying...' : 'Play Flight'}
           </button>
-          <button className="p3-action-btn" onClick={() => setShowExploded(e => !e)}>
+          <button className="p2-action-btn" onClick={() => setShowExploded(e => !e)}>
             <span>🔍</span> {showExploded ? 'Hide Layers' : 'Exploded View'}
           </button>
         </div>
       </div>
 
       {/* ═══ CENTER MAP ═══ */}
-      <div className="p3-map-area">
-        <Page3Map
+      <div className="p2-map-area">
+        <Page2Map
           activeCase={currentCase}
           showGround={showGround}
           showAir={showAir}
@@ -166,34 +166,34 @@ export default function Page3Routes() {
 
       {/* ═══ EXPLODED VIEW OVERLAY ═══ */}
       {showExploded && (
-        <div className="p3-exploded-overlay">
-          <Page3Exploded activeCase={activeCase} onClose={() => setShowExploded(false)} />
+        <div className="p2-exploded-overlay">
+          <Page2Exploded activeCase={activeCase} onClose={() => setShowExploded(false)} />
         </div>
       )}
 
       {/* ═══ BOTTOM METRICS ═══ */}
-      <div className="p3-metrics-bar">
-        <div className="p3-metric">
+      <div className="p2-metrics-bar">
+        <div className="p2-metric">
           <div className="pm-label">Ground</div>
           <div className="pm-value" style={{ color: '#ff5050' }}>{activeCase.ground_dist} km · {activeCase.tt_ground} min</div>
         </div>
-        <div className="p3-metric">
+        <div className="p2-metric">
           <div className="pm-label">Air</div>
           <div className="pm-value" style={{ color: '#00ccff' }}>{activeCase.air_dist} km · {activeCase.tt_air} min</div>
         </div>
-        <div className="p3-metric">
+        <div className="p2-metric">
           <div className="pm-label">Detour Ratio</div>
           <div className="pm-value">{activeCase.detour.toFixed(2)}x</div>
         </div>
-        <div className="p3-metric">
+        <div className="p2-metric">
           <div className="pm-label">Time Saved</div>
           <div className="pm-value" style={{ color: '#00e896' }}>{activeCase.tt_ground - activeCase.tt_air} min ({Math.round((1 - activeCase.tt_air / activeCase.tt_ground) * 100)}%)</div>
         </div>
-        <div className="p3-metric">
+        <div className="p2-metric">
           <div className="pm-label">Barriers</div>
           <div className="pm-value">{activeCase.barriers.length > 0 ? activeCase.barriers.join(' + ') : 'none'}</div>
         </div>
-        <div className="p3-metric highlight" style={{ borderColor: jStyle.color }}>
+        <div className="p2-metric highlight" style={{ borderColor: jStyle.color }}>
           <div className="pm-label">Judgment</div>
           <div className="pm-value" style={{ color: jStyle.color }}>{jStyle.label}</div>
         </div>

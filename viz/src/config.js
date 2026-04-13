@@ -35,8 +35,8 @@ export const POI_COLORS = {
 export const PAGE_TITLES = [
   'Where do drones enter the city?',
   'Where are the drone sites now?',
-  'What makes ground delivery hard?',
   'How do drones fly?',
+  'What makes ground delivery hard?',
   'Where is demand highest?',
   'Where should we build?',
   'What have we learned?',

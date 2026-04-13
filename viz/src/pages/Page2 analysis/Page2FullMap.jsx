@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceArea } from 'recharts';
-import Page3FrictionMap from './Page3FrictionMap';
-import Page3FrictionCharts from './Page3FrictionCharts';
+import Page2FrictionMap from './Page2FrictionMap';
+import Page2FrictionCharts from './Page2FrictionCharts';
 import { publicDataUrl } from '../../config';
-import './Page3FullMap.css';
+import './Page2FullMap.css';
 
 const LAYER_MODES = [
   { id: 'demand', label: 'Demand', color: '#ff8c00' },
@@ -34,7 +34,7 @@ const POI_ITEMS = [
   { key: 'leisure_count', label: 'Leisure', color: '#ffa028' },
 ];
 
-export default function Page3FullMap() {
+export default function Page2FullMap() {
   const navigate = useNavigate();
   const [barriers, setBarriers] = useState({});
   const [demandGrid, setDemandGrid] = useState(null);
@@ -54,7 +54,7 @@ export default function Page3FullMap() {
 
   useEffect(() => {
     ['water', 'waterway', 'railway', 'highway_major'].forEach(t => {
-      fetch(publicDataUrl(`data/page3_barrier_${t}.json`))
+      fetch(publicDataUrl(`data/page2_barrier_${t}.json`))
         .then(r => r.json())
         .then(data => setBarriers(prev => ({ ...prev, [t]: data })))
         .catch(() => {});
@@ -63,19 +63,19 @@ export default function Page3FullMap() {
       .then(r => r.json())
       .then(setDemandGrid)
       .catch(() => {});
-    fetch(publicDataUrl('data/page3_h3_gap.json'))
+    fetch(publicDataUrl('data/page2_h3_gap.json'))
       .then(r => r.json())
       .then(setH3Gap)
       .catch(() => {});
-    fetch(publicDataUrl('data/page3_od_analysis.json'))
+    fetch(publicDataUrl('data/page2_od_analysis.json'))
       .then(r => r.json())
       .then(data => setOdAnalysis(data?.features?.map(f => f.properties) || []))
       .catch(() => {});
-    fetch(publicDataUrl('data/page3_routes.json'))
+    fetch(publicDataUrl('data/page2_routes.json'))
       .then(r => r.json())
       .then(setRoutes)
       .catch(() => {});
-    fetch(publicDataUrl('data/page3_hourly_demand.json'))
+    fetch(publicDataUrl('data/page2_hourly_demand.json'))
       .then(r => r.json())
       .then(data => {
         const total = data.reduce((s, d) => s + d.orders, 0);
@@ -135,36 +135,36 @@ export default function Page3FullMap() {
   return (
     <div className="p3f">
       <button
-        className="p3f-back"
-        onClick={() => navigate('/', { state: { scrollTo: 'page-3' } })}
+        className="p2f-back"
+        onClick={() => navigate('/', { state: { scrollTo: 'page-2' } })}
       >
         ← Back to Main
       </button>
 
-      <div className="p3f-topbar">
-        <div className="p3f-tab-group">
+      <div className="p2f-topbar">
+        <div className="p2f-tab-group">
           {LAYER_MODES.map(m => (
             <button
               key={m.id}
-              className={`p3f-tab ${activeMode === m.id ? 'active' : ''}`}
+              className={`p2f-tab ${activeMode === m.id ? 'active' : ''}`}
               onClick={() => { setActiveMode(m.id); setHighlightFilter(null); }}
               style={{ '--tab-color': m.color }}
             >
-              <span className="p3f-tab-dot" />
+              <span className="p2f-tab-dot" />
               {m.label}
             </button>
           ))}
         </div>
         {highlightFilter && (
-          <button className="p3f-clear-hl" onClick={() => setHighlightFilter(null)}>
+          <button className="p2f-clear-hl" onClick={() => setHighlightFilter(null)}>
             Clear highlight ×
           </button>
         )}
       </div>
 
-      <div className="p3f-main">
-        <div className="p3f-map-area">
-          <Page3FrictionMap
+      <div className="p2f-main">
+        <div className="p2f-map-area">
+          <Page2FrictionMap
             barriers={barriers}
             activeBarriers={activeBarriers}
             showBarriers={showBarriers}
@@ -180,27 +180,27 @@ export default function Page3FullMap() {
 
           {/* Hover tooltip — expanded with POI + pop */}
           {hoveredHex && (
-            <div className="p3f-hex-tooltip">
-              <div className="p3f-hv-row">
-                <div className="p3f-hv"><span>Demand</span> {hoveredHex.dp?.toFixed(1) ?? '—'}</div>
-                <div className="p3f-hv"><span>Friction</span> {hoveredHex.avg_friction?.toFixed(3) ?? '—'}</div>
-                <div className="p3f-hv"><span>Gap</span> {hoveredHex.gap_index?.toFixed(4) ?? '—'}</div>
-                <div className="p3f-hv"><span>Pop</span> {hoveredHex.pop_count?.toFixed(0) ?? '—'}</div>
+            <div className="p2f-hex-tooltip">
+              <div className="p2f-hv-row">
+                <div className="p2f-hv"><span>Demand</span> {hoveredHex.dp?.toFixed(1) ?? '—'}</div>
+                <div className="p2f-hv"><span>Friction</span> {hoveredHex.avg_friction?.toFixed(3) ?? '—'}</div>
+                <div className="p2f-hv"><span>Gap</span> {hoveredHex.gap_index?.toFixed(4) ?? '—'}</div>
+                <div className="p2f-hv"><span>Pop</span> {hoveredHex.pop_count?.toFixed(0) ?? '—'}</div>
               </div>
-              <div className="p3f-hv-poi">
+              <div className="p2f-hv-poi">
                 {POI_ITEMS.map(p => {
                   const v = hoveredHex[p.key] || 0;
                   if (v === 0) return null;
                   return (
-                    <div key={p.key} className="p3f-poi-bar">
-                      <span className="p3f-poi-label">{p.label}</span>
-                      <div className="p3f-poi-track">
+                    <div key={p.key} className="p2f-poi-bar">
+                      <span className="p2f-poi-label">{p.label}</span>
+                      <div className="p2f-poi-track">
                         <div
-                          className="p3f-poi-fill"
+                          className="p2f-poi-fill"
                           style={{ width: `${(v / poiMax) * 100}%`, background: p.color }}
                         />
                       </div>
-                      <span className="p3f-poi-val">{v}</span>
+                      <span className="p2f-poi-val">{v}</span>
                     </div>
                   );
                 })}
@@ -208,8 +208,8 @@ export default function Page3FullMap() {
             </div>
           )}
 
-          <div className="p3f-barrier-float">
-            <div className="p3f-bf-title">
+          <div className="p2f-barrier-float">
+            <div className="p2f-bf-title">
               <label>
                 <input type="checkbox" checked={showBarriers} onChange={e => setShowBarriers(e.target.checked)} />
                 Barrier Layers
@@ -218,15 +218,15 @@ export default function Page3FullMap() {
             {BARRIER_TYPES.map(b => (
               <button
                 key={b.id}
-                className={`p3f-bf-chip ${activeBarriers.has(b.id) ? 'on' : ''}`}
+                className={`p2f-bf-chip ${activeBarriers.has(b.id) ? 'on' : ''}`}
                 onClick={() => toggleBarrier(b.id)}
                 style={{ '--chip-color': b.color }}
               >
-                <span className="p3f-chip-dot" />
+                <span className="p2f-chip-dot" />
                 {b.label}
               </button>
             ))}
-            <div className="p3f-bf-title" style={{ marginTop: 8 }}>
+            <div className="p2f-bf-title" style={{ marginTop: 8 }}>
               <label>
                 <input type="checkbox" checked={showRoutes} onChange={e => setShowRoutes(e.target.checked)} />
                 OD Routes ({routes?.features?.length ?? 0})
@@ -236,17 +236,17 @@ export default function Page3FullMap() {
 
           {/* Demand mode: 24h timeline with slider */}
           {activeMode === 'demand' && hourlyDemand && (
-            <div className="p3f-timeline">
-              <div className="p3f-tl-header">
+            <div className="p2f-timeline">
+              <div className="p2f-tl-header">
                 <button
-                  className={`p3f-tl-play ${playing ? 'active' : ''}`}
+                  className={`p2f-tl-play ${playing ? 'active' : ''}`}
                   onClick={() => setPlaying(p => !p)}
                 >
                   {playing ? '⏸' : '▶'}
                 </button>
-                <span className="p3f-tl-time">{String(selectedHour).padStart(2, '0')}:00</span>
-                <span className="p3f-tl-weight">weight: {timeWeight.toFixed(3)}</span>
-                <span className="p3f-tl-label">Meituan 654K orders</span>
+                <span className="p2f-tl-time">{String(selectedHour).padStart(2, '0')}:00</span>
+                <span className="p2f-tl-weight">weight: {timeWeight.toFixed(3)}</span>
+                <span className="p2f-tl-label">Meituan 654K orders</span>
               </div>
               <ResponsiveContainer width="100%" height={60}>
                 <AreaChart data={hourlyDemand} margin={{ left: 0, right: 0, top: 2, bottom: 0 }}>
@@ -283,18 +283,18 @@ export default function Page3FullMap() {
                 type="range" min={0} max={23} step={1}
                 value={selectedHour}
                 onChange={(e) => { setSelectedHour(+e.target.value); setPlaying(false); }}
-                className="p3f-tl-slider"
+                className="p2f-tl-slider"
               />
             </div>
           )}
 
-          <div className="p3f-summary-bar">
+          <div className="p2f-summary-bar">
             {MODE_DESC[activeMode]}
           </div>
         </div>
 
-        <div className="p3f-panel">
-          <Page3FrictionCharts
+        <div className="p2f-panel">
+          <Page2FrictionCharts
             activeMode={activeMode}
             hoveredHex={hoveredHex}
             h3Gap={h3Gap}

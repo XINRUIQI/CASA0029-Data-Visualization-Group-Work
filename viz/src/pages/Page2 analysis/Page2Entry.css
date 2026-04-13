@@ -1,5 +1,5 @@
 /* ── Page 3 Entry — Cloud Dive Scene ── */
-.page-3-entry {
+.page-2-entry {
   position: relative;
   min-height: 100vh;
   display: flex;
@@ -10,7 +10,7 @@
 }
 
 /* ── Foreground content — hidden until intro completes ── */
-.p3e-content {
+.p2e-content {
   position: relative;
   z-index: 2;
   text-align: center;
@@ -22,13 +22,13 @@
   transition: opacity 1.4s ease, transform 1.4s ease;
 }
 
-.p3e-content.p3e-visible {
+.p2e-content.p2e-visible {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
 }
 
-.p3e-kicker {
+.p2e-kicker {
   font-size: 0.75rem;
   letter-spacing: 0.25em;
   text-transform: uppercase;
@@ -36,7 +36,7 @@
   margin-bottom: 0.75rem;
 }
 
-.p3e-title {
+.p2e-title {
   font-size: clamp(2rem, 5vw, 3.2rem);
   font-weight: 700;
   line-height: 1.2;
@@ -45,14 +45,14 @@
   text-shadow: 0 2px 30px rgba(0, 0, 0, 0.4);
 }
 
-.p3e-subtitle {
+.p2e-subtitle {
   font-size: 1.1rem;
   color: rgba(180, 200, 230, 0.65);
   letter-spacing: 0.15em;
   margin-bottom: 1.5rem;
 }
 
-.p3e-desc {
+.p2e-desc {
   font-size: 0.95rem;
   color: rgba(170, 190, 220, 0.55);
   line-height: 1.7;
@@ -60,14 +60,14 @@
 }
 
 /* ── Stat cards ── */
-.p3e-stats {
+.p2e-stats {
   display: flex;
   justify-content: center;
   gap: 2rem;
   margin-bottom: 3rem;
 }
 
-.p3e-stat-card {
+.p2e-stat-card {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
@@ -77,19 +77,19 @@
   transition: transform 0.3s, border-color 0.3s;
 }
 
-.p3e-stat-card:hover {
+.p2e-stat-card:hover {
   transform: translateY(-4px);
   border-color: rgba(255, 255, 255, 0.25);
 }
 
-.p3e-stat-value {
+.p2e-stat-value {
   font-size: 1.8rem;
   font-weight: 700;
   margin-bottom: 0.3rem;
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.2);
 }
 
-.p3e-stat-label {
+.p2e-stat-label {
   font-size: 0.75rem;
   color: rgba(180, 200, 230, 0.5);
   text-transform: uppercase;
@@ -97,7 +97,7 @@
 }
 
 /* ── CTA button ── */
-.p3e-enter-btn {
+.p2e-enter-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
@@ -114,35 +114,35 @@
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }
 
-.p3e-enter-btn:hover {
+.p2e-enter-btn:hover {
   transform: translateY(-2px) scale(1.03);
   box-shadow: 0 8px 36px rgba(100, 200, 255, 0.2);
   background: rgba(20, 30, 60, 0.8);
   border-color: rgba(100, 200, 255, 0.5);
 }
 
-.p3e-enter-btn:active {
+.p2e-enter-btn:active {
   transform: translateY(0) scale(0.98);
 }
 
-.p3e-btn-arrow {
+.p2e-btn-arrow {
   font-size: 1.3rem;
   transition: transform 0.25s;
 }
 
-.p3e-enter-btn:hover .p3e-btn-arrow {
+  .p2e-enter-btn:hover .p2e-btn-arrow {
   transform: translateX(4px);
 }
 
 /* ── Responsive ── */
 @media (max-width: 640px) {
-  .p3e-stats {
+  .p2e-stats {
     flex-direction: column;
     align-items: center;
     gap: 1rem;
   }
 
-  .p3e-stat-card {
+  .p2e-stat-card {
     min-width: 200px;
   }
 }

@@ -70,7 +70,7 @@ function PinIcon({ color, size = 18 }) {
   );
 }
 
-export default function Page2Map({ data, boundary, hexGrid, activeTab, compoundFilter, focusDistrict, districtStats, onDistrictFocus }) {
+export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundFilter, focusDistrict, districtStats, onDistrictFocus }) {
   const [viewState, setViewState]           = useState(INITIAL_VIEW);
   const [tooltip, setTooltip]               = useState(null);
   const [districtPanel, setDistrictPanel]   = useState(null);
@@ -408,58 +408,58 @@ export default function Page2Map({ data, boundary, hexGrid, activeTab, compoundF
 
       {/* Tooltip */}
       {tooltip && (activeTab === 1 || activeTab === 2) && (
-        <div className="p2-map-tooltip" style={{ left: '50%', top: 12, transform: 'translateX(-50%)' }}>
+        <div className="p3-map-tooltip" style={{ left: '50%', top: 12, transform: 'translateX(-50%)' }}>
           {activeTab === 1 && (
-            <div className="p2-tip-type" style={{ color: ZONE_META[tooltip.zone_type]?.hex }}>
+            <div className="p3-tip-type" style={{ color: ZONE_META[tooltip.zone_type]?.hex }}>
               {ZONE_META[tooltip.zone_type]?.label}
             </div>
           )}
           {activeTab === 2 && (
-            <div className="p2-tip-type" style={{ color: POI_COLORS[tooltip.dominant_poi]?.hex }}>
+            <div className="p3-tip-type" style={{ color: POI_COLORS[tooltip.dominant_poi]?.hex }}>
               {POI_COLORS[tooltip.dominant_poi]?.label}
             </div>
           )}
-          {tooltip.nearest_compound && <div className="p2-tip-name">{tooltip.nearest_compound}</div>}
-          <div className="p2-tip-meta">{tooltip.dominant_poi} · {tooltip.distance_m}m</div>
+          {tooltip.nearest_compound && <div className="p3-tip-name">{tooltip.nearest_compound}</div>}
+          <div className="p3-tip-meta">{tooltip.dominant_poi} · {tooltip.distance_m}m</div>
         </div>
       )}
 
       {/* 行政区信息 panel */}
       {districtPanel && (
-        <div className="p2-district-panel">
-          <div className="p2-dp-header">
-            <span className="p2-dp-zh">{districtPanel.enName}</span>
-            <span className="p2-dp-en">District</span>
+        <div className="p3-district-panel">
+          <div className="p3-dp-header">
+            <span className="p3-dp-zh">{districtPanel.enName}</span>
+            <span className="p3-dp-en">District</span>
           </div>
-          <div className="p2-dp-divider" />
-          <div className="p2-dp-row">
-            <span className="p2-dp-label">Population</span>
-            <span className="p2-dp-val">{districtPanel.population} 万</span>
+          <div className="p3-dp-divider" />
+          <div className="p3-dp-row">
+            <span className="p3-dp-label">Population</span>
+            <span className="p3-dp-val">{districtPanel.population} 万</span>
           </div>
-          <div className="p2-dp-row">
-            <span className="p2-dp-label">Area</span>
-            <span className="p2-dp-val">{districtPanel.area} km²</span>
+          <div className="p3-dp-row">
+            <span className="p3-dp-label">Area</span>
+            <span className="p3-dp-val">{districtPanel.area} km²</span>
           </div>
-          <div className="p2-dp-row">
-            <span className="p2-dp-label">Density</span>
-            <span className="p2-dp-val">
+          <div className="p3-dp-row">
+            <span className="p3-dp-label">Density</span>
+            <span className="p3-dp-val">
               {districtPanel.population && districtPanel.area
                 ? Math.round(districtPanel.population * 10000 / districtPanel.area).toLocaleString()
                 : '—'} /km²
             </span>
           </div>
-          <div className="p2-dp-divider" />
-          <div className="p2-dp-row">
-            <span className="p2-dp-label">Total Sites</span>
-            <span className="p2-dp-val">{districtPanel.commercial + districtPanel.last_mile}</span>
+          <div className="p3-dp-divider" />
+          <div className="p3-dp-row">
+            <span className="p3-dp-label">Total Sites</span>
+            <span className="p3-dp-val">{districtPanel.commercial + districtPanel.last_mile}</span>
           </div>
-          <div className="p2-dp-row">
-            <span className="p2-dp-label" style={{ color: '#ffa028' }}>Hub</span>
-            <span className="p2-dp-val">{districtPanel.commercial}</span>
+          <div className="p3-dp-row">
+            <span className="p3-dp-label" style={{ color: '#ffa028' }}>Hub</span>
+            <span className="p3-dp-val">{districtPanel.commercial}</span>
           </div>
-          <div className="p2-dp-row">
-            <span className="p2-dp-label" style={{ color: '#c864ff' }}>Last-mile</span>
-            <span className="p2-dp-val">{districtPanel.last_mile}</span>
+          <div className="p3-dp-row">
+            <span className="p3-dp-label" style={{ color: '#c864ff' }}>Last-mile</span>
+            <span className="p3-dp-val">{districtPanel.last_mile}</span>
           </div>
         </div>
       )}

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
          RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
          ScatterChart, Scatter, ZAxis, CartesianGrid, ReferenceArea } from 'recharts';
-import './Page3FrictionCharts.css';
+import './Page2FrictionCharts.css';
 
 const TT_STYLE = { background: '#1a1a2e', border: '1px solid #333', borderRadius: 8, fontSize: 11 };
 
@@ -17,7 +17,7 @@ function buildBins(values, binWidth) {
     .sort((a, b) => parseFloat(a.range) - parseFloat(b.range));
 }
 
-export default function Page3FrictionCharts({
+export default function Page2FrictionCharts({
   activeMode, hoveredHex, h3Gap, odAnalysis, liveMetrics, onHighlight
 }) {
   const scatterData = useMemo(() => {

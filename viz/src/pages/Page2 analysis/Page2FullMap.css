@@ -1,5 +1,5 @@
-/* ── Page 3 Full‑screen Analysis Map ── */
-.p3f {
+/* ── Page 2 Full‑screen Analysis Map ── */
+.p2f {
   position: relative;
   width: 100vw;
   height: 100vh;
@@ -10,7 +10,7 @@
 }
 
 /* ── Back button ── */
-.p3f-back {
+.p2f-back {
   position: absolute;
   top: 16px;
   left: 16px;
@@ -26,14 +26,14 @@
   transition: all 0.2s;
 }
 
-.p3f-back:hover {
+.p2f-back:hover {
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
   border-color: rgba(255, 255, 255, 0.4);
 }
 
 /* ── Top bar ── */
-.p3f-topbar {
+.p2f-topbar {
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -46,12 +46,12 @@
   z-index: 10;
 }
 
-.p3f-tab-group {
+.p2f-tab-group {
   display: flex;
   gap: 4px;
 }
 
-.p3f-tab {
+.p2f-tab {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -65,18 +65,18 @@
   transition: all 0.2s;
 }
 
-.p3f-tab:hover {
+.p2f-tab:hover {
   background: rgba(255, 255, 255, 0.05);
   color: #bbb;
 }
 
-.p3f-tab.active {
+.p2f-tab.active {
   background: rgba(255, 255, 255, 0.08);
   color: var(--tab-color, #fff);
   border-color: var(--tab-color, #fff);
 }
 
-.p3f-tab-dot {
+.p2f-tab-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -84,17 +84,17 @@
   opacity: 0.6;
 }
 
-.p3f-tab.active .p3f-tab-dot {
+.p2f-tab.active .p2f-tab-dot {
   opacity: 1;
   box-shadow: 0 0 6px var(--tab-color);
 }
 
-.p3f-scenario-filter {
+.p2f-scenario-filter {
   display: flex;
   gap: 4px;
 }
 
-.p3f-sf-btn {
+.p2f-sf-btn {
   padding: 0.3rem 0.7rem;
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 4px;
@@ -106,27 +106,27 @@
   transition: all 0.2s;
 }
 
-.p3f-sf-btn:hover { color: #aaa; }
-.p3f-sf-btn.active {
+.p2f-sf-btn:hover { color: #aaa; }
+.p2f-sf-btn.active {
   background: rgba(0, 232, 150, 0.12);
   color: #00e896;
   border-color: rgba(0, 232, 150, 0.3);
 }
 
 /* ── Main layout ── */
-.p3f-main {
+.p2f-main {
   flex: 1;
   display: flex;
   min-height: 0;
 }
 
-.p3f-map-area {
+.p2f-map-area {
   flex: 1;
   position: relative;
 }
 
 /* ── Clear highlight button ── */
-.p3f-clear-hl {
+.p2f-clear-hl {
   padding: 0.3rem 0.8rem;
   border: 1px solid rgba(0, 255, 200, 0.3);
   border-radius: 4px;
@@ -137,12 +137,12 @@
   transition: all 0.2s;
 }
 
-.p3f-clear-hl:hover {
+.p2f-clear-hl:hover {
   background: rgba(0, 255, 200, 0.2);
 }
 
 /* ── Hex tooltip — expanded ── */
-.p3f-hex-tooltip {
+.p2f-hex-tooltip {
   position: absolute;
   top: 16px;
   left: 50%;
@@ -156,25 +156,25 @@
   min-width: 280px;
 }
 
-.p3f-hv-row {
+.p2f-hv-row {
   display: flex;
   gap: 1.2rem;
   margin-bottom: 0.4rem;
 }
 
-.p3f-hv {
+.p2f-hv {
   font-size: 0.78rem;
   color: #ddd;
 }
 
-.p3f-hv span {
+.p2f-hv span {
   color: #777;
   margin-right: 0.3rem;
   font-size: 0.65rem;
   text-transform: uppercase;
 }
 
-.p3f-hv-poi {
+.p2f-hv-poi {
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -182,20 +182,20 @@
   padding-top: 0.4rem;
 }
 
-.p3f-poi-bar {
+.p2f-poi-bar {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.p3f-poi-label {
+.p2f-poi-label {
   font-size: 0.65rem;
   color: #888;
   width: 52px;
   text-align: right;
 }
 
-.p3f-poi-track {
+.p2f-poi-track {
   flex: 1;
   height: 6px;
   background: rgba(255, 255, 255, 0.04);
@@ -203,13 +203,13 @@
   overflow: hidden;
 }
 
-.p3f-poi-fill {
+.p2f-poi-fill {
   height: 100%;
   border-radius: 3px;
   transition: width 0.15s;
 }
 
-.p3f-poi-val {
+.p2f-poi-val {
   font-size: 0.65rem;
   color: #aaa;
   width: 28px;
@@ -217,7 +217,7 @@
 }
 
 /* ── Barrier float ── */
-.p3f-barrier-float {
+.p2f-barrier-float {
   position: absolute;
   bottom: 60px;
   left: 16px;
@@ -229,20 +229,20 @@
   z-index: 5;
 }
 
-.p3f-bf-title {
+.p2f-bf-title {
   font-size: 0.75rem;
   color: #888;
   margin-bottom: 0.4rem;
 }
 
-.p3f-bf-title label {
+.p2f-bf-title label {
   display: flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
 }
 
-.p3f-bf-chip {
+.p2f-bf-chip {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -257,13 +257,13 @@
   transition: all 0.15s;
 }
 
-.p3f-bf-chip:hover { color: #aaa; }
+.p2f-bf-chip:hover { color: #aaa; }
 
-.p3f-bf-chip.on {
+.p2f-bf-chip.on {
   color: var(--chip-color, #888);
 }
 
-.p3f-chip-dot {
+.p2f-chip-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -271,10 +271,10 @@
   opacity: 0.3;
 }
 
-.p3f-bf-chip.on .p3f-chip-dot { opacity: 1; }
+.p2f-bf-chip.on .p2f-chip-dot { opacity: 1; }
 
 /* ── 24h Timeline ── */
-.p3f-timeline {
+.p2f-timeline {
   position: absolute;
   bottom: 36px;
   left: 0;
@@ -285,14 +285,14 @@
   z-index: 5;
 }
 
-.p3f-tl-header {
+.p2f-tl-header {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 2px;
 }
 
-.p3f-tl-play {
+.p2f-tl-play {
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -308,16 +308,16 @@
   transition: all 0.2s;
 }
 
-.p3f-tl-play:hover {
+.p2f-tl-play:hover {
   background: rgba(255, 140, 0, 0.25);
 }
 
-.p3f-tl-play.active {
+.p2f-tl-play.active {
   background: rgba(255, 140, 0, 0.3);
   border-color: #ff8c00;
 }
 
-.p3f-tl-time {
+.p2f-tl-time {
   font-size: 1rem;
   font-weight: 700;
   color: #ff8c00;
@@ -325,13 +325,13 @@
   min-width: 48px;
 }
 
-.p3f-tl-weight {
+.p2f-tl-weight {
   font-size: 0.65rem;
   color: #666;
   font-family: monospace;
 }
 
-.p3f-tl-label {
+.p2f-tl-label {
   font-size: 0.6rem;
   color: #555;
   margin-left: auto;
@@ -339,7 +339,7 @@
   letter-spacing: 0.5px;
 }
 
-.p3f-tl-slider {
+.p2f-tl-slider {
   width: 100%;
   height: 4px;
   -webkit-appearance: none;
@@ -351,7 +351,7 @@
   cursor: pointer;
 }
 
-.p3f-tl-slider::-webkit-slider-thumb {
+.p2f-tl-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 14px;
   height: 14px;
@@ -362,7 +362,7 @@
   box-shadow: 0 0 6px rgba(255, 140, 0, 0.4);
 }
 
-.p3f-tl-slider::-moz-range-thumb {
+.p2f-tl-slider::-moz-range-thumb {
   width: 14px;
   height: 14px;
   border-radius: 50%;
@@ -372,7 +372,7 @@
 }
 
 /* ── Summary bar ── */
-.p3f-summary-bar {
+.p2f-summary-bar {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -387,7 +387,7 @@
 }
 
 /* ── Right panel ── */
-.p3f-panel {
+.p2f-panel {
   flex-shrink: 0;
   width: 360px;
   overflow-y: auto;
@@ -397,5 +397,5 @@
 }
 
 /* ── Scrollbar ── */
-.p3f-panel::-webkit-scrollbar { width: 4px; }
-.p3f-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+.p2f-panel::-webkit-scrollbar { width: 4px; }
+.p2f-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }

@@ -3,11 +3,11 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import { point as turfPoint } from '@turf/helpers';
-import Page2Map from './Page2Map';
+import Page3Map from './Page3Map';
 import { publicDataUrl, POI_COLORS } from '../../config';
 import { PoiPinIcon } from './poiIcons';
 import { COMPOUND_COLORS } from '../Page1 overview/Page1Landing';
-import './Page2.css';
+import './Page3.css';
 
 const SCENARIOS = [
   {
@@ -110,7 +110,7 @@ const TABS = [
 ];
 
 
-export default function Page2Friction() {
+export default function Page3Friction() {
   const [sites, setSites]           = useState(null);
   const [routes, setRoutes]         = useState(null);
   const [boundary, setBoundary]     = useState(null);
@@ -280,33 +280,33 @@ export default function Page2Friction() {
   }, [siteStats]);
 
   return (
-    <section id="page-2" className="page page-2">
-      <div className="p2-layout">
+    <section id="page-3" className="page page-3">
+      <div className="p3-layout">
 
         {/* ── LEFT: map (50%) ── */}
-        <div className="p2-map-half">
+        <div className="p3-map-half">
 
 
           {/* 下方：左侧 tab + 右侧地图 */}
-          <div className="p2-map-body">
+          <div className="p3-map-body">
 
             {/* 左侧：4 个切页 tab */}
-            <div className="p2-tab-sidebar">
+            <div className="p3-tab-sidebar">
               {TABS.map(tab => (
                 <button
                   key={tab.id}
-                  className={`p2-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+                  className={`p3-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
                   onClick={() => { setActiveTab(tab.id); setCompoundFilter('all'); }}
                 >
-                  <span className="p2-tab-icon">{tab.icon}</span>
-                  <span className="p2-tab-label">{tab.label}</span>
+                  <span className="p3-tab-icon">{tab.icon}</span>
+                  <span className="p3-tab-label">{tab.label}</span>
                 </button>
               ))}
             </div>
 
             {/* 右侧：地图卡片 */}
-            <div className="p2-map-card">
-              <Page2Map
+            <div className="p3-map-card">
+              <Page3Map
                 data={filteredSites}
                 routes={routes}
                 boundary={boundary}
@@ -322,23 +322,23 @@ export default function Page2Friction() {
           </div>
 
           {/* ── 地图与图表之间的图例条（可点击） ── */}
-          <div className="p2-inline-legend">
+          <div className="p3-inline-legend">
             {activeTab === 1 && <>
-              <button className={`p2-il-btn ${showCommercial ? 'active' : ''}`} style={{ '--ilc': '#ffa028' }}
+              <button className={`p3-il-btn ${showCommercial ? 'active' : ''}`} style={{ '--ilc': '#ffa028' }}
                 onClick={() => setShowCommercial(v => !v)}>
                 <svg viewBox="0 0 40 52" width={11} height={14} style={{ display: 'block', flexShrink: 0 }}>
                   <path d="M20 0C8.954 0 0 8.954 0 20c0 13.333 20 32 20 32S40 33.333 40 20C40 8.954 31.046 0 20 0z" fill="#ffa028" />
                   <circle cx="20" cy="19" r="8" fill="white" opacity="0.9" />
                 </svg>
-                Hub Sites <span className="p2-il-count">45</span>
+                Hub Sites <span className="p3-il-count">45</span>
               </button>
-              <button className={`p2-il-btn ${showLastMile ? 'active' : ''}`} style={{ '--ilc': '#c864ff' }}
+              <button className={`p3-il-btn ${showLastMile ? 'active' : ''}`} style={{ '--ilc': '#c864ff' }}
                 onClick={() => setShowLastMile(v => !v)}>
                 <svg viewBox="0 0 40 52" width={11} height={14} style={{ display: 'block', flexShrink: 0 }}>
                   <path d="M20 0C8.954 0 0 8.954 0 20c0 13.333 20 32 20 32S40 33.333 40 20C40 8.954 31.046 0 20 0z" fill="#c864ff" />
                   <circle cx="20" cy="19" r="8" fill="white" opacity="0.9" />
                 </svg>
-                Last-mile <span className="p2-il-count">161</span>
+                Last-mile <span className="p3-il-count">161</span>
               </button>
             </>}
             {activeTab === 4 && [
@@ -351,14 +351,14 @@ export default function Page2Friction() {
               { color: '#d04800', label: '800–1500' },
               { color: '#b50000', label: '> 1500' },
             ].map(({ color, label }) => (
-              <div key={label} className="p2-il-btn" style={{ cursor: 'default', gap: 6 }}>
+              <div key={label} className="p3-il-btn" style={{ cursor: 'default', gap: 6 }}>
                 <span style={{ width: 14, height: 14, borderRadius: 3, background: color, display: 'inline-block', flexShrink: 0, border: '1px solid rgba(255,255,255,0.2)' }} />
                 <span style={{ fontSize: 11, color: '#ccc', whiteSpace: 'nowrap' }}>{label}</span>
               </div>
             ))}
             {activeTab === 2 && Object.entries(POI_COLORS).map(([k, v]) => (
               <button key={k}
-                className={`p2-il-btn ${compoundFilter === k ? 'active' : compoundFilter === 'all' ? '' : 'dim'}`}
+                className={`p3-il-btn ${compoundFilter === k ? 'active' : compoundFilter === 'all' ? '' : 'dim'}`}
                 style={{ '--ilc': v.hex, color: '#fff' }}
                 onClick={() => {
                   const next = compoundFilter === k ? 'all' : k;
@@ -372,9 +372,9 @@ export default function Page2Friction() {
           </div>
 
           {/* ── 地图下方：行政区统计 ── */}
-          <div className="p2-district-card">
-            <div className="p2-district-header">
-              <div className="p2p-section-label">Sites by District</div>
+          <div className="p3-district-card">
+            <div className="p3-district-header">
+              <div className="p3p-section-label">Sites by District</div>
             </div>
             {activeTab !== 2 && activeTab !== 4 && districtStats.length > 0 && (
               <ResponsiveContainer width="100%" height="100%">
@@ -453,41 +453,41 @@ export default function Page2Friction() {
         </div>
 
         {/* ── RIGHT: panel (50%) ── */}
-        <div className="p2-panel-half">
-        <div className="p2-panel-card">
-          <div className="p2p-header">
-            <div className="p2p-tag">Infrastructure · Shenzhen 2024</div>
-            <h2 className="p2p-title">Vertiport Site Distribution</h2>
-            <p className="p2p-desc">
+        <div className="p3-panel-half">
+        <div className="p3-panel-card">
+          <div className="p3p-header">
+            <div className="p3p-tag">Infrastructure · Shenzhen 2024</div>
+            <h2 className="p3p-title">Vertiport Site Distribution</h2>
+            <p className="p3p-desc">
               Influenced by terrain, zoning policy, and operator strategies,
               vertiport sites cluster near commercial hubs, parks, and residential
               compounds. Existing pads reflect demand; planned pads signal expansion.
             </p>
           </div>
 
-          {loadError && <div className="p2p-loading" style={{ color: '#ff6b6b' }}>加载失败：{loadError}</div>}
+          {loadError && <div className="p3p-loading" style={{ color: '#ff6b6b' }}>加载失败：{loadError}</div>}
 
           {siteStats ? (
-            <div className="p2p-kpis">
-              <div className="p2p-kpi">
+            <div className="p3p-kpis">
+              <div className="p3p-kpi">
                 <div className="kpi-val">{siteStats.total}</div>
                 <div className="kpi-lab">Total Sites</div>
               </div>
-              <div className="p2p-kpi">
+              <div className="p3p-kpi">
                 <div className="kpi-val" style={{ color: '#00e896' }}>{siteStats.byStatus.existing ?? 0}</div>
                 <div className="kpi-lab">Existing</div>
               </div>
-              <div className="p2p-kpi">
+              <div className="p3p-kpi">
                 <div className="kpi-val" style={{ color: '#64c8ff' }}>{siteStats.byStatus.planned ?? 0}</div>
                 <div className="kpi-lab">Planned</div>
               </div>
             </div>
           ) : (
-            <div className="p2p-loading">Loading sites…</div>
+            <div className="p3p-loading">Loading sites…</div>
           )}
 
-          <div className="p2p-section p2p-chart-section">
-            <div className="p2p-section-label">Sites by Context</div>
+          <div className="p3p-section p3p-chart-section">
+            <div className="p3p-section-label">Sites by Context</div>
             {chartData.length > 0 && (
               <ResponsiveContainer width="100%" height={180}>
                 <BarChart data={chartData} layout="vertical" margin={{ left: 70, right: 30, top: 4, bottom: 4 }}>
@@ -506,7 +506,7 @@ export default function Page2Friction() {
             )}
           </div>
 
-          <div className="p2p-footer">
+          <div className="p3p-footer">
             <span>Source: Shenzhen Transport Bureau, 2024</span>
           </div>
         </div>

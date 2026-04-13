@@ -1,16 +1,16 @@
-.p2c {
+.p3c {
   height: 100%;
   overflow-y: auto;
   padding: 16px 0;
 }
 
-.p2c-metrics {
+.p3c-metrics {
   display: flex;
   gap: 8px;
   margin-bottom: 20px;
 }
 
-.p2c-metric {
+.p3c-metric {
   flex: 1;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -30,11 +30,11 @@
   margin-top: 4px;
 }
 
-.p2c-section {
+.p3c-section {
   margin-bottom: 20px;
 }
 
-.p2c-section h4 {
+.p3c-section h4 {
   font-size: 0.78rem;
   color: #888;
   text-transform: uppercase;
@@ -42,14 +42,14 @@
   margin-bottom: 10px;
 }
 
-.p2c-note {
+.p3c-note {
   font-size: 0.72rem;
   color: #666;
   margin-top: 4px;
   font-style: italic;
 }
 
-.p2c-insight {
+.p3c-insight {
   font-size: 0.75rem;
   color: #64c8ff;
   font-style: italic;

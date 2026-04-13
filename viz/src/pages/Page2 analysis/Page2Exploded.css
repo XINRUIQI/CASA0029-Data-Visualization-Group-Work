@@ -1,4 +1,4 @@
-.p3e {
+.p2e {
   width: 100%;
   height: 100%;
   padding: 40px;
@@ -8,13 +8,13 @@
   justify-content: center;
 }
 
-.p3e-header {
+.p2e-header {
   text-align: center;
   margin-bottom: 32px;
   position: relative;
 }
 
-.p3e-header h3 {
+.p2e-header h3 {
   font-size: 1.6rem;
   background: linear-gradient(135deg, #00ccff, #c864ff);
   -webkit-background-clip: text;
@@ -22,13 +22,13 @@
   background-clip: text;
 }
 
-.p3e-header p {
+.p2e-header p {
   font-size: 0.9rem;
   color: #888;
   margin-top: 6px;
 }
 
-.p3e-close {
+.p2e-close {
   position: absolute;
   top: -20px;
   right: -40px;
@@ -43,13 +43,13 @@
   transition: all 0.2s;
 }
 
-.p3e-close:hover {
+.p2e-close:hover {
   background: rgba(255, 255, 255, 0.15);
   color: #fff;
 }
 
 /* Stacked layers */
-.p3e-stack {
+.p2e-stack {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -58,7 +58,7 @@
   margin-bottom: 32px;
 }
 
-.p3e-layer {
+.p2e-layer {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -70,7 +70,7 @@
   transition: all 0.3s;
 }
 
-.p3e-layer:hover {
+.p2e-layer:hover {
   background: rgba(255, 255, 255, 0.06);
   border-color: var(--layer-color);
   transform: translateX(6px);
@@ -81,7 +81,7 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-.p3e-layer-bar {
+.p2e-layer-bar {
   width: 4px;
   height: 36px;
   border-radius: 2px;
@@ -89,34 +89,34 @@
   flex-shrink: 0;
 }
 
-.p3e-layer-content {
+.p2e-layer-content {
   display: flex;
   align-items: flex-start;
   gap: 10px;
   flex: 1;
 }
 
-.p3e-icon {
+.p2e-icon {
   font-size: 1.3rem;
   flex-shrink: 0;
   margin-top: 1px;
 }
 
-.p3e-layer-name {
+.p2e-layer-name {
   font-size: 0.88rem;
   font-weight: 600;
   color: #e0e0f0;
   margin-bottom: 2px;
 }
 
-.p3e-layer-desc {
+.p2e-layer-desc {
   font-size: 0.72rem;
   color: #777;
   line-height: 1.4;
 }
 
 /* Verdict */
-.p3e-verdict {
+.p2e-verdict {
   display: flex;
   align-items: center;
   gap: 20px;
@@ -128,7 +128,7 @@
   width: 100%;
 }
 
-.p3e-verdict-ground, .p3e-verdict-air {
+.p2e-verdict-ground, .p2e-verdict-air {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -137,19 +137,19 @@
   color: #888;
 }
 
-.p3e-v-label {
+.p2e-v-label {
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: #555;
 }
 
-.p3e-v-time {
+.p2e-v-time {
   font-size: 1.4rem;
   font-weight: 700;
 }
 
-.p3e-verdict-vs {
+.p2e-verdict-vs {
   font-size: 1rem;
   font-weight: 700;
   color: #444;

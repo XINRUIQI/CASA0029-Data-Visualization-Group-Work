@@ -24,7 +24,7 @@ function lerp(a, b, t) {
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
 }
 
-export default function Page3Map({ activeCase, showGround, showAir, showBarriers, showBuildings, barriers, animProgress }) {
+export default function Page2Map({ activeCase, showGround, showAir, showBarriers, showBuildings, barriers, animProgress }) {
   const [viewState, setViewState] = useState(null);
   const [mapRef, setMapRef] = useState(null);
 

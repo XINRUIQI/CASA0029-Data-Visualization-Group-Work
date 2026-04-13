@@ -1,6 +1,6 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
          RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
-import './Page2Charts.css';
+import './Page3Charts.css';
 
 const BARRIER_STATS = [
   { name: 'Water', rate: 93.6, crossings: 6.78, color: '#4688dc' },
@@ -25,27 +25,27 @@ const SCENARIO_COMPARE = [
   { name: 'medical', observed: 0.48, random: 0.36 },
 ];
 
-export default function Page2Charts({ activeMode, hoveredHex }) {
+export default function Page3Charts({ activeMode, hoveredHex }) {
   return (
     <div className="p2c">
       {/* Section 1: key metrics */}
-      <div className="p2c-metrics">
-        <div className="p2c-metric">
+      <div className="p3c-metrics">
+        <div className="p3c-metric">
           <div className="m-value" style={{ color: '#ff8c00' }}>1.50</div>
           <div className="m-label">Avg detour ratio</div>
         </div>
-        <div className="p2c-metric">
+        <div className="p3c-metric">
           <div className="m-value" style={{ color: '#ff3264' }}>1.82x</div>
           <div className="m-label">Peak congestion</div>
         </div>
-        <div className="p2c-metric">
+        <div className="p3c-metric">
           <div className="m-value" style={{ color: '#c864ff' }}>93.6%</div>
           <div className="m-label">ODs cross water</div>
         </div>
       </div>
 
       {/* Section 2: barrier crossing rates */}
-      <div className="p2c-section">
+      <div className="p3c-section">
         <h4>Barrier Crossing Rate (%)</h4>
         <ResponsiveContainer width="100%" height={140}>
           <BarChart data={BARRIER_STATS} layout="vertical" margin={{ left: 60, right: 10, top: 5, bottom: 5 }}>
@@ -65,7 +65,7 @@ export default function Page2Charts({ activeMode, hoveredHex }) {
       </div>
 
       {/* Section 3: friction radar */}
-      <div className="p2c-section">
+      <div className="p3c-section">
         <h4>Friction Composition</h4>
         <ResponsiveContainer width="100%" height={180}>
           <RadarChart data={FRICTION_COMPONENTS} cx="50%" cy="50%" outerRadius="70%">
@@ -78,7 +78,7 @@ export default function Page2Charts({ activeMode, hoveredHex }) {
       </div>
 
       {/* Section 4: feature importance (新增) */}
-      <div className="p2c-section">
+      <div className="p3c-section">
         <h4>Feature Importance</h4>
         <ResponsiveContainer width="100%" height={130}>
           <BarChart
@@ -105,11 +105,11 @@ export default function Page2Charts({ activeMode, hoveredHex }) {
             </Bar>
           </BarChart>
         </ResponsiveContainer>
-        <p className="p2c-note">What drives ground friction most? Detour and barrier crossings dominate.</p>
+        <p className="p3c-note">What drives ground friction most? Detour and barrier crossings dominate.</p>
       </div>
 
       {/* Section 5: observed vs random */}
-      <div className="p2c-section">
+      <div className="p3c-section">
         <h4>Observed vs Random (Gap Index)</h4>
         <ResponsiveContainer width="100%" height={140}>
           <BarChart data={SCENARIO_COMPARE} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
@@ -122,7 +122,7 @@ export default function Page2Charts({ activeMode, hoveredHex }) {
             <Bar dataKey="random" fill="#444" fillOpacity={0.6} radius={[3, 3, 0, 0]} name="Random" />
           </BarChart>
         </ResponsiveContainer>
-        <p className="p2c-insight">
+        <p className="p3c-insight">
           Observed sites cluster in high-friction overlap zones — not in demand-only areas.
         </p>
       </div>

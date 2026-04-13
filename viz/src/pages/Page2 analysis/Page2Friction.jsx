@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import Page3FrictionMap from './Page3FrictionMap';
-import Page3FrictionCharts from './Page3FrictionCharts';
+import Page2FrictionMap from './Page2FrictionMap';
+import Page2FrictionCharts from './Page2FrictionCharts';
 import { publicDataUrl } from '../../config';
-import './Page3Friction.css';
+import './Page2Friction.css';
 
 const LAYER_MODES = [
   { id: 'demand', label: 'Demand', color: '#ff8c00' },
@@ -20,7 +20,7 @@ const BARRIER_TYPES = [
 
 const SCENARIO_FILTERS = ['all', 'meal_delivery', 'parcel_delivery', 'park', 'cross_border', 'medical'];
 
-export default function Page3Friction() {
+export default function Page2Friction() {
   const [barriers, setBarriers] = useState({});
   const [h3Demand, setH3Demand] = useState(null);
   const [h3Gap, setH3Gap] = useState(null);
@@ -34,7 +34,7 @@ export default function Page3Friction() {
 
   useEffect(() => {
     ['water', 'waterway', 'railway', 'highway_major'].forEach(t => {
-      fetch(publicDataUrl(`data/page3_barrier_${t}.json`))
+      fetch(publicDataUrl(`data/page2_barrier_${t}.json`))
         .then(r => r.json())
         .then(data => setBarriers(prev => ({ ...prev, [t]: data })))
         .catch(() => {});
@@ -43,15 +43,15 @@ export default function Page3Friction() {
       .then(r => r.json())
       .then(setH3Demand)
       .catch(() => {});
-    fetch(publicDataUrl('data/page3_h3_gap.json'))
+    fetch(publicDataUrl('data/page2_h3_gap.json'))
       .then(r => r.json())
       .then(setH3Gap)
       .catch(() => {});
-    fetch(publicDataUrl('data/page2_sites.json'))
+    fetch(publicDataUrl('data/page3_sites.json'))
       .then(r => r.json())
       .then(setObservedSites)
       .catch(() => {});
-    fetch(publicDataUrl('data/page3_od_analysis.json'))
+    fetch(publicDataUrl('data/page2_od_analysis.json'))
       .then(r => r.json())
       .then(data => setOdAnalysis(data?.features?.map(f => f.properties) || []))
       .catch(() => {});
@@ -66,7 +66,7 @@ export default function Page3Friction() {
   };
 
   return (
-    <section id="page-3" className="page page-3-friction">
+    <section id="page-2" className="page page-2-friction">
       {/* ═══ TOP BAR ═══ */}
       <div className="p2-topbar">
         <div className="p2-tab-group">
@@ -102,7 +102,7 @@ export default function Page3Friction() {
       {/* ═══ MAIN ═══ */}
       <div className="p2-main">
         <div className="p2-map-area">
-          <Page3FrictionMap
+          <Page2FrictionMap
             barriers={barriers}
             activeBarriers={activeBarriers}
             showBarriers={showBarriers}
@@ -154,7 +154,7 @@ export default function Page3Friction() {
         </div>
 
         <div className="p2-analysis-panel">
-          <Page3FrictionCharts activeMode={activeMode} hoveredHex={hoveredHex} h3Gap={h3Gap} odAnalysis={odAnalysis} />
+          <Page2FrictionCharts activeMode={activeMode} hoveredHex={hoveredHex} h3Gap={h3Gap} odAnalysis={odAnalysis} />
         </div>
       </div>
     </section>

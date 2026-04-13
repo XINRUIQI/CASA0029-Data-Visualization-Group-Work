@@ -37,7 +37,7 @@ const TASK_TYPES = [
     id: 'barrier',
     title: '绕行 / 割裂型城区',
     subtitle: '立体形态与体量',
-    hint: '用建筑体量、密度与高层计数代理「割裂感」（非单条 OD，可与 Page3 对照）。',
+    hint: '用建筑体量、密度与高层计数代理「割裂感」（非单条 OD，可与 Page2 对照）。',
     vignette: 'layers-barrier',
   },
 ];

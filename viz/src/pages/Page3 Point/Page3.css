@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════
-   Page 2 — Vertiport Sites Dashboard
+   Page 3 — Vertiport Sites Dashboard
    Left 50%: map   |   Right 50%: panel
    ═══════════════════════════════════════════ */
 
-.page-2 {
+.page-3 {
   height: 100vh;
   min-height: 100vh;
   overflow: hidden;
@@ -11,13 +11,13 @@
 }
 
 /* ─── TWO-COLUMN LAYOUT ─── */
-.p2-layout {
+.p3-layout {
   display: flex;
   height: 100%;
 }
 
 /* Left half — map */
-.p2-map-half {
+.p3-map-half {
   width: 50%;
   flex-shrink: 0;
   padding: 28px 10px 28px 24px;
@@ -28,13 +28,13 @@
 }
 
 /* ─── 上方 legend 行 ─── */
-.p2-map-legend {
+.p3-map-legend {
   display: flex;
   gap: 20px;
   flex-shrink: 0;
 }
 
-.p2-legend-item {
+.p3-legend-item {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -44,11 +44,11 @@
   user-select: none;
 }
 
-.p2-legend-item input[type="checkbox"] {
+.p3-legend-item input[type="checkbox"] {
   display: none;
 }
 
-.p2-legend-dot {
+.p3-legend-dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -57,23 +57,23 @@
   transition: opacity 0.2s;
 }
 
-.p2-legend-item:has(input:checked) .p2-legend-dot {
+.p3-legend-item:has(input:checked) .p3-legend-dot {
   opacity: 1;
 }
 
-.p2-legend-item:has(input:not(:checked)) {
+.p3-legend-item:has(input:not(:checked)) {
   color: #555;
   text-decoration: line-through;
   text-decoration-color: #444;
 }
 
-.p2-legend-sub {
+.p3-legend-sub {
   font-size: 0.68rem;
   color: #555;
   margin-left: 2px;
 }
 
-.p2-legend-divider {
+.p3-legend-divider {
   width: 1px;
   height: 16px;
   background: rgba(255, 255, 255, 0.1);
@@ -82,7 +82,7 @@
 }
 
 /* ─── 下方区域：侧边筛选 + 地图卡片 ─── */
-.p2-map-body {
+.p3-map-body {
   height: 50vh;
   flex-shrink: 0;
   display: flex;
@@ -91,7 +91,7 @@
 }
 
 /* ─── 左侧：4 个切页 Tab ─── */
-.p2-tab-sidebar {
+.p3-tab-sidebar {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -101,7 +101,7 @@
   align-items: center;
 }
 
-.p2-tab-btn {
+.p3-tab-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -116,18 +116,18 @@
   width: 100%;
 }
 
-.p2-tab-btn:hover {
+.p3-tab-btn:hover {
   color: #aaa;
   background: rgba(255, 255, 255, 0.04);
 }
 
-.p2-tab-btn.active {
+.p3-tab-btn.active {
   color: #fff;
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.12);
 }
 
-.p2-tab-icon {
+.p3-tab-icon {
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -140,17 +140,17 @@
   transition: opacity 0.2s;
 }
 
-.p2-tab-btn.active .p2-tab-icon,
-.p2-tab-btn:hover .p2-tab-icon {
+.p3-tab-btn.active .p3-tab-icon,
+.p3-tab-btn:hover .p3-tab-icon {
   opacity: 1;
 }
 
-.p2-tab-icon svg {
+.p3-tab-icon svg {
   width: 16px;
   height: 16px;
 }
 
-.p2-tab-label {
+.p3-tab-label {
   font-size: 0.6rem;
   text-align: center;
   line-height: 1.2;
@@ -158,7 +158,7 @@
 }
 
 /* ─── 周围类型浮层（左下角）─── */
-.p2-compound-float {
+.p3-compound-float {
   position: absolute;
   bottom: 16px;
   left: 16px;
@@ -173,7 +173,7 @@
   padding: 10px 8px;
 }
 
-.p2-cf-btn {
+.p3-cf-btn {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -188,22 +188,22 @@
   text-align: left;
 }
 
-.p2-cf-btn:hover { color: #bbb; background: rgba(255,255,255,0.04); }
+.p3-cf-btn:hover { color: #bbb; background: rgba(255,255,255,0.04); }
 
-.p2-cf-btn.active {
+.p3-cf-btn.active {
   border-color: var(--c);
   color: #eee;
   background: rgba(255,255,255,0.05);
 }
 
-.p2-cf-dot {
+.p3-cf-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
-.p2-cf-icon {
+.p3-cf-icon {
   width: 26px;
   height: 26px;
   border-radius: 50%;
@@ -214,24 +214,24 @@
   flex-shrink: 0;
 }
 
-.p2-cf-icon svg {
+.p3-cf-icon svg {
   width: 13px;
   height: 13px;
   color: var(--c);
   opacity: 0.7;
 }
 
-.p2-cf-btn.active .p2-cf-icon svg { opacity: 1; }
+.p3-cf-btn.active .p3-cf-icon svg { opacity: 1; }
 
-.p2-cf-label { flex: 1; }
+.p3-cf-label { flex: 1; }
 
-.p2-cf-count {
+.p3-cf-count {
   font-size: 0.65rem;
   color: #444;
 }
 
 /* ─── Tab 4 覆盖圆圈 ─── */
-.p2-coverage-ring {
+.p3-coverage-ring {
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -241,13 +241,13 @@
 }
 
 /* Context type tab switcher */
-.p2-context-type-tabs {
+.p3-context-type-tabs {
   display: flex;
   gap: 6px;
   flex-shrink: 0;
 }
 
-.p2-ct-btn {
+.p3-ct-btn {
   display: flex;
   align-items: center;
   gap: 5px;
@@ -261,15 +261,15 @@
   transition: all 0.18s;
 }
 
-.p2-ct-btn:hover { color: #bbb; border-color: rgba(255,255,255,0.15); }
+.p3-ct-btn:hover { color: #bbb; border-color: rgba(255,255,255,0.15); }
 
-.p2-ct-btn.active {
+.p3-ct-btn.active {
   border-color: var(--ct);
   color: #eee;
   background: rgba(255,255,255,0.05);
 }
 
-.p2-ct-dot {
+.p3-ct-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -277,7 +277,7 @@
 }
 
 /* District card header row */
-.p2-district-header {
+.p3-district-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -285,7 +285,7 @@
 }
 
 /* Legend bar between map and district card */
-.p2-inline-legend {
+.p3-inline-legend {
   display: flex;
   align-items: center;
   justify-content: space-evenly;
@@ -298,7 +298,7 @@
   backdrop-filter: blur(8px);
 }
 
-.p2-il-btn {
+.p3-il-btn {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -312,20 +312,20 @@
   transition: all 0.18s;
 }
 
-.p2-il-btn:hover { color: #ccc; border-color: rgba(255,255,255,0.35); }
+.p3-il-btn:hover { color: #ccc; border-color: rgba(255,255,255,0.35); }
 
-.p2-il-btn.active {
+.p3-il-btn.active {
   border-color: var(--ilc);
   color: #eee;
   background: rgba(255,255,255,0.05);
 }
 
-.p2-il-btn.dim {
+.p3-il-btn.dim {
   opacity: 0.55;
   border-color: rgba(255, 255, 255, 0.15);
 }
 
-.p2-il-dot {
+.p3-il-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -333,8 +333,8 @@
 }
 
 /* Shared circular POI icon — used in map markers and inline legend */
-.p2-poi-marker,
-.p2-il-icon {
+.p3-poi-marker,
+.p3-il-icon {
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -348,20 +348,20 @@
   filter: drop-shadow(0 1px 4px rgba(0,0,0,0.7));
 }
 
-.p2-poi-marker svg,
-.p2-il-icon svg {
+.p3-poi-marker svg,
+.p3-il-icon svg {
   width: 12px;
   height: 12px;
 }
 
-.p2-il-count {
+.p3-il-count {
   font-size: 0.65rem;
   color: #555;
   margin-left: 2px;
 }
 
 /* District chart card — below map */
-.p2-district-card {
+.p3-district-card {
   flex: 1;
   min-height: 0;
   background: #0d0d22;
@@ -374,7 +374,7 @@
 }
 
 /* Map card — rounded box */
-.p2-map-card {
+.p3-map-card {
   flex: 1;
   border-radius: 16px;
   overflow: hidden;
@@ -387,7 +387,7 @@
 }
 
 /* Right half — outer wrapper with padding */
-.p2-panel-half {
+.p3-panel-half {
   width: 50%;
   flex-shrink: 0;
   padding: 28px 24px 0 10px;   /* top right bottom left — 与左边呼应 */
@@ -396,7 +396,7 @@
 }
 
 /* Right panel card */
-.p2-panel-card {
+.p3-panel-card {
   flex: 1;
   background: #0d0d22;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -410,11 +410,11 @@
 }
 
 /* ─── HEADER ─── */
-.p2p-header {
+.p3p-header {
   flex-shrink: 0;
 }
 
-.p2p-tag {
+.p3p-tag {
   font-size: 0.7rem;
   font-weight: 600;
   color: #64c8ff;
@@ -423,7 +423,7 @@
   margin-bottom: 10px;
 }
 
-.p2p-title {
+.p3p-title {
   font-size: 1.55rem;
   font-weight: 700;
   color: #fff;
@@ -431,7 +431,7 @@
   line-height: 1.25;
 }
 
-.p2p-desc {
+.p3p-desc {
   font-size: 0.85rem;
   color: #7a7a9a;
   line-height: 1.65;
@@ -439,13 +439,13 @@
 }
 
 /* ─── KPIs ─── */
-.p2p-kpis {
+.p3p-kpis {
   display: flex;
   gap: 12px;
   flex-shrink: 0;
 }
 
-.p2p-kpi {
+.p3p-kpi {
   flex: 1;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -469,18 +469,18 @@
   margin-top: 6px;
 }
 
-.p2p-loading {
+.p3p-loading {
   color: #444;
   font-size: 0.8rem;
   padding: 20px 0;
 }
 
 /* ─── SECTIONS ─── */
-.p2p-section {
+.p3p-section {
   flex-shrink: 0;
 }
 
-.p2p-section-label {
+.p3p-section-label {
   font-size: 0.68rem;
   font-weight: 600;
   color: #555;
@@ -490,12 +490,12 @@
 }
 
 /* ─── STATUS TOGGLES ─── */
-.p2p-toggles {
+.p3p-toggles {
   display: flex;
   gap: 10px;
 }
 
-.p2p-toggle-chip {
+.p3p-toggle-chip {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -510,11 +510,11 @@
   user-select: none;
 }
 
-.p2p-toggle-chip input[type="checkbox"] {
+.p3p-toggle-chip input[type="checkbox"] {
   display: none;
 }
 
-.p2p-toggle-chip:has(input:checked) {
+.p3p-toggle-chip:has(input:checked) {
   border-color: var(--chip);
   color: #ddd;
   background: rgba(255, 255, 255, 0.06);
@@ -530,18 +530,18 @@
   flex-shrink: 0;
 }
 
-.p2p-toggle-chip:has(input:checked) .toggle-dot {
+.p3p-toggle-chip:has(input:checked) .toggle-dot {
   opacity: 1;
 }
 
 /* ─── COMPOUND FILTER CHIPS ─── */
-.p2p-compound-chips {
+.p3p-compound-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.p2p-chip {
+.p3p-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -555,12 +555,12 @@
   transition: all 0.2s;
 }
 
-.p2p-chip:hover {
+.p3p-chip:hover {
   border-color: #444;
   color: #aaa;
 }
 
-.p2p-chip.active {
+.p3p-chip.active {
   border-color: var(--chip-color);
   color: #eee;
   background: rgba(255, 255, 255, 0.05);
@@ -574,13 +574,13 @@
 }
 
 /* ─── CHART SECTION ─── */
-.p2p-chart-section {
+.p3p-chart-section {
   flex: 1;
   min-height: 0;
 }
 
 /* ─── FOOTER ─── */
-.p2p-footer {
+.p3p-footer {
   flex-shrink: 0;
   font-size: 0.68rem;
   color: #333;
@@ -589,7 +589,7 @@
 }
 
 /* ─── DISTRICT INFO PANEL ─── */
-.p2-district-panel {
+.p3-district-panel {
   position: absolute;
   top: 12px;
   right: 12px;
@@ -606,52 +606,52 @@
   pointer-events: none;
 }
 
-.p2-dp-header {
+.p3-dp-header {
   display: flex;
   align-items: baseline;
   gap: 8px;
   margin-bottom: 2px;
 }
 
-.p2-dp-zh {
+.p3-dp-zh {
   font-size: 1rem;
   font-weight: 700;
   color: #fff;
 }
 
-.p2-dp-en {
+.p3-dp-en {
   font-size: 0.7rem;
   color: #666;
 }
 
-.p2-dp-divider {
+.p3-dp-divider {
   height: 1px;
   background: rgba(255, 255, 255, 0.07);
   margin: 2px 0;
 }
 
-.p2-dp-row {
+.p3-dp-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
 }
 
-.p2-dp-label {
+.p3-dp-label {
   font-size: 0.68rem;
   color: #666;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.p2-dp-val {
+.p3-dp-val {
   font-size: 0.82rem;
   font-weight: 600;
   color: #ddd;
 }
 
 /* ─── MAP TOOLTIP ─── */
-.p2-map-tooltip {
+.p3-map-tooltip {
   position: absolute;
   z-index: 20;
   pointer-events: none;
@@ -663,7 +663,7 @@
   min-width: 160px;
 }
 
-.p2-tip-type {
+.p3-tip-type {
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -671,13 +671,13 @@
   margin-bottom: 4px;
 }
 
-.p2-tip-name {
+.p3-tip-name {
   font-size: 0.85rem;
   color: #ddd;
   margin-bottom: 4px;
 }
 
-.p2-tip-meta {
+.p3-tip-meta {
   font-size: 0.72rem;
   color: #666;
 }

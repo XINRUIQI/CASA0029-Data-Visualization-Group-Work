@@ -49,7 +49,7 @@ function hexColor(mode, d, highlight, tw) {
   return [80, 80, 80, 40];
 }
 
-export default function Page3FrictionMap({
+export default function Page2FrictionMap({
   barriers, activeBarriers, showBarriers, activeMode,
   h3Demand, h3Gap, routes, showRoutes, onHoverHex, highlightFilter,
   timeWeight = 1
