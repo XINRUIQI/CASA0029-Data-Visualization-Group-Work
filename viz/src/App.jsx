@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Page0Cover from './pages/Page0/Page0Cover';
 import Page1Landing from './pages/Page1 overview/Page1Landing';
-import Page2Sites from './pages/Page2 sites/Page2Sites';
+import Page2Friction from './pages/Page2 Point/Page2Friction';
 import Page3Entry from './pages/Page3 analysis/Page3Entry';
 import Page3FullMap from './pages/Page3 analysis/Page3FullMap';
 import Page4Demand from './pages/Page4/Page4Demand';
@@ -131,7 +131,7 @@ function MainNarrative() {
 
       <Page0Cover />
       <Page1Landing />
-      <Page2Sites />
+      <Page2Friction />
       <Page3Entry key={p3Key} />
       <Page4Demand />
       <Page5Strategy />

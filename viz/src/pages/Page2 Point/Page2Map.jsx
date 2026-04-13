@@ -1,0 +1,468 @@
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import Map, { Marker, Source, Layer } from 'react-map-gl/mapbox';
+import DeckGL from '@deck.gl/react';
+import { ArcLayer } from '@deck.gl/layers';
+import { WebMercatorViewport } from '@deck.gl/core';
+import { MAPBOX_TOKEN, POI_COLORS } from '../../config';
+import { PoiPinIcon } from './poiIcons';
+import 'mapbox-gl/dist/mapbox-gl.css';
+
+const INITIAL_VIEW = {
+  longitude: 114.19,
+  latitude: 22.63,
+  zoom: 9.5,
+  pitch: 0,
+  bearing: 0,
+};
+
+const ZONE_META = {
+  commercial: { hex: '#ffa028', label: 'Hub Site' },
+  last_mile:  { hex: '#c864ff', label: 'Last-mile Site' },
+};
+
+const DISTRICT_EN = {
+  '光明区': 'Guangming', '坪山区': 'Pingshan', '龙华区': 'Longhua',
+  '盐田区': 'Yantian',  '龙岗区': 'Longgang', '宝安区': "Bao'an",
+  '南山区': 'Nanshan',  '福田区': 'Futian',   '罗湖区': 'Luohu',
+};
+
+const DISTRICT_INFO = {
+  '福田区': { population: 153,  area: 78.7  },
+  '罗湖区': { population: 116,  area: 78.8  },
+  '南山区': { population: 188,  area: 187.5 },
+  '盐田区': { population: 24,   area: 74.6  },
+  '宝安区': { population: 420,  area: 397.9 },
+  '龙岗区': { population: 393,  area: 843.6 },
+  '龙华区': { population: 292,  area: 175.6 },
+  '坪山区': { population: 64,   area: 167.0 },
+  '光明区': { population: 100,  area: 156.1 },
+};
+
+function haversineKm(a, b) {
+  const R = 6371;
+  const toRad = x => x * Math.PI / 180;
+  const dLat = toRad(b[1] - a[1]);
+  const dLon = toRad(b[0] - a[0]);
+  const s = Math.sin(dLat / 2) ** 2
+    + Math.cos(toRad(a[1])) * Math.cos(toRad(b[1])) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+const FLIGHT_RADIUS_KM = 3;
+
+function getBbox(feature) {
+  const coords = [];
+  const g = feature.geometry;
+  if (g.type === 'Polygon') g.coordinates[0].forEach(c => coords.push(c));
+  else if (g.type === 'MultiPolygon') g.coordinates.forEach(p => p[0].forEach(c => coords.push(c)));
+  const lons = coords.map(c => c[0]);
+  const lats = coords.map(c => c[1]);
+  return [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)];
+}
+
+function PinIcon({ color, size = 18 }) {
+  return (
+    <svg viewBox="0 0 40 52" width={size} height={size * 1.3}
+      style={{ display: 'block', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}>
+      <path d="M20 0C8.954 0 0 8.954 0 20c0 13.333 20 32 20 32S40 33.333 40 20C40 8.954 31.046 0 20 0z" fill={color} />
+      <circle cx="20" cy="19" r="8" fill="white" opacity="0.9" />
+    </svg>
+  );
+}
+
+export default function Page2Map({ data, boundary, hexGrid, activeTab, compoundFilter, focusDistrict, districtStats, onDistrictFocus }) {
+  const [viewState, setViewState]           = useState(INITIAL_VIEW);
+  const [tooltip, setTooltip]               = useState(null);
+  const [districtPanel, setDistrictPanel]   = useState(null);
+  const [selectedHubIdx, setSelectedHubIdx] = useState(null);
+  const containerRef = useRef(null);
+  const mapRef       = useRef(null);
+  const viewStateRef = useRef(INITIAL_VIEW);
+
+  useEffect(() => {
+    setSelectedHubIdx(null);
+    if (activeTab === 3) {
+      setViewState(vs => ({ ...vs, pitch: 55, bearing: -20, transitionDuration: 1000 }));
+    } else {
+      setViewState(vs => ({ ...vs, pitch: 0, bearing: 0, transitionDuration: 600 }));
+    }
+    if (activeTab === 4 && hexGrid && containerRef.current) {
+      let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
+      hexGrid.features.forEach(f => {
+        f.geometry.coordinates[0].forEach(([lon, lat]) => {
+          if (lon < minLon) minLon = lon;
+          if (lat < minLat) minLat = lat;
+          if (lon > maxLon) maxLon = lon;
+          if (lat > maxLat) maxLat = lat;
+        });
+      });
+      const bbox = [minLon, minLat, maxLon, maxLat];
+      const { clientWidth: w, clientHeight: h } = containerRef.current;
+      const vp = new WebMercatorViewport({ width: w, height: h });
+      const { longitude, latitude, zoom } = vp.fitBounds(
+        [[bbox[0], bbox[1]], [bbox[2], bbox[3]]], { padding: 40 }
+      );
+      setViewState(vs => ({ ...vs, longitude, latitude, zoom, transitionDuration: 800 }));
+    }
+  }, [activeTab, hexGrid]);
+
+  // ── Tab 3 数据（必须在 handleDeckClick 之前声明）──
+  const tab3Data = useMemo(() => {
+    if (!data) return null;
+    const hubs = data.filter(d => d.zone_type === 'commercial');
+    const lms  = data.filter(d => d.zone_type === 'last_mile');
+    const connections = hubs.map(hub => ({
+      hub,
+      reachable: lms.filter(lm =>
+        haversineKm([hub.lon, hub.lat], [lm.lon, lm.lat]) <= FLIGHT_RADIUS_KM
+      ),
+    }));
+    return { hubs, lms, connections };
+  }, [data]);
+
+  const activeArcs = useMemo(() => {
+    if (selectedHubIdx === null || !tab3Data) return [];
+    const { hub, reachable } = tab3Data.connections[selectedHubIdx];
+    return reachable.map(lm => ({ src: [hub.lon, hub.lat], tgt: [lm.lon, lm.lat] }));
+  }, [selectedHubIdx, tab3Data]);
+
+  const reachableSet = useMemo(() => {
+    if (selectedHubIdx === null || !tab3Data) return null;
+    return new Set(tab3Data.connections[selectedHubIdx].reachable);
+  }, [selectedHubIdx, tab3Data]);
+
+  // ── 事件处理 ──
+  const handleViewStateChange = useCallback(({ viewState: vs, interactionState }) => {
+    setViewState(vs);
+    viewStateRef.current = vs;
+    if (interactionState && !interactionState.inTransition &&
+        (interactionState.isPanning || interactionState.isZooming ||
+         interactionState.isRotating || interactionState.isDragging)) {
+      setDistrictPanel(null);
+      onDistrictFocus?.(null);
+    }
+  }, [onDistrictFocus]);
+
+  useEffect(() => {
+    if (!focusDistrict?.bbox || !containerRef.current) return;
+    const { clientWidth: width, clientHeight: height } = containerRef.current;
+    const [minLon, minLat, maxLon, maxLat] = focusDistrict.bbox;
+    const vp = new WebMercatorViewport({ width, height });
+    const { longitude, latitude, zoom } = vp.fitBounds(
+      [[minLon, minLat], [maxLon, maxLat]], { padding: 40 }
+    );
+    setViewState(vs => ({ ...vs, longitude, latitude, zoom, transitionDuration: 800 }));
+    const featureName = focusDistrict.featureName;
+    const enName   = DISTRICT_EN[featureName] || featureName;
+    const distInfo = DISTRICT_INFO[featureName] || {};
+    const stats    = districtStats?.find(d => d.name === enName) || {};
+    setDistrictPanel({
+      zhName: featureName, enName,
+      population: distInfo.population, area: distInfo.area,
+      commercial: stats.commercial ?? 0,
+      last_mile:  stats.last_mile  ?? 0,
+    });
+  }, [focusDistrict, districtStats]);
+
+  const handleDeckClick = useCallback((info) => {
+    // Tab 3：像素距离检测 hub
+    if (activeTab === 3 && tab3Data && containerRef.current) {
+      const { clientWidth: w, clientHeight: h } = containerRef.current;
+      const vp = new WebMercatorViewport({ ...viewStateRef.current, width: w, height: h });
+      const HIT_RADIUS = 22;
+      let nearest = null, nearestDist = Infinity;
+      tab3Data.hubs.forEach((hub, i) => {
+        const [px, py] = vp.project([hub.lon, hub.lat]);
+        const d = Math.sqrt((px - info.x) ** 2 + (py - info.y) ** 2);
+        if (d < HIT_RADIUS && d < nearestDist) { nearestDist = d; nearest = i; }
+      });
+      if (nearest !== null) {
+        const isDeselecting = selectedHubIdx === nearest;
+        setSelectedHubIdx(isDeselecting ? null : nearest);
+        if (!isDeselecting) {
+          const { hub, reachable } = tab3Data.connections[nearest];
+          const allPts = [hub, ...reachable];
+          const lons = allPts.map(p => p.lon);
+          const lats = allPts.map(p => p.lat);
+          const bbox = [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)];
+          const { clientWidth: w, clientHeight: h } = containerRef.current;
+          const vp = new WebMercatorViewport({ ...viewStateRef.current, width: w, height: h });
+          const { longitude, latitude, zoom } = vp.fitBounds(
+            [[bbox[0], bbox[1]], [bbox[2], bbox[3]]], { padding: 60 }
+          );
+          setViewState(vs => ({ ...vs, longitude, latitude, zoom, transitionDuration: 700 }));
+        }
+        return;
+      }
+    }
+
+    // 行政区检测
+    const map = mapRef.current?.getMap?.();
+    if (!map) return;
+    const features = map.queryRenderedFeatures([info.x, info.y], { layers: ['sz-boundary-fill'] });
+    if (!features || features.length === 0) {
+      setTooltip(null);
+      setDistrictPanel(null);
+      return;
+    }
+    const featureName = features[0].properties.name;
+    const feature = boundary?.features?.find(f => f.properties.name === featureName);
+    if (!feature) return;
+    const bbox = getBbox(feature);
+    if (containerRef.current) {
+      const { clientWidth: width, clientHeight: height } = containerRef.current;
+      const vp = new WebMercatorViewport({ width, height });
+      const { longitude, latitude, zoom } = vp.fitBounds(
+        [[bbox[0], bbox[1]], [bbox[2], bbox[3]]], { padding: 40 }
+      );
+      setViewState(vs => ({ ...vs, longitude, latitude, zoom, transitionDuration: 800 }));
+    }
+    onDistrictFocus?.({ featureName, bbox });
+    const enName   = DISTRICT_EN[featureName] || featureName;
+    const distInfo = DISTRICT_INFO[featureName] || {};
+    const stats    = districtStats?.find(d => d.name === enName) || {};
+    setDistrictPanel({
+      zhName: featureName, enName,
+      population: distInfo.population, area: distInfo.area,
+      commercial: stats.commercial ?? 0,
+      last_mile:  stats.last_mile  ?? 0,
+    });
+  }, [activeTab, tab3Data, districtStats, onDistrictFocus]);
+
+  // ── DeckGL 图层 ──
+  const deckLayers = useMemo(() => {
+    const layers = [];
+
+    if (activeTab === 3 && activeArcs.length > 0) {
+      const arcProps = {
+        data: activeArcs,
+        getSourcePosition: d => d.src,
+        getTargetPosition: d => d.tgt,
+        getHeight: 0.7,
+        greatCircle: false,
+      };
+      layers.push(new ArcLayer({ ...arcProps, id: 'arc-glow',
+        getSourceColor: [255, 230, 80, 15], getTargetColor: [120, 220, 255, 15],
+        getWidth: 8, widthMinPixels: 4 }));
+      layers.push(new ArcLayer({ ...arcProps, id: 'arc-mid',
+        getSourceColor: [255, 220, 60, 55], getTargetColor: [100, 200, 255, 55],
+        getWidth: 2.5, widthMinPixels: 1.5 }));
+      layers.push(new ArcLayer({ ...arcProps, id: 'arc-core',
+        getSourceColor: [255, 245, 160, 255], getTargetColor: [180, 240, 255, 255],
+        getWidth: 0.7, widthMinPixels: 0.7 }));
+    }
+
+    return layers;
+  }, [activeTab, activeArcs, data, selectedHubIdx]);
+
+  const highlightFeatures = useMemo(() => ({
+    type: 'FeatureCollection',
+    features: focusDistrict?.featureName && boundary
+      ? boundary.features.filter(f => f.properties.name === focusDistrict.featureName)
+      : [],
+  }), [focusDistrict, boundary]);
+
+  return (
+    <div ref={containerRef} style={{ position: 'absolute', inset: 0 }}>
+      <DeckGL
+        viewState={viewState}
+        onViewStateChange={handleViewStateChange}
+        controller={true}
+        layers={deckLayers}
+        style={{ position: 'absolute', inset: 0 }}
+        onClick={handleDeckClick}
+      >
+        <Map
+          ref={mapRef}
+          mapboxAccessToken={MAPBOX_TOKEN}
+          mapStyle="mapbox://styles/mapbox/dark-v11"
+          projection="mercator"
+          style={{ width: '100%', height: '100%' }}
+        >
+          {/* Tab 3：3D 建筑 */}
+          {activeTab === 3 && (
+            <Layer id="3d-buildings" type="fill-extrusion" source="composite" source-layer="building"
+              filter={['==', 'extrude', 'true']}
+              minzoom={12}
+              paint={{
+                'fill-extrusion-color': '#1a1a2e',
+                'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 12, 0, 15, ['get', 'height']],
+                'fill-extrusion-base': ['interpolate', ['linear'], ['zoom'], 12, 0, 15, ['get', 'min_height']],
+                'fill-extrusion-opacity': 0.7,
+              }}
+            />
+          )}
+
+
+          {boundary && <Source id="sz-boundary" type="geojson" data={boundary}>
+            <Layer id="sz-boundary-fill" type="fill" paint={{ 'fill-color': '#ffffff', 'fill-opacity': 0.03 }} />
+            <Layer id="sz-boundary-line" type="line"
+              paint={{ 'line-color': 'rgba(200,200,210,0.6)', 'line-width': 1, 'line-dasharray': [6, 4] }} />
+          </Source>}
+
+          <Source id="sz-highlight" type="geojson" data={highlightFeatures}>
+            <Layer id="sz-district-highlight" type="fill" beforeId="sz-boundary-line"
+              paint={{ 'fill-color': '#000000', 'fill-opacity': 0.45 }} />
+            <Layer id="sz-district-highlight-border" type="line"
+              paint={{ 'line-color': 'rgba(220,220,230,0.9)', 'line-width': 1.5 }} />
+          </Source>
+
+          {/* Tab 1 */}
+          {activeTab === 1 && data?.map((d, i) => (
+            <Marker key={i} longitude={d.lon} latitude={d.lat} anchor="bottom"
+              onClick={e => { e.originalEvent.stopPropagation(); setTooltip(tooltip?.i === i ? null : { ...d, i }); }}>
+              <PinIcon color={ZONE_META[d.zone_type]?.hex || '#888'} />
+            </Marker>
+          ))}
+
+          {/* Tab 3：last-mile */}
+          {activeTab === 3 && tab3Data?.lms.map((d, i) => {
+            const isReachable = reachableSet ? reachableSet.has(d) : false;
+            if (selectedHubIdx !== null && !isReachable) return null;
+            return (
+              <Marker key={`lm${i}`} longitude={d.lon} latitude={d.lat} anchor="bottom">
+                <div style={{ pointerEvents: 'none', opacity: selectedHubIdx === null ? 0.5 : 1 }}>
+                  <PinIcon color={selectedHubIdx === null ? '#606070' : '#c864ff'} size={14} />
+                </div>
+              </Marker>
+            );
+          })}
+          {/* Tab 3：hub */}
+          {activeTab === 3 && tab3Data?.hubs.map((d, i) => {
+            const isSelected = selectedHubIdx === i;
+            const isDimmed   = selectedHubIdx !== null && !isSelected;
+            return (
+              <Marker key={`h${i}`} longitude={d.lon} latitude={d.lat} anchor="bottom">
+                <div style={{
+                  transform: isSelected ? 'scale(1.25)' : 'scale(1)',
+                  transition: 'all 0.2s',
+                  cursor: 'pointer',
+                  pointerEvents: 'none',
+                  opacity: isDimmed ? 0.35 : 1,
+                }}>
+                  <PinIcon color="#ffa028" size={18} />
+                </div>
+              </Marker>
+            );
+          })}
+
+          {/* Tab 4：Hex Grid（Mapbox 原生，在 marker 下面）*/}
+          {activeTab === 4 && hexGrid && (
+            <Source id="hex-grid" type="geojson" data={hexGrid}>
+              <Layer id="hex-grid-fill" type="fill"
+                paint={{
+                  'fill-color': [
+                    'step', ['get', 'coverage_ratio'],
+                    '#111118',    // 0  — 无覆盖
+                    0.001, '#0d3060',  // 极低
+                    50,   '#0a5a8a',   // 低
+                    100,  '#0b7a6a',   // 中低
+                    200,  '#1a9640',   // 中
+                    400,  '#c8a200',   // 中高
+                    800,  '#d04800',   // 高
+                    1500, '#b50000',   // 极高
+                  ],
+                  'fill-opacity': [
+                    'step', ['get', 'coverage_ratio'],
+                    0.12,
+                    0.001, 0.55,
+                    50,   0.65,
+                    100,  0.70,
+                    200,  0.75,
+                    400,  0.82,
+                    800,  0.88,
+                    1500, 0.92,
+                  ],
+                }}
+              />
+              <Layer id="hex-grid-line" type="line"
+                paint={{ 'line-color': '#ffffff', 'line-width': 0.4, 'line-opacity': 0.15 }} />
+            </Source>
+          )}
+
+          {/* Tab 4：起降点水滴图标 */}
+          {activeTab === 4 && data?.map((d, i) => (
+            <Marker key={`v${i}`} longitude={d.lon} latitude={d.lat} anchor="bottom"
+              style={{ zIndex: 10 }}>
+              <div style={{ pointerEvents: 'none' }}>
+                <PinIcon color="#e03030" size={14} />
+              </div>
+            </Marker>
+          ))}
+
+          {/* Tab 2 */}
+          {activeTab === 2 && data?.map((d, i) => {
+            const isActive = compoundFilter === 'all' || compoundFilter === d.dominant_poi;
+            return (
+              <Marker key={i} longitude={d.lon} latitude={d.lat} anchor="bottom"
+                onClick={e => { e.originalEvent.stopPropagation(); setTooltip(tooltip?.i === i ? null : { ...d, i }); }}>
+                <div style={{ opacity: isActive ? 1 : 0.15, transition: 'opacity 0.2s' }}>
+                  <PoiPinIcon type={d.dominant_poi} size={20} />
+                </div>
+              </Marker>
+            );
+          })}
+
+        </Map>
+      </DeckGL>
+
+      {/* Tooltip */}
+      {tooltip && (activeTab === 1 || activeTab === 2) && (
+        <div className="p2-map-tooltip" style={{ left: '50%', top: 12, transform: 'translateX(-50%)' }}>
+          {activeTab === 1 && (
+            <div className="p2-tip-type" style={{ color: ZONE_META[tooltip.zone_type]?.hex }}>
+              {ZONE_META[tooltip.zone_type]?.label}
+            </div>
+          )}
+          {activeTab === 2 && (
+            <div className="p2-tip-type" style={{ color: POI_COLORS[tooltip.dominant_poi]?.hex }}>
+              {POI_COLORS[tooltip.dominant_poi]?.label}
+            </div>
+          )}
+          {tooltip.nearest_compound && <div className="p2-tip-name">{tooltip.nearest_compound}</div>}
+          <div className="p2-tip-meta">{tooltip.dominant_poi} · {tooltip.distance_m}m</div>
+        </div>
+      )}
+
+      {/* 行政区信息 panel */}
+      {districtPanel && (
+        <div className="p2-district-panel">
+          <div className="p2-dp-header">
+            <span className="p2-dp-zh">{districtPanel.enName}</span>
+            <span className="p2-dp-en">District</span>
+          </div>
+          <div className="p2-dp-divider" />
+          <div className="p2-dp-row">
+            <span className="p2-dp-label">Population</span>
+            <span className="p2-dp-val">{districtPanel.population} 万</span>
+          </div>
+          <div className="p2-dp-row">
+            <span className="p2-dp-label">Area</span>
+            <span className="p2-dp-val">{districtPanel.area} km²</span>
+          </div>
+          <div className="p2-dp-row">
+            <span className="p2-dp-label">Density</span>
+            <span className="p2-dp-val">
+              {districtPanel.population && districtPanel.area
+                ? Math.round(districtPanel.population * 10000 / districtPanel.area).toLocaleString()
+                : '—'} /km²
+            </span>
+          </div>
+          <div className="p2-dp-divider" />
+          <div className="p2-dp-row">
+            <span className="p2-dp-label">Total Sites</span>
+            <span className="p2-dp-val">{districtPanel.commercial + districtPanel.last_mile}</span>
+          </div>
+          <div className="p2-dp-row">
+            <span className="p2-dp-label" style={{ color: '#ffa028' }}>Hub</span>
+            <span className="p2-dp-val">{districtPanel.commercial}</span>
+          </div>
+          <div className="p2-dp-row">
+            <span className="p2-dp-label" style={{ color: '#c864ff' }}>Last-mile</span>
+            <span className="p2-dp-val">{districtPanel.last_mile}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

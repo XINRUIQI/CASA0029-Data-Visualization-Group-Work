@@ -20,11 +20,23 @@ export function publicDataUrl(relativePath) {
   const base = import.meta.env.BASE_URL ?? '/';
   return `${base}${path}`;
 }
+export const POI_COLORS = {
+  retail:    { hex: '#ff6b6b', label: 'Retail' },
+  food:      { hex: '#ffa028', label: 'Food' },
+  service:   { hex: '#ffdd57', label: 'Service' },
+  office:    { hex: '#48dbfb', label: 'Office' },
+  education: { hex: '#64c8ff', label: 'Education' },
+  leisure:   { hex: '#00e896', label: 'Leisure' },
+  scenic:    { hex: '#c864ff', label: 'Scenic' },
+  medical:   { hex: '#ff85a1', label: 'Medical' },
+};
+
 
 export const PAGE_TITLES = [
   'Where do drones enter the city?',
   'Where are the drone sites now?',
   'What makes ground delivery hard?',
+  'How do drones fly?',
   'Where is demand highest?',
   'Where should we build?',
   'What have we learned?',
