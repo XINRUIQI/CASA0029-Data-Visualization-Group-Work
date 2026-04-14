@@ -36,7 +36,7 @@ jobs:
       - name: Install & build
         working-directory: viz
         run: |
-          npm ci
+          npm install --no-audit --no-fund
           npm run build
 
       - name: Upload artifact
