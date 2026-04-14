@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 
-const PARTICLE_COUNT = 4000;
+const PARTICLE_COUNT = 10000;
 const PHASE_BURST = 1000;
 const PHASE_RETREAT = 900;
 const PHASE_BLACK = 300;
