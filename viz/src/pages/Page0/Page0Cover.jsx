@@ -3,6 +3,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import DroneParticles from './DroneParticles';
 import EnterTransition from './EnterTransition';
+import IntroOverlay from './IntroOverlay';
 import './Page0.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -64,6 +65,11 @@ export default function Page0Cover() {
   const [activeInfo, setActiveInfo] = useState(null);
   const [transitioning, setTransitioning] = useState(false);
   const [spawnPoints, setSpawnPoints] = useState(null);
+  const [introDone, setIntroDone] = useState(false);
+
+  const handleIntroDone = useCallback(() => {
+    setIntroDone(true);
+  }, []);
 
   const handleEnter = useCallback(() => {
     const positions = droneRef.current?.getPositions?.() || [];
@@ -122,8 +128,10 @@ export default function Page0Cover() {
     };
   }, []);
 
-  /* ── GSAP entrance animations ── */
+  /* ── GSAP entrance animations (wait for intro) ── */
   useEffect(() => {
+    if (!introDone) return;
+
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
 
@@ -132,35 +140,34 @@ export default function Page0Cover() {
           opacity: 0,
           duration: 0.8,
           ease: 'power4.out',
-        }, 0.4)
+        }, 0.1)
         .from('.p0-word-bold', {
           x: 60,
           opacity: 0,
           duration: 0.8,
           ease: 'power4.out',
-        }, 0.55)
-        .from('.p0-deco-dots', { opacity: 0, x: 20, duration: 0.6 }, 1.0)
+        }, 0.25)
+        .from('.p0-deco-dots', { opacity: 0, x: 20, duration: 0.6 }, 0.7)
         .from('.p0-sub-light', {
           y: 30,
           opacity: 0,
           duration: 0.7,
-        }, 1.1)
+        }, 0.8)
         .from('.p0-sub-boxed', {
           scaleX: 0,
           opacity: 0,
           duration: 0.6,
           ease: 'back.out(1.7)',
-        }, 1.4)
-        .from('.p0-deco-squares', { opacity: 0, x: 15, duration: 0.5 }, 1.6)
+        }, 1.1)
+        .from('.p0-deco-squares', { opacity: 0, x: 15, duration: 0.5 }, 1.3)
         .from('.p0-sidebar-btn', {
           x: -30,
           opacity: 0,
           duration: 0.5,
           stagger: 0.12,
-        }, 1.2)
-        .from('.p0-scroll-hint', { opacity: 0, duration: 0.6 }, 2.0);
+        }, 0.9)
+        .from('.p0-scroll-hint', { opacity: 0, duration: 0.6 }, 1.6);
 
-      /* ── ScrollTrigger: parallax + fade on scroll ── */
       gsap.to('.p0-hero-content', {
         y: -80,
         opacity: 0,
@@ -187,7 +194,7 @@ export default function Page0Cover() {
     }, sectionRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [introDone]);
 
   return (
     <section id="page-0" className="page page-0" ref={sectionRef}>
@@ -245,8 +252,11 @@ export default function Page0Cover() {
         </div>
       )}
 
+      {/* ── intro mask overlay ── */}
+      {!introDone && <IntroOverlay onComplete={handleIntroDone} />}
+
       {/* ── hero content ── */}
-      <div className="p0-hero-content" ref={heroContentRef}>
+      <div className={`p0-hero-content ${introDone ? '' : 'p0-hidden'}`} ref={heroContentRef}>
         <h1 className="p0-title">
           <span className="p0-title-big">
             <span className="p0-word-light">Delivery,</span>

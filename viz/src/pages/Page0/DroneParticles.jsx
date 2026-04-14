@@ -149,8 +149,8 @@ const DroneParticles = forwardRef(function DroneParticles({ exploding }, ref) {
       particles = targets.map((t, i) => {
         const prev = particles[i];
         return {
-          x: prev ? prev.x : cx + (Math.random() - 0.5) * w,
-          y: prev ? prev.y : cy + (Math.random() - 0.5) * h,
+          x: prev ? prev.x : t.x,
+          y: prev ? prev.y : t.y,
           tx: t.x,
           ty: t.y,
           layer: t.layer,
