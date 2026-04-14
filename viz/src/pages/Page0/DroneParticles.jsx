@@ -1,10 +1,4 @@
-import { useEffect, useRef } from 'react';
-
-/*
- * Canvas particle system — particles converge into a top-down
- * quadcopter silhouette. Propeller particles orbit their hub,
- * body particles are larger/denser, and mouse proximity scatters them.
- */
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 
 const PARTICLE_COUNT = 1000;
 const CONNECT_DIST = 55;
@@ -96,10 +90,37 @@ function generateDroneTargets(cx, cy, scale, count) {
   return pts;
 }
 
-export default function DroneParticles() {
+const DroneParticles = forwardRef(function DroneParticles({ exploding }, ref) {
   const canvasRef = useRef(null);
   const mouse = useRef({ x: -9999, y: -9999 });
   const animRef = useRef(null);
+  const particlesRef = useRef([]);
+  const explodeRef = useRef(false);
+  const explodeStartRef = useRef(null);
+
+  useImperativeHandle(ref, () => ({
+    getPositions() {
+      return particlesRef.current.map(p => ({ x: p.x, y: p.y }));
+    },
+  }));
+
+  useEffect(() => {
+    if (exploding && !explodeRef.current) {
+      explodeRef.current = true;
+      explodeStartRef.current = performance.now();
+      const particles = particlesRef.current;
+      for (const p of particles) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 6 + Math.random() * 12;
+        p.evx = Math.cos(angle) * speed + (Math.random() - 0.5) * 4;
+        p.evy = Math.sin(angle) * speed + (Math.random() - 0.5) * 4;
+      }
+    }
+    if (!exploding) {
+      explodeRef.current = false;
+      explodeStartRef.current = null;
+    }
+  }, [exploding]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -151,6 +172,7 @@ export default function DroneParticles() {
           phase: Math.random() * Math.PI * 2,
         };
       });
+      particlesRef.current = particles;
     };
 
     const onMouseMove = (e) => {
@@ -163,96 +185,120 @@ export default function DroneParticles() {
       mouse.current.y = -9999;
     };
 
+    const EXPLODE_DURATION = 1200;
+
     const draw = (time) => {
       ctx.clearRect(0, 0, w, h);
       const t = time * 0.001;
       const mx = mouse.current.x;
       const my = mouse.current.y;
+      const isExploding = explodeRef.current;
+      const explodeElapsed = isExploding && explodeStartRef.current
+        ? time - explodeStartRef.current
+        : 0;
+      const explodeProgress = Math.min(explodeElapsed / EXPLODE_DURATION, 1);
 
-      // propeller spin speed (radians per second)
       const spinSpeed = 2.5;
 
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
 
-        let goalX, goalY;
+        if (isExploding) {
+          p.evx = (p.evx || 0) * 0.98;
+          p.evy = (p.evy || 0) * 0.98;
+          p.x += p.evx || 0;
+          p.y += p.evy || 0;
 
-        if (p.layer === 'prop') {
-          // propellers orbit around their hub
-          const angle = p.hubAngle + t * spinSpeed;
-          goalX = p.hubCx + Math.cos(angle) * p.orbitR;
-          goalY = p.hubCy + Math.sin(angle) * p.orbitR;
-        } else {
-          const floatX = Math.sin(t * 1.5 + p.phase) * 2;
-          const floatY = Math.cos(t * 1.2 + p.phase * 1.3) * 2;
-          goalX = p.tx + floatX;
-          goalY = p.ty + floatY;
-        }
+          const fadeAlpha = p.alpha * (1 - explodeProgress);
+          if (fadeAlpha <= 0.01) continue;
 
-        // mouse repulsion
-        const dx = p.x - mx;
-        const dy = p.y - my;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < MOUSE_RADIUS && dist > 0) {
-          const force = (1 - dist / MOUSE_RADIUS) * 9;
-          p.vx += (dx / dist) * force;
-          p.vy += (dy / dist) * force;
-        }
+          const sz = p.size * (1 - explodeProgress * 0.7);
+          const twinkle = 0.75 + 0.25 * Math.sin(t * 3 + p.phase);
+          const a = fadeAlpha * twinkle;
 
-        // spring toward target
-        const stiffness = p.layer === 'prop' ? 0.06 : 0.035;
-        p.vx += (goalX - p.x) * stiffness;
-        p.vy += (goalY - p.y) * stiffness;
+          let color;
+          if (p.layer === 'body') color = `rgba(100, 200, 255, ${a})`;
+          else if (p.layer === 'arm') color = `rgba(80, 180, 240, ${a * 0.9})`;
+          else if (p.layer === 'prop') color = `rgba(0, 232, 150, ${a * 0.75})`;
+          else color = `rgba(100, 200, 255, ${a * 0.35})`;
 
-        // damping
-        p.vx *= 0.86;
-        p.vy *= 0.86;
-        p.x += p.vx;
-        p.y += p.vy;
-
-        // twinkle
-        const twinkle = 0.75 + 0.25 * Math.sin(t * 3 + p.phase);
-        const a = p.alpha * twinkle;
-
-        let color;
-        if (p.layer === 'body') color = `rgba(100, 200, 255, ${a})`;
-        else if (p.layer === 'arm') color = `rgba(80, 180, 240, ${a * 0.9})`;
-        else if (p.layer === 'prop') color = `rgba(0, 232, 150, ${a * 0.75})`;
-        else color = `rgba(100, 200, 255, ${a * 0.35})`;
-
-        // glow for non-ambient
-        if (p.layer !== 'ambient') {
           ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size * 3.5, 0, Math.PI * 2);
-          ctx.fillStyle = color.replace(/[\d.]+\)$/, `${a * 0.1})`);
+          ctx.arc(p.x, p.y, sz, 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.fill();
+        } else {
+          let goalX, goalY;
+
+          if (p.layer === 'prop') {
+            const angle = p.hubAngle + t * spinSpeed;
+            goalX = p.hubCx + Math.cos(angle) * p.orbitR;
+            goalY = p.hubCy + Math.sin(angle) * p.orbitR;
+          } else {
+            const floatX = Math.sin(t * 1.5 + p.phase) * 2;
+            const floatY = Math.cos(t * 1.2 + p.phase * 1.3) * 2;
+            goalX = p.tx + floatX;
+            goalY = p.ty + floatY;
+          }
+
+          const dx = p.x - mx;
+          const dy = p.y - my;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < MOUSE_RADIUS && dist > 0) {
+            const force = (1 - dist / MOUSE_RADIUS) * 9;
+            p.vx += (dx / dist) * force;
+            p.vy += (dy / dist) * force;
+          }
+
+          const stiffness = p.layer === 'prop' ? 0.06 : 0.035;
+          p.vx += (goalX - p.x) * stiffness;
+          p.vy += (goalY - p.y) * stiffness;
+          p.vx *= 0.86;
+          p.vy *= 0.86;
+          p.x += p.vx;
+          p.y += p.vy;
+
+          const twinkle = 0.75 + 0.25 * Math.sin(t * 3 + p.phase);
+          const a = p.alpha * twinkle;
+
+          let color;
+          if (p.layer === 'body') color = `rgba(100, 200, 255, ${a})`;
+          else if (p.layer === 'arm') color = `rgba(80, 180, 240, ${a * 0.9})`;
+          else if (p.layer === 'prop') color = `rgba(0, 232, 150, ${a * 0.75})`;
+          else color = `rgba(100, 200, 255, ${a * 0.35})`;
+
+          if (p.layer !== 'ambient') {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 3.5, 0, Math.PI * 2);
+            ctx.fillStyle = color.replace(/[\d.]+\)$/, `${a * 0.1})`);
+            ctx.fill();
+          }
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = color;
           ctx.fill();
         }
-
-        // particle dot
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = color;
-        ctx.fill();
       }
 
-      // connection lines (body + arm only)
-      ctx.lineWidth = 0.5;
-      for (let i = 0; i < particles.length; i++) {
-        const a = particles[i];
-        if (a.layer !== 'body' && a.layer !== 'arm') continue;
-        for (let j = i + 1; j < particles.length; j++) {
-          const b = particles[j];
-          if (b.layer !== 'body' && b.layer !== 'arm') continue;
-          const dx = a.x - b.x;
-          const dy = a.y - b.y;
-          const d2 = dx * dx + dy * dy;
-          if (d2 < CONNECT_DIST * CONNECT_DIST) {
-            const alpha = (1 - Math.sqrt(d2) / CONNECT_DIST) * 0.15;
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
-            ctx.strokeStyle = `rgba(100, 200, 255, ${alpha})`;
-            ctx.stroke();
+      if (!isExploding) {
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i < particles.length; i++) {
+          const a = particles[i];
+          if (a.layer !== 'body' && a.layer !== 'arm') continue;
+          for (let j = i + 1; j < particles.length; j++) {
+            const b = particles[j];
+            if (b.layer !== 'body' && b.layer !== 'arm') continue;
+            const dx = a.x - b.x;
+            const dy = a.y - b.y;
+            const d2 = dx * dx + dy * dy;
+            if (d2 < CONNECT_DIST * CONNECT_DIST) {
+              const alpha = (1 - Math.sqrt(d2) / CONNECT_DIST) * 0.15;
+              ctx.beginPath();
+              ctx.moveTo(a.x, a.y);
+              ctx.lineTo(b.x, b.y);
+              ctx.strokeStyle = `rgba(100, 200, 255, ${alpha})`;
+              ctx.stroke();
+            }
           }
         }
       }
@@ -275,4 +321,6 @@ export default function DroneParticles() {
   }, []);
 
   return <canvas ref={canvasRef} className="p0-particles-canvas" />;
-}
+});
+
+export default DroneParticles;

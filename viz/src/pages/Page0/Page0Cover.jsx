@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import DroneParticles from './DroneParticles';
+import EnterTransition from './EnterTransition';
 import './Page0.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -59,7 +60,21 @@ export default function Page0Cover() {
   const cursorRef = useRef(null);
   const cursorDotRef = useRef(null);
   const heroContentRef = useRef(null);
+  const droneRef = useRef(null);
   const [activeInfo, setActiveInfo] = useState(null);
+  const [transitioning, setTransitioning] = useState(false);
+  const [spawnPoints, setSpawnPoints] = useState(null);
+
+  const handleEnter = useCallback(() => {
+    const positions = droneRef.current?.getPositions?.() || [];
+    setSpawnPoints(positions);
+    setTransitioning(true);
+  }, []);
+
+  const handleTransitionComplete = useCallback(() => {
+    setTransitioning(false);
+    document.getElementById('page-1')?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
 
   /* ── custom cursor ── */
   useEffect(() => {
@@ -112,26 +127,31 @@ export default function Page0Cover() {
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
 
-      tl.from('.p0-char-small', {
+      tl.from('.p0-word-light', {
+          x: -60,
+          opacity: 0,
+          duration: 0.8,
+          ease: 'power4.out',
+        }, 0.4)
+        .from('.p0-word-bold', {
+          x: 60,
+          opacity: 0,
+          duration: 0.8,
+          ease: 'power4.out',
+        }, 0.55)
+        .from('.p0-deco-dots', { opacity: 0, x: 20, duration: 0.6 }, 1.0)
+        .from('.p0-sub-light', {
           y: 30,
           opacity: 0,
-          rotateX: 90,
+          duration: 0.7,
+        }, 1.1)
+        .from('.p0-sub-boxed', {
+          scaleX: 0,
+          opacity: 0,
           duration: 0.6,
           ease: 'back.out(1.7)',
-          stagger: 0.02,
-        }, 0.4)
-        .from('.p0-title-big .p0-char', {
-          y: 80,
-          opacity: 0,
-          rotateX: 90,
-          scale: 0.5,
-          duration: 0.8,
-          ease: 'back.out(2)',
-          stagger: 0.03,
-        }, 0.7)
-        .from('.p0-divider', { scaleX: 0, opacity: 0, duration: 0.8 }, 1.4)
-        .from('.p0-subtitle', { y: 30, opacity: 0, duration: 0.8 }, 1.5)
-        .from('.p0-cta', { y: 20, opacity: 0, duration: 0.7 }, 1.7)
+        }, 1.4)
+        .from('.p0-deco-squares', { opacity: 0, x: 15, duration: 0.5 }, 1.6)
         .from('.p0-sidebar-btn', {
           x: -30,
           opacity: 0,
@@ -179,19 +199,7 @@ export default function Page0Cover() {
       />
       <div className="p0-cursor-dot" ref={cursorDotRef} />
 
-      {/* ── background layers ── */}
-      <div className="p0-bg-wrap">
-        <img
-          className="p0-bg-city"
-          src={`${import.meta.env.BASE_URL}city-aerial-bg.png`}
-          alt=""
-        />
-        <div className="p0-bg-overlay" />
-        <DroneParticles />
-        <div className="p0-bg-grain" />
-      </div>
-
-      {/* ── VIDEO VERSION (commented out — uncomment to switch) ──
+      {/* ── background layers: video + particles ── */}
       <div className="p0-bg-wrap">
         <video
           className="p0-bg-video"
@@ -204,9 +212,9 @@ export default function Page0Cover() {
           <source src={`${import.meta.env.BASE_URL}shenzhen-drone-bg.mp4`} type="video/mp4" />
         </video>
         <div className="p0-bg-overlay" />
+        <DroneParticles ref={droneRef} exploding={transitioning} />
         <div className="p0-bg-grain" />
       </div>
-      ── END VIDEO VERSION ── */}
 
       {/* ── sidebar info buttons ── */}
       <aside className="p0-sidebar">
@@ -240,44 +248,32 @@ export default function Page0Cover() {
       {/* ── hero content ── */}
       <div className="p0-hero-content" ref={heroContentRef}>
         <h1 className="p0-title">
-          <span className="p0-title-small">
-            <SplitChars text="When the sky becomes infrastructure" className="p0-char-small" />
-          </span>
           <span className="p0-title-big">
-            <SplitChars text="Drones " />
-            <SplitChars text="Reshape" className="p0-char-accent" />
-            <SplitChars text=" the City" />
+            <span className="p0-word-light">Delivery,</span>
+            {' '}
+            <span className="p0-word-bold p0-glitch" data-text="elevated!">elevated!</span>
+          </span>
+          <span className="p0-deco-dots" aria-hidden="true">
+            <span /><span /><span /><span />
           </span>
         </h1>
 
-        <div className="p0-divider" />
-
         <p className="p0-subtitle">
-          Shenzhen — China&rsquo;s pioneer in low-altitude economy
-          <br />
-          483 launch pads &middot; 250 routes &middot; 776 k cargo flights in 2024
+          <span className="p0-sub-light">Drone Delivery and the Rise of a New Urban Mobility System in</span>
+          {' '}
+          <span className="p0-sub-boxed">ShenZhen</span>
+          <span className="p0-deco-squares" aria-hidden="true">
+            <span /><span /><span />
+          </span>
         </p>
 
-        <a
-          href="#page-1"
-          className="p0-cta"
-          onClick={(e) => {
-            e.preventDefault();
-            document.getElementById('page-1')?.scrollIntoView({ behavior: 'smooth' });
-          }}
-        >
-          <span>Explore the story</span>
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <path
-              d="M9 3v12M4 10l5 5 5-5"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </a>
+        <button className={`p0-enter-btn ${transitioning ? 'p0-enter-hide' : ''}`} onClick={handleEnter}>
+          <span className="p0-enter-text">Enter</span>
+          <span className="p0-enter-ring" />
+        </button>
       </div>
+
+      <EnterTransition active={transitioning} spawnPoints={spawnPoints} onComplete={handleTransitionComplete} />
 
       {/* ── scroll hint ── */}
       <div className="p0-scroll-hint">
