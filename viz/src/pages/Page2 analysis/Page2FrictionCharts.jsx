@@ -18,7 +18,7 @@ function buildBins(values, binWidth) {
 }
 
 export default function Page2FrictionCharts({
-  activeMode, hoveredHex, h3Gap, odAnalysis, liveMetrics, onHighlight
+  activeMode, hoveredHex, h3Gap, h3Takeout, odAnalysis, liveMetrics, onHighlight
 }) {
   const scatterData = useMemo(() => {
     if (!h3Gap?.length) return [];
@@ -203,9 +203,81 @@ export default function Page2FrictionCharts({
 
   const [selectedHex, setSelectedHex] = useState(null);
 
+  const takeoutBins = useMemo(() => {
+    if (!h3Takeout?.length) return [];
+    const vals = h3Takeout.map(d => d.takeout_demand_index || 0).filter(v => v > 0);
+    return buildBins(vals, 0.05);
+  }, [h3Takeout]);
+
+  const coverageBins = useMemo(() => {
+    if (!h3Takeout?.length) return [];
+    return buildBins(h3Takeout.map(d => d.food_access_2km || 0).filter(v => v > 0), 200);
+  }, [h3Takeout]);
+
+  const takeoutComponents = useMemo(() => {
+    if (!h3Takeout?.length) return [];
+    const avg = (key) => {
+      const vals = h3Takeout.map(d => d[key] || 0);
+      const s = vals.reduce((a, b) => a + b, 0);
+      const mx = Math.max(...vals);
+      return mx > 0 ? +(s / vals.length / mx).toFixed(3) : 0;
+    };
+    return [
+      { axis: 'Real Orders', value: avg('real_order_count') },
+      { axis: 'Population', value: avg('pop_count') },
+      { axis: 'Residential', value: avg('residential_count') },
+      { axis: 'Xiaoqu', value: avg('xiaoqu_count') },
+      { axis: 'Food POI', value: avg('food_count') },
+      { axis: 'Access 2km', value: avg('food_access_2km') },
+    ];
+  }, [h3Takeout]);
+
+  const coverageStats = useMemo(() => {
+    if (!h3Takeout?.length) return null;
+    const total = h3Takeout.length;
+    const a1 = h3Takeout.filter(d => (d.food_access_1km || 0) > 0).length;
+    const a2 = h3Takeout.filter(d => (d.food_access_2km || 0) > 0).length;
+    const a3 = h3Takeout.filter(d => (d.food_access_3km || 0) > 0).length;
+    return [
+      { radius: '1 km', covered: a1, pct: +((a1 / total) * 100).toFixed(1), color: '#ff4500' },
+      { radius: '2 km', covered: a2, pct: +((a2 / total) * 100).toFixed(1), color: '#00c8ff' },
+      { radius: '3 km', covered: a3, pct: +((a3 / total) * 100).toFixed(1), color: '#00e896' },
+    ];
+  }, [h3Takeout]);
+
+  const topTakeout = useMemo(() => {
+    if (!h3Takeout?.length) return [];
+    return [...h3Takeout]
+      .sort((a, b) => (b.takeout_demand_index || 0) - (a.takeout_demand_index || 0))
+      .slice(0, 8)
+      .map((d, i) => ({
+        rank: i + 1,
+        h3: d.h3,
+        tdi: +(d.takeout_demand_index || 0).toFixed(3),
+        orders: d.real_order_count || 0,
+        pop: d.pop_count || 0,
+        food: d.food_count || 0,
+        access: d.food_access_2km || 0,
+      }));
+  }, [h3Takeout]);
+
+  const orderVsProxy = useMemo(() => {
+    if (!h3Takeout?.length) return [];
+    return h3Takeout
+      .filter(d => (d.real_order_count || 0) > 0)
+      .map(d => ({
+        orders: d.real_order_count || 0,
+        pop: +(d.pop_count || 0).toFixed(0),
+        food: d.food_count || 0,
+        tdi: +(d.takeout_demand_index || 0).toFixed(3),
+      }));
+  }, [h3Takeout]);
+
   const isDemand = activeMode === 'demand';
   const isFriction = activeMode === 'friction';
   const isOverlap = activeMode === 'overlap';
+  const isTakeout = activeMode === 'takeout';
+  const isCoverage = activeMode === 'coverage';
 
   return (
     <div className="p2c">
@@ -447,6 +519,147 @@ export default function Page2FrictionCharts({
               <p className="p2c-note">
                 Each delivery crosses ~{barrierCrossings.reduce((s, b) => s + b.avg, 0).toFixed(1)} barriers on average.
               </p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Takeout mode charts */}
+      {isTakeout && (
+        <>
+          {takeoutBins.length > 0 && (
+            <div className="p2c-section">
+              <h4>Takeout Demand Distribution</h4>
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={takeoutBins} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
+                  <XAxis dataKey="range" tick={{ fill: '#666', fontSize: 9 }} />
+                  <YAxis tick={{ fill: '#555', fontSize: 9 }} />
+                  <Tooltip contentStyle={TT_STYLE}
+                    formatter={(v) => [v, 'Hexagons']}
+                    labelFormatter={(l) => `Index ${l}`}
+                  />
+                  <Bar dataKey="count" fill="#ff4500" fillOpacity={0.7} radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+              <p className="p2c-note">
+                Fused: real orders (35%) + population (25%) + xiaoqu (15%) + food POI (15%) + residential (10%)
+              </p>
+            </div>
+          )}
+
+          {takeoutComponents.length > 0 && (
+            <div className="p2c-section">
+              <h4>Demand Components</h4>
+              <ResponsiveContainer width="100%" height={180}>
+                <RadarChart data={takeoutComponents} cx="50%" cy="50%" outerRadius="70%">
+                  <PolarGrid stroke="#2a2a4a" />
+                  <PolarAngleAxis dataKey="axis" tick={{ fill: '#888', fontSize: 10 }} />
+                  <PolarRadiusAxis tick={false} axisLine={false} domain={[0, 1]} />
+                  <Radar dataKey="value" stroke="#ff4500" fill="#ff4500" fillOpacity={0.25} strokeWidth={2} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {orderVsProxy.length > 0 && (
+            <div className="p2c-section">
+              <h4>Real Orders vs Population</h4>
+              <ResponsiveContainer width="100%" height={180}>
+                <ScatterChart margin={{ left: 5, right: 10, top: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e2040" />
+                  <XAxis dataKey="pop" type="number" name="Population"
+                    tick={{ fill: '#666', fontSize: 9 }} axisLine={{ stroke: '#2a2a4a' }}
+                    label={{ value: 'Population', position: 'bottom', fill: '#555', fontSize: 10, offset: -2 }}
+                  />
+                  <YAxis dataKey="orders" type="number" name="Orders"
+                    tick={{ fill: '#666', fontSize: 9 }} axisLine={{ stroke: '#2a2a4a' }}
+                    label={{ value: 'Real Orders', angle: -90, position: 'insideLeft', fill: '#555', fontSize: 10 }}
+                  />
+                  <ZAxis range={[8, 8]} />
+                  <Tooltip contentStyle={TT_STYLE}
+                    formatter={(v, name) => [typeof v === 'number' ? v.toLocaleString() : v, name]} />
+                  <Scatter data={orderVsProxy} fill="#ff4500" fillOpacity={0.4} r={2.5} />
+                </ScatterChart>
+              </ResponsiveContainer>
+              <p className="p2c-note">
+                {orderVsProxy.length.toLocaleString()} hexagons with real delivery orders (RL-Dispatch)
+              </p>
+            </div>
+          )}
+
+          {topTakeout.length > 0 && (
+            <div className="p2c-section">
+              <h4>Top Takeout Demand Hexagons</h4>
+              <div className="p2c-hex-rank">
+                {topTakeout.map(hex => {
+                  const barW = (hex.tdi / topTakeout[0].tdi) * 100;
+                  return (
+                    <div
+                      key={hex.h3}
+                      className="p2c-hr-row"
+                      onClick={() => {
+                        const target = hex.h3;
+                        onHighlight?.((d) => d.h3 === target);
+                      }}
+                    >
+                      <span className="p2c-hr-rank">#{hex.rank}</span>
+                      <div className="p2c-hr-body">
+                        <div className="p2c-hr-bar-wrap">
+                          <div className="p2c-hr-bar" style={{ width: `${barW}%`, background: '#ff4500' }} />
+                          <span className="p2c-hr-dp">{hex.tdi}</span>
+                        </div>
+                        <span style={{ fontSize: '0.6rem', color: '#777' }}>
+                          {hex.orders > 0 ? `${hex.orders.toLocaleString()} orders · ` : ''}pop {hex.pop.toFixed(0)} · food {hex.food}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Coverage mode charts */}
+      {isCoverage && (
+        <>
+          {coverageStats && (
+            <div className="p2c-section">
+              <h4>Food Accessibility Coverage</h4>
+              <ResponsiveContainer width="100%" height={130}>
+                <BarChart data={coverageStats} layout="vertical" margin={{ left: 40, right: 20, top: 5, bottom: 5 }}>
+                  <XAxis type="number" domain={[0, 100]} tick={{ fill: '#555', fontSize: 10 }}
+                    tickFormatter={(v) => `${v}%`} />
+                  <YAxis type="category" dataKey="radius" tick={{ fill: '#999', fontSize: 11 }} width={38} />
+                  <Tooltip contentStyle={TT_STYLE}
+                    formatter={(v, _, props) => [`${v}% (${props.payload.covered} hexagons)`, 'Coverage']} />
+                  <Bar dataKey="pct" radius={[0, 4, 4, 0]} name="Coverage">
+                    {coverageStats.map((s, i) => <Cell key={i} fill={s.color} fillOpacity={0.8} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              <p className="p2c-note">
+                Percentage of hexagons with at least 1 food POI within each radius
+              </p>
+            </div>
+          )}
+
+          {coverageBins.length > 0 && (
+            <div className="p2c-section">
+              <h4>Food Access 2km Distribution</h4>
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={coverageBins} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
+                  <XAxis dataKey="range" tick={{ fill: '#666', fontSize: 9 }}
+                    label={{ value: 'Restaurants within 2km', position: 'bottom', fill: '#555', fontSize: 10, offset: -2 }} />
+                  <YAxis tick={{ fill: '#555', fontSize: 9 }} />
+                  <Tooltip contentStyle={TT_STYLE}
+                    formatter={(v) => [v, 'Hexagons']}
+                    labelFormatter={(l) => `${l}–${parseInt(l) + 200} restaurants`}
+                  />
+                  <Bar dataKey="count" fill="#00c8ff" fillOpacity={0.7} radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           )}
         </>

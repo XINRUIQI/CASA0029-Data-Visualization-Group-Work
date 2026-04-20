@@ -46,12 +46,22 @@ function hexColor(mode, d, highlight, tw) {
     const v = dv * fv;
     return [120 + 135 * v, 40 * (1 - v), 180 + 75 * v, 30 + 200 * v];
   }
+  if (mode === 'takeout') {
+    const tdi = d.takeout_demand_index || 0;
+    const v = Math.min(tdi, 1);
+    return [255, Math.round(100 * (1 - v)), Math.round(50 * (1 - v)), Math.round(15 + 220 * v)];
+  }
+  if (mode === 'coverage') {
+    const acc = d.food_access_2km || 0;
+    const v = Math.min(acc / 3000, 1);
+    return [Math.round(30 + 50 * v), Math.round(200 * (1 - v * 0.4)), Math.round(255 - 100 * v), Math.round(15 + 220 * v)];
+  }
   return [80, 80, 80, 40];
 }
 
 export default function Page2FrictionMap({
   barriers, activeBarriers, showBarriers, activeMode,
-  h3Demand, h3Gap, routes, showRoutes, onHoverHex, highlightFilter,
+  h3Demand, h3Gap, h3Takeout, routes, showRoutes, onHoverHex, highlightFilter,
   timeWeight = 1
 }) {
   const [viewState, setViewState] = useState(VIEW);
@@ -59,8 +69,10 @@ export default function Page2FrictionMap({
   const mergedHex = useMemo(() => {
     if (!h3Demand) return null;
     const gapMap = new window.Map((h3Gap || []).map(g => [g.h3, g]));
+    const takeoutMap = new window.Map((h3Takeout || []).map(t => [t.h3, t]));
     return h3Demand.map(d => {
       const gap = gapMap.get(d.h3);
+      const tk = takeoutMap.get(d.h3);
       return {
         ...d,
         avg_friction: gap?.avg_friction || 0,
@@ -71,10 +83,18 @@ export default function Page2FrictionMap({
         med_count: d.med || gap?.medical_count || 0,
         scenic_count: d.scenic || gap?.scenic_count || 0,
         leisure_count: d.leisure || gap?.leisure_count || 0,
-        pop_count: gap?.pop_count || 0,
+        pop_count: tk?.pop_count || gap?.pop_count || 0,
+        real_order_count: tk?.real_order_count || 0,
+        real_order_density: tk?.real_order_density || 0,
+        takeout_demand_index: tk?.takeout_demand_index || 0,
+        takeout_demand_norm: tk?.takeout_demand_norm || 0,
+        food_access_1km: tk?.food_access_1km || 0,
+        food_access_2km: tk?.food_access_2km || 0,
+        food_access_3km: tk?.food_access_3km || 0,
+        xiaoqu_count: tk?.xiaoqu_count || 0,
       };
     });
-  }, [h3Demand, h3Gap]);
+  }, [h3Demand, h3Gap, h3Takeout]);
 
   const layers = useMemo(() => {
     const result = [];

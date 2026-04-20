@@ -7,12 +7,14 @@ Inputs:
   - Data/08 POI Demand/data_out/sz_demand_grid.gpkg      (2754 H3, already aligned)
   - Data/09 Population/data_out/sz_population_grid.gpkg  (2754 H3, already aligned)
   - Data/11 Composite Analysis/data_out/sz_gap_grid.gpkg (7392 square → spatial-join to H3)
+  - Data/14 Takeout Demand Coverage/data_out/sz_takeout_demand_grid.gpkg (2754 H3, takeout + coverage)
 
 Outputs (→ viz/public/data/):
   - h3_demand.json      — [{h3_id, food_count, medical_count, …, demand_pressure}, …]
   - h3_population.json  — [{h3_id, pop_count, pop_density, …}, …]
   - h3_building.json    — [{h3_id, building_count, avg_height, …}, …]
   - h3_gap.json         — [{h3_id, gap_index, avg_friction, covered_by_10, …}, …]
+  - h3_takeout.json     — [{h3_id, takeout_demand_index, food_access_1/2/3km, …}, …]
 
 All files: array of objects, keyed by h3_id, NO geometry (deck.gl H3HexagonLayer renders from h3_id).
 """
@@ -165,8 +167,33 @@ save("h3_gap.json", gap_records)
 
 
 # ══════════════════════════════════════════
+# 4. Takeout demand + food coverage (14)
+# ══════════════════════════════════════════
+TAKEOUT_PATH = NB / "14 Takeout Demand Coverage" / "data_out" / "sz_takeout_demand_grid.gpkg"
+if TAKEOUT_PATH.exists():
+    print("\nExporting h3_takeout.json …")
+    takeout = gpd.read_file(TAKEOUT_PATH)
+    takeout_records = []
+    takeout_cols = [c for c in takeout.columns if c not in ("geometry", "h3_id")]
+    for _, r in takeout.iterrows():
+        rec = {"h3": r["h3_id"]}
+        for col in takeout_cols:
+            val = r[col]
+            if val is None or (isinstance(val, float) and np.isnan(val)):
+                rec[col] = 0
+            elif isinstance(val, float):
+                rec[col] = round(val, 4)
+            else:
+                rec[col] = int(val) if isinstance(val, (np.integer,)) else val
+        takeout_records.append(rec)
+    save("h3_takeout.json", takeout_records)
+else:
+    print(f"\n⚠ Skipping h3_takeout.json — {TAKEOUT_PATH} not found. Run notebook 14 first.")
+
+
+# ══════════════════════════════════════════
 # Summary
 # ══════════════════════════════════════════
 print("\n✅ All grid data converted to H3 hex res-8!")
-print("   Files: h3_demand.json, h3_population.json, h3_building.json, h3_gap.json")
+print("   Files: h3_demand.json, h3_population.json, h3_building.json, h3_gap.json, h3_takeout.json")
 print("   All keyed by h3_id — no geometry needed (deck.gl H3HexagonLayer renders natively)")

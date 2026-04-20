@@ -10,6 +10,8 @@ const LAYER_MODES = [
   { id: 'demand', label: 'Demand', color: '#ff8c00' },
   { id: 'friction', label: 'Friction', color: '#ff3264' },
   { id: 'overlap', label: 'Overlap', color: '#c864ff' },
+  { id: 'takeout', label: 'Takeout', color: '#ff4500' },
+  { id: 'coverage', label: 'Coverage', color: '#00c8ff' },
 ];
 
 const BARRIER_TYPES = [
@@ -23,6 +25,8 @@ const MODE_DESC = {
   demand: '490K+ POIs reveal delivery pressure — darker = higher demand',
   friction: 'Detour, barriers, congestion compound into ground friction',
   overlap: 'High demand × high friction = where drones create the most value',
+  takeout: 'Population × residential × food POI — who orders takeout?',
+  coverage: 'Food accessibility — how many restaurants within 2km of each cell',
 };
 
 const POI_ITEMS = [
@@ -39,6 +43,7 @@ export default function Page2FullMap() {
   const [barriers, setBarriers] = useState({});
   const [demandGrid, setDemandGrid] = useState(null);
   const [h3Gap, setH3Gap] = useState(null);
+  const [h3Takeout, setH3Takeout] = useState(null);
   const [odAnalysis, setOdAnalysis] = useState(null);
   const [routes, setRoutes] = useState(null);
   const [activeMode, setActiveMode] = useState('overlap');
@@ -66,6 +71,10 @@ export default function Page2FullMap() {
     fetch(publicDataUrl('data/page2_h3_gap.json'))
       .then(r => r.json())
       .then(setH3Gap)
+      .catch(() => {});
+    fetch(publicDataUrl('data/h3_takeout.json'))
+      .then(r => r.json())
+      .then(setH3Takeout)
       .catch(() => {});
     fetch(publicDataUrl('data/page2_od_analysis.json'))
       .then(r => r.json())
@@ -171,6 +180,7 @@ export default function Page2FullMap() {
             activeMode={activeMode}
             h3Demand={demandGrid}
             h3Gap={h3Gap}
+            h3Takeout={h3Takeout}
             routes={routes}
             showRoutes={showRoutes}
             onHoverHex={setHoveredHex}
@@ -187,6 +197,15 @@ export default function Page2FullMap() {
                 <div className="p2f-hv"><span>Gap</span> {hoveredHex.gap_index?.toFixed(4) ?? '—'}</div>
                 <div className="p2f-hv"><span>Pop</span> {hoveredHex.pop_count?.toFixed(0) ?? '—'}</div>
               </div>
+              {(activeMode === 'takeout' || activeMode === 'coverage') && (
+                <div className="p2f-hv-row" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '0.3rem', marginTop: '0.3rem' }}>
+                  <div className="p2f-hv"><span>Orders</span> {hoveredHex.real_order_count?.toLocaleString() ?? '—'}</div>
+                  <div className="p2f-hv"><span>Takeout</span> {hoveredHex.takeout_demand_index?.toFixed(3) ?? '—'}</div>
+                  <div className="p2f-hv"><span>1km</span> {hoveredHex.food_access_1km?.toLocaleString() ?? '—'}</div>
+                  <div className="p2f-hv"><span>2km</span> {hoveredHex.food_access_2km?.toLocaleString() ?? '—'}</div>
+                  <div className="p2f-hv"><span>3km</span> {hoveredHex.food_access_3km?.toLocaleString() ?? '—'}</div>
+                </div>
+              )}
               <div className="p2f-hv-poi">
                 {POI_ITEMS.map(p => {
                   const v = hoveredHex[p.key] || 0;
@@ -298,6 +317,7 @@ export default function Page2FullMap() {
             activeMode={activeMode}
             hoveredHex={hoveredHex}
             h3Gap={h3Gap}
+            h3Takeout={h3Takeout}
             odAnalysis={odAnalysis}
             liveMetrics={liveMetrics}
             onHighlight={handleChartHighlight}
