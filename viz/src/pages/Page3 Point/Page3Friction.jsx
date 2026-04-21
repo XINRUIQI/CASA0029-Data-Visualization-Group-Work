@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import { point as turfPoint } from '@turf/helpers';
 import Page3Map from './Page3Map';
+import ParticleBackground from './ParticleBackground';
 import { publicDataUrl, POI_COLORS } from '../../config';
 import { PoiPinIcon } from './poiIcons';
 import { COMPOUND_COLORS } from '../Page1 overview/Page1Landing';
@@ -280,8 +281,9 @@ export default function Page3Friction() {
   }, [siteStats]);
 
   return (
-    <section id="page-3" className="page page-3">
-      <div className="p3-layout">
+    <section id="page-3" className="page page-3" style={{ position: 'relative' }}>
+      <ParticleBackground />
+      <div className="p3-layout" style={{ position: 'relative', zIndex: 1 }}>
 
         {/* ── LEFT: map (50%) ── */}
         <div className="p3-map-half">
@@ -371,85 +373,6 @@ export default function Page3Friction() {
             ))}
           </div>
 
-          {/* ── 地图下方：行政区统计 ── */}
-          <div className="p3-district-card">
-            <div className="p3-district-header">
-              <div className="p3p-section-label">Sites by District</div>
-            </div>
-            {activeTab !== 2 && activeTab !== 4 && districtStats.length > 0 && (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={districtStats} margin={{ left: 16, right: 60, top: 30, bottom: 36 }} barCategoryGap="28%" barGap={3}>
-                  <CartesianGrid vertical={true} horizontal={true} stroke="rgba(200,200,210,0.2)" strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={{ fill: '#ddd', fontSize: 12, textAnchor: 'middle' }} axisLine={{ stroke: 'rgba(255,255,255,0.5)' }} tickLine={{ stroke: 'rgba(255,255,255,0.5)' }} interval={0}
-                    label={{ value: 'District', position: 'right', dy: -20, fill: '#888', fontSize: 11, dominantBaseline: 'central' }} />
-                  <YAxis type="number" tick={{ fill: '#ddd', fontSize: 10 }} axisLine={{ stroke: 'rgba(255,255,255,0.5)' }} tickLine={{ stroke: 'rgba(255,255,255,0.5)' }} width={42}
-                    label={{ value: 'Sites (n)', angle: 0, position: 'top', fill: '#888', fontSize: 11, dy: -6, dx: 20, textAnchor: 'middle' }} />
-                  <Tooltip
-                    contentStyle={{ background: '#0f0f24', border: '1px solid #2a2a4a', borderRadius: 8, fontSize: 12 }}
-                    labelStyle={{ color: '#aaa' }}
-                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                    formatter={(value, name) => [value, name === 'commercial' ? 'Hub Sites' : 'Last-mile Sites']}
-                  />
-                  <Bar dataKey="commercial" name="commercial" fill="#ffa028" fillOpacity={showCommercial ? 0.85 : 0.15} maxBarSize={22} cursor="pointer"
-                    onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
-                    <LabelList dataKey="commercial" position="top" style={{ fill: showCommercial ? '#fff' : 'transparent', fontSize: 10 }} formatter={v => v > 0 ? v : ''} />
-                  </Bar>
-                  <Bar dataKey="last_mile" name="last_mile" fill="#c864ff" fillOpacity={showLastMile ? 0.85 : 0.15} maxBarSize={22} cursor="pointer"
-                    onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
-                    <LabelList dataKey="last_mile" position="top" style={{ fill: showLastMile ? '#fff' : 'transparent', fontSize: 10 }} formatter={v => v > 0 ? v : ''} />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-
-            {activeTab === 4 && districtCoverageStats.length > 0 && (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={districtCoverageStats} margin={{ left: 16, right: 60, top: 30, bottom: 36 }} barCategoryGap="35%">
-                  <CartesianGrid vertical={true} horizontal={true} stroke="rgba(200,200,210,0.2)" strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={{ fill: '#ddd', fontSize: 12, textAnchor: 'middle' }} axisLine={{ stroke: 'rgba(255,255,255,0.5)' }} tickLine={{ stroke: 'rgba(255,255,255,0.5)' }} interval={0}
-                    label={{ value: 'District', position: 'right', dy: -20, fill: '#888', fontSize: 11, dominantBaseline: 'central' }} />
-                  <YAxis type="number" tick={{ fill: '#ddd', fontSize: 10 }} axisLine={{ stroke: 'rgba(255,255,255,0.5)' }} tickLine={{ stroke: 'rgba(255,255,255,0.5)' }} width={42}
-                    label={{ value: 'Sites / 万人', angle: 0, position: 'top', fill: '#888', fontSize: 11, dy: -6, dx: 30, textAnchor: 'middle' }} />
-                  <Tooltip
-                    contentStyle={{ background: '#0f0f24', border: '1px solid #2a2a4a', borderRadius: 8, fontSize: 12 }}
-                    labelStyle={{ color: '#aaa' }}
-                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                    formatter={(value, name) => [
-                      name === 'ratio' ? `${value} sites/万人` : value,
-                      name === 'ratio' ? 'Coverage Rate' : 'Total Sites',
-                    ]}
-                  />
-                  <Bar dataKey="ratio" name="ratio" maxBarSize={28} cursor="pointer"
-                    fill="#e03030" fillOpacity={0.85}
-                    onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
-                    <LabelList dataKey="ratio" position="top" style={{ fill: '#fff', fontSize: 10 }} formatter={v => v > 0 ? v : ''} />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-
-            {activeTab === 2 && districtContextStats.length > 0 && (<>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={districtContextStats} margin={{ left: 16, right: 60, top: 16, bottom: 36 }} barCategoryGap="35%">
-                  <CartesianGrid vertical={true} horizontal={true} stroke="rgba(200,200,210,0.2)" strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={{ fill: '#ddd', fontSize: 11, textAnchor: 'middle' }} axisLine={{ stroke: 'rgba(255,255,255,0.5)' }} tickLine={{ stroke: 'rgba(255,255,255,0.5)' }} interval={0}
-                    label={{ value: 'District', position: 'right', dy: -20, fill: '#888', fontSize: 11, dominantBaseline: 'central' }} />
-                  <YAxis type="number" tick={{ fill: '#ddd', fontSize: 10 }} axisLine={{ stroke: 'rgba(255,255,255,0.5)' }} tickLine={{ stroke: 'rgba(255,255,255,0.5)' }} width={42}
-                    label={{ value: 'Sites (n)', angle: 0, position: 'top', fill: '#888', fontSize: 11, dy: -6, dx: 20, textAnchor: 'middle' }} />
-                  <Tooltip
-                    contentStyle={{ background: '#0f0f24', border: '1px solid #2a2a4a', borderRadius: 8, fontSize: 12 }}
-                    labelStyle={{ color: '#aaa' }}
-                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                    formatter={v => [v, POI_COLORS[contextChartType]?.label]}
-                  />
-                  <Bar dataKey={contextChartType} fill={POI_COLORS[contextChartType]?.hex} fillOpacity={0.85} maxBarSize={28} cursor="pointer"
-                    onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
-                    <LabelList dataKey={contextChartType} position="top" style={{ fill: '#fff', fontSize: 10 }} formatter={v => v > 0 ? v : ''} />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </>)}
-          </div>
         </div>
 
         {/* ── RIGHT: panel (50%) ── */}
@@ -486,21 +409,64 @@ export default function Page3Friction() {
             <div className="p3p-loading">Loading sites…</div>
           )}
 
-          <div className="p3p-section p3p-chart-section">
-            <div className="p3p-section-label">Sites by Context</div>
-            {chartData.length > 0 && (
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={chartData} layout="vertical" margin={{ left: 70, right: 30, top: 4, bottom: 4 }}>
-                  <XAxis type="number" tick={{ fill: '#555', fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <YAxis type="category" dataKey="name" tick={{ fill: '#999', fontSize: 11 }} width={68} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ background: '#0f0f24', border: '1px solid #2a2a4a', borderRadius: 8, fontSize: 12 }} labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-                  <Bar dataKey="count" name="Sites"
-                    shape={(props) => {
-                      const { x, y, width, height, payload } = props;
-                      const opacity = compoundFilter === 'all' || compoundFilter === payload.key ? 0.85 : 0.25;
-                      return <rect x={x} y={y} width={Math.max(width, 0)} height={Math.max(height, 0)} fill={payload.color} fillOpacity={opacity} rx={4} />;
-                    }}
-                  />
+          {/* ── Sites by District (moved from bottom-left) ── */}
+          <div className="p3p-section p3p-district-section">
+            <div className="p3p-section-label">Sites by District</div>
+
+            {activeTab !== 2 && activeTab !== 4 && districtStats.length > 0 && (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={districtStats} margin={{ left: 4, right: 8, top: 24, bottom: 30 }} barCategoryGap="28%" barGap={3}>
+                  <CartesianGrid vertical={false} horizontal={true} stroke="rgba(200,200,210,0.12)" strokeDasharray="3 3" />
+                  <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
+                  <YAxis type="number" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
+                    label={{ value: 'Sites (n)', angle: 0, position: 'top', fill: '#555', fontSize: 10, dy: -8, dx: 20, textAnchor: 'middle' }} />
+                  <Tooltip contentStyle={{ background: '#0f0f24', border: '1px solid #2a2a4a', borderRadius: 8, fontSize: 12 }}
+                    labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                    formatter={(value, name) => [value, name === 'commercial' ? 'Hub Sites' : 'Last-mile Sites']} />
+                  <Bar dataKey="commercial" fill="#ffa028" fillOpacity={showCommercial ? 0.85 : 0.15} maxBarSize={18} cursor="pointer"
+                    onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
+                    <LabelList dataKey="commercial" position="top" style={{ fill: showCommercial ? '#ccc' : 'transparent', fontSize: 9 }} formatter={v => v > 0 ? v : ''} />
+                  </Bar>
+                  <Bar dataKey="last_mile" fill="#c864ff" fillOpacity={showLastMile ? 0.85 : 0.15} maxBarSize={18} cursor="pointer"
+                    onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
+                    <LabelList dataKey="last_mile" position="top" style={{ fill: showLastMile ? '#ccc' : 'transparent', fontSize: 9 }} formatter={v => v > 0 ? v : ''} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+
+            {activeTab === 4 && districtCoverageStats.length > 0 && (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={districtCoverageStats} margin={{ left: 4, right: 8, top: 24, bottom: 30 }} barCategoryGap="35%">
+                  <CartesianGrid vertical={false} horizontal={true} stroke="rgba(200,200,210,0.12)" strokeDasharray="3 3" />
+                  <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
+                  <YAxis type="number" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
+                    label={{ value: 'per 万人', angle: 0, position: 'top', fill: '#555', fontSize: 10, dy: -8, dx: 24, textAnchor: 'middle' }} />
+                  <Tooltip contentStyle={{ background: '#0f0f24', border: '1px solid #2a2a4a', borderRadius: 8, fontSize: 12 }}
+                    labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                    formatter={(value, name) => [name === 'ratio' ? `${value} sites/万人` : value, name === 'ratio' ? 'Coverage Rate' : 'Total']} />
+                  <Bar dataKey="ratio" fill="#e03030" fillOpacity={0.85} maxBarSize={22} cursor="pointer"
+                    onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
+                    <LabelList dataKey="ratio" position="top" style={{ fill: '#ccc', fontSize: 9 }} formatter={v => v > 0 ? v : ''} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+
+            {activeTab === 2 && districtContextStats.length > 0 && (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={districtContextStats} margin={{ left: 4, right: 8, top: 16, bottom: 30 }} barCategoryGap="35%">
+                  <CartesianGrid vertical={false} horizontal={true} stroke="rgba(200,200,210,0.12)" strokeDasharray="3 3" />
+                  <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
+                  <YAxis type="number" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
+                    label={{ value: 'Sites (n)', angle: 0, position: 'top', fill: '#555', fontSize: 10, dy: -8, dx: 20, textAnchor: 'middle' }} />
+                  <Tooltip contentStyle={{ background: '#0f0f24', border: '1px solid #2a2a4a', borderRadius: 8, fontSize: 12 }}
+                    labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                    formatter={v => [v, POI_COLORS[contextChartType]?.label]} />
+                  <Bar dataKey={contextChartType} fill={POI_COLORS[contextChartType]?.hex} fillOpacity={0.85} maxBarSize={22} cursor="pointer"
+                    onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
+                    <LabelList dataKey={contextChartType} position="top" style={{ fill: '#ccc', fontSize: 9 }} formatter={v => v > 0 ? v : ''} />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             )}

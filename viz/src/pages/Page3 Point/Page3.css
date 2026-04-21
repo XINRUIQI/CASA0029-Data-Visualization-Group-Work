@@ -18,9 +18,9 @@
 
 /* Left half — map */
 .p3-map-half {
-  width: 50%;
+  width: 61.8%;
   flex-shrink: 0;
-  padding: 28px 10px 28px 24px;
+  padding: 200px 8px 200px 60px;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -75,7 +75,7 @@
 
 .p3-legend-divider {
   width: 1px;
-  height: 16px;
+  height: 8px;
   background: rgba(255, 255, 255, 0.1);
   margin: 0 4px;
   flex-shrink: 0;
@@ -83,11 +83,10 @@
 
 /* ─── 下方区域：侧边筛选 + 地图卡片 ─── */
 .p3-map-body {
-  height: 50vh;
-  flex-shrink: 0;
+  flex: 1;
+  min-height: 0;
   display: flex;
   gap: 10px;
-  min-height: 0;
 }
 
 /* ─── 左侧：4 个切页 Tab ─── */
@@ -146,8 +145,8 @@
 }
 
 .p3-tab-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 8px;
+  height: 8px;
 }
 
 .p3-tab-label {
@@ -160,8 +159,8 @@
 /* ─── 周围类型浮层（左下角）─── */
 .p3-compound-float {
   position: absolute;
-  bottom: 16px;
-  left: 16px;
+  bottom: 8px;
+  left: 8px;
   z-index: 20;
   display: flex;
   flex-direction: column;
@@ -291,10 +290,10 @@
   justify-content: space-evenly;
   flex-shrink: 0;
   flex-wrap: wrap;
-  padding: 8px 12px;
+  padding: 8px 8px;
   background: rgba(13, 13, 34, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  border-radius: 8px;
   backdrop-filter: blur(8px);
 }
 
@@ -350,8 +349,8 @@
 
 .p3-poi-marker svg,
 .p3-il-icon svg {
-  width: 12px;
-  height: 12px;
+  width: 8px;
+  height: 8px;
 }
 
 .p3-il-count {
@@ -366,8 +365,8 @@
   min-height: 0;
   background: #0d0d22;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 16px 20px 12px;
+  border-radius: 8px;
+  padding: 8px 20px 8px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -376,7 +375,7 @@
 /* Map card — rounded box */
 .p3-map-card {
   flex: 1;
-  border-radius: 16px;
+  border-radius: 8px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: #0f0f28;
@@ -388,9 +387,9 @@
 
 /* Right half — outer wrapper with padding */
 .p3-panel-half {
-  width: 50%;
+  width: 38.2%;
   flex-shrink: 0;
-  padding: 28px 24px 0 10px;   /* top right bottom left — 与左边呼应 */
+  padding: 200px 60px 200px 8px;
   display: flex;
   flex-direction: column;
 }
@@ -398,15 +397,15 @@
 /* Right panel card */
 .p3-panel-card {
   flex: 1;
+  min-height: 0;
   background: #0d0d22;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
   padding: 28px 28px 24px;
   overflow-y: auto;
-  gap: 24px;
-  height: 50vh;
+  gap: 8px;
 }
 
 /* ─── HEADER ─── */
@@ -427,7 +426,7 @@
   font-size: 1.55rem;
   font-weight: 700;
   color: #fff;
-  margin: 0 0 12px;
+  margin: 0 0 8px;
   line-height: 1.25;
 }
 
@@ -441,7 +440,7 @@
 /* ─── KPIs ─── */
 .p3p-kpis {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -499,7 +498,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
+  padding: 8px 8px;
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
@@ -575,8 +574,13 @@
 
 /* ─── CHART SECTION ─── */
 .p3p-chart-section {
-  flex: 1;
-  min-height: 0;
+  flex-shrink: 0;
+}
+
+.p3p-district-section {
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 14px;
 }
 
 /* ─── FOOTER ─── */
@@ -584,21 +588,21 @@
   flex-shrink: 0;
   font-size: 0.68rem;
   color: #333;
-  padding-top: 12px;
+  padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 /* ─── DISTRICT INFO PANEL ─── */
 .p3-district-panel {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 8px;
+  right: 8px;
   z-index: 20;
   background: rgba(8, 8, 26, 0.92);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
-  padding: 14px 16px;
+  padding: 14px 8px;
   min-width: 170px;
   display: flex;
   flex-direction: column;
@@ -634,7 +638,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .p3-dp-label {

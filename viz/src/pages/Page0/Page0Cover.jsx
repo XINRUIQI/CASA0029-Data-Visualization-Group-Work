@@ -58,8 +58,6 @@ const INFO_ITEMS = [
 
 export default function Page0Cover() {
   const sectionRef = useRef(null);
-  const cursorRef = useRef(null);
-  const cursorDotRef = useRef(null);
   const heroContentRef = useRef(null);
   const droneRef = useRef(null);
   const [activeInfo, setActiveInfo] = useState(null);
@@ -80,52 +78,6 @@ export default function Page0Cover() {
   const handleTransitionComplete = useCallback(() => {
     setTransitioning(false);
     document.getElementById('page-1')?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
-
-  /* ── custom cursor ── */
-  useEffect(() => {
-    const cursor = cursorRef.current;
-    const dot = cursorDotRef.current;
-    if (!cursor || !dot) return;
-
-    const onMove = (e) => {
-      gsap.to(cursor, {
-        x: e.clientX,
-        y: e.clientY,
-        duration: 0.6,
-        ease: 'power3.out',
-      });
-      gsap.to(dot, {
-        x: e.clientX,
-        y: e.clientY,
-        duration: 0.1,
-      });
-    };
-
-    const onEnterInteractive = () => {
-      gsap.to(cursor, { scale: 2.2, opacity: 0.5, duration: 0.3 });
-    };
-    const onLeaveInteractive = () => {
-      gsap.to(cursor, { scale: 1, opacity: 1, duration: 0.3 });
-    };
-
-    window.addEventListener('mousemove', onMove);
-
-    const interactives = sectionRef.current?.querySelectorAll(
-      'a, button, .p0-topbar-nav a'
-    );
-    interactives?.forEach((el) => {
-      el.addEventListener('mouseenter', onEnterInteractive);
-      el.addEventListener('mouseleave', onLeaveInteractive);
-    });
-
-    return () => {
-      window.removeEventListener('mousemove', onMove);
-      interactives?.forEach((el) => {
-        el.removeEventListener('mouseenter', onEnterInteractive);
-        el.removeEventListener('mouseleave', onLeaveInteractive);
-      });
-    };
   }, []);
 
   /* ── GSAP entrance animations (wait for intro) ── */
@@ -198,14 +150,6 @@ export default function Page0Cover() {
 
   return (
     <section id="page-0" className="page page-0" ref={sectionRef}>
-      {/* ── custom cursor ── */}
-      <div
-        className="p0-cursor"
-        ref={cursorRef}
-        style={{ background: `url(${import.meta.env.BASE_URL}drone-cursor.svg) center/60% no-repeat` }}
-      />
-      <div className="p0-cursor-dot" ref={cursorDotRef} />
-
       {/* ── background layers: video + particles ── */}
       <div className="p0-bg-wrap">
         <video

@@ -31,9 +31,7 @@ const NAV_LINKS = [
 
 function GlobalTopbar() {
   const [isOnPage0, setIsOnPage0] = useState(true);
-  const [hovered, setHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const hideTimer = useRef(null);
 
   useEffect(() => {
     const page0 = document.getElementById('page-0');
@@ -47,55 +45,86 @@ function GlobalTopbar() {
     return () => observer.disconnect();
   }, []);
 
-  const visible = isOnPage0 || hovered || menuOpen;
-
-  const handleMouseEnter = () => {
-    clearTimeout(hideTimer.current);
-    setHovered(true);
-  };
-
-  const handleMouseLeave = () => {
-    hideTimer.current = setTimeout(() => setHovered(false), 300);
-  };
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
 
   return (
     <>
-      {!isOnPage0 && (
-        <div
-          className="topbar-trigger-zone"
-          onMouseEnter={handleMouseEnter}
-        />
-      )}
-      <header
-        className={`global-topbar ${visible ? 'visible' : ''} ${isOnPage0 ? 'on-page0' : ''}`}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+      <div
+        className={`global-nav-overlay ${menuOpen ? 'visible' : ''}`}
+        onClick={() => setMenuOpen(false)}
+      />
+      <button
+        className={`global-menu-toggle ${menuOpen ? 'open' : ''} ${isOnPage0 ? 'on-page0' : ''}`}
+        onClick={() => setMenuOpen(!menuOpen)}
+        aria-label="Toggle menu"
+        aria-expanded={menuOpen}
       >
-        <div className="global-topbar-spacer" />
-        <nav className={`global-topbar-nav ${menuOpen ? 'open' : ''}`}>
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.target}
-              href={`#${link.target}`}
-              onClick={(e) => {
-                e.preventDefault();
-                setMenuOpen(false);
-                document.getElementById(link.target)?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
-              {link.label}
-            </a>
-          ))}
-        </nav>
-        <button
-          className={`global-menu-toggle ${menuOpen ? 'open' : ''}`}
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Toggle menu"
-        >
-          <span /><span /><span />
-        </button>
-      </header>
+        <span /><span /><span />
+      </button>
+      <nav
+        className={`global-topbar-nav ${menuOpen ? 'open' : ''}`}
+        aria-hidden={!menuOpen}
+      >
+        {NAV_LINKS.map((link) => (
+          <a
+            key={link.target}
+            href={`#${link.target}`}
+            onClick={(e) => {
+              e.preventDefault();
+              setMenuOpen(false);
+              document.getElementById(link.target)?.scrollIntoView({ behavior: 'smooth' });
+            }}
+          >
+            {link.label}
+          </a>
+        ))}
+      </nav>
     </>
+  );
+}
+
+function PageNav({ pages, onNavigate }) {
+  const [activeId, setActiveId] = useState(0);
+
+  useEffect(() => {
+    const observers = pages
+      .map((p) => {
+        const el = document.getElementById(`page-${p.id}`);
+        if (!el) return null;
+        const obs = new IntersectionObserver(
+          ([entry]) => {
+            if (entry.intersectionRatio > 0.5) setActiveId(p.id);
+          },
+          { threshold: [0, 0.5, 1] }
+        );
+        obs.observe(el);
+        return obs;
+      })
+      .filter(Boolean);
+    return () => observers.forEach((o) => o.disconnect());
+  }, [pages]);
+
+  return (
+    <nav className="page-nav" aria-label="Section navigation">
+      {pages.map((p) => (
+        <button
+          key={p.id}
+          className={`nav-dot ${activeId === p.id ? 'active' : ''}`}
+          onClick={() => onNavigate(p.id)}
+          aria-label={p.label}
+          aria-current={activeId === p.id ? 'true' : undefined}
+        >
+          <span className="nav-dot-label">{p.label}</span>
+        </button>
+      ))}
+    </nav>
   );
 }
 
@@ -116,18 +145,7 @@ function MainNarrative() {
     <div className="app">
       <GlobalTopbar />
 
-      <nav className="page-nav">
-        {NAV_PAGES.map(p => (
-          <button
-            key={p.id}
-            className="nav-dot"
-            title={p.label}
-            onClick={() => handleNavClick(p.id)}
-          >
-            <span>{p.id}</span>
-          </button>
-        ))}
-      </nav>
+      <PageNav pages={NAV_PAGES} onNavigate={handleNavClick} />
 
       <Page0Cover />
       <Page1Landing />
@@ -140,11 +158,68 @@ function MainNarrative() {
   );
 }
 
+function GlobalCursor() {
+  const wrapRef = useRef(null);
+  const ringRef = useRef(null);
+  const dotRef = useRef(null);
+
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    const ring = ringRef.current;
+    const dot = dotRef.current;
+    if (!wrap || !ring || !dot) return;
+
+    let hovering = false;
+
+    const onMove = (e) => {
+      const t = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
+      wrap.style.transform = t;
+      dot.style.transform = t;
+    };
+
+    const onMouseOver = (e) => {
+      const next = !!e.target.closest?.(
+        'a, button, input, textarea, select, label, [role="button"]'
+      );
+      if (next === hovering) return;
+      hovering = next;
+      ring.classList.toggle('hovering', next);
+    };
+
+    const onMouseDown = () => ring.classList.add('pressed');
+    const onMouseUp = () => ring.classList.remove('pressed');
+
+    window.addEventListener('mousemove', onMove, { passive: true });
+    window.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mouseup', onMouseUp);
+    document.addEventListener('mouseover', onMouseOver);
+
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mouseup', onMouseUp);
+      document.removeEventListener('mouseover', onMouseOver);
+    };
+  }, []);
+
+  return (
+    <>
+      <div className="global-cursor" ref={wrapRef}>
+        <div className="global-cursor-ring" ref={ringRef} />
+      </div>
+      <div className="global-cursor-dot" ref={dotRef} />
+    </>
+  );
+}
+
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<MainNarrative />} />
-      <Route path="/analysis" element={<Page2FullMap />} />
-    </Routes>
+    <>
+      <GlobalCursor />
+      <Routes>
+        <Route path="/" element={<MainNarrative />} />
+        <Route path="/analysis" element={<Page2FullMap />} />
+      </Routes>
+    </>
   );
 }
