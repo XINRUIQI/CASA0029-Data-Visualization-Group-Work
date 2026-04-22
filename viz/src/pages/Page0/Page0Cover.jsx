@@ -1,24 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import DroneParticles from './DroneParticles';
 import EnterTransition from './EnterTransition';
 import IntroOverlay from './IntroOverlay';
 import './Page0.css';
 
 gsap.registerPlugin(ScrollTrigger);
-
-function SplitChars({ text, className }) {
-  return text.split('').map((char, i) => (
-    <span
-      key={i}
-      className={`p0-char ${className || ''}`}
-      style={{ display: char === ' ' ? 'inline' : 'inline-block' }}
-    >
-      {char === ' ' ? '\u00A0' : char}
-    </span>
-  ));
-}
 
 const INFO_ITEMS = [
   {
@@ -59,7 +46,14 @@ const INFO_ITEMS = [
 export default function Page0Cover() {
   const sectionRef = useRef(null);
   const heroContentRef = useRef(null);
-  const droneRef = useRef(null);
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = true;
+    v.play().catch(() => {});
+  }, []);
   const [activeInfo, setActiveInfo] = useState(null);
   const [transitioning, setTransitioning] = useState(false);
   const [spawnPoints, setSpawnPoints] = useState(null);
@@ -69,9 +63,18 @@ export default function Page0Cover() {
     setIntroDone(true);
   }, []);
 
+  // Safety fallback: ensure intro completes even if animation fails.
+  // IntroOverlay's natural run-time is ~7.1s (900+2700+1800+1700), so we
+  // give it a comfortable margin before forcing the page forward.
+  useEffect(() => {
+    const timer = setTimeout(() => setIntroDone(true), 9000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleEnter = useCallback(() => {
-    const positions = droneRef.current?.getPositions?.() || [];
-    setSpawnPoints(positions);
+    // Drone particles were removed, so there are no source points to sample.
+    // EnterTransition already falls back to bursting from screen center.
+    setSpawnPoints(null);
     setTransitioning(true);
   }, []);
 
@@ -85,64 +88,57 @@ export default function Page0Cover() {
     if (!introDone) return;
 
     const ctx = gsap.context(() => {
+      // Entrance choreography, all kicked off the moment the intro overlay
+      // finishes. Pace is deliberately quick so the hero reads as a single
+      // beat: Delivery → elevated! → subtitle (as one line) → Enter.
       const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
 
       tl.from('.p0-word-light', {
-          x: -60,
+          x: -40,
           opacity: 0,
-          duration: 0.8,
-          ease: 'power4.out',
-        }, 0.1)
+          duration: 0.45,
+        }, 0)
         .from('.p0-word-bold', {
-          x: 60,
+          x: 40,
           opacity: 0,
-          duration: 0.8,
-          ease: 'power4.out',
-        }, 0.25)
-        .from('.p0-deco-dots', { opacity: 0, x: 20, duration: 0.6 }, 0.7)
-        .from('.p0-sub-light', {
-          y: 30,
-          opacity: 0,
-          duration: 0.7,
-        }, 0.8)
-        .from('.p0-sub-boxed', {
-          scaleX: 0,
-          opacity: 0,
-          duration: 0.6,
-          ease: 'back.out(1.7)',
-        }, 1.1)
-        .from('.p0-deco-squares', { opacity: 0, x: 15, duration: 0.5 }, 1.3)
-        .from('.p0-sidebar-btn', {
-          x: -30,
+          duration: 0.45,
+        }, 0.18)
+        // Bring the whole subtitle in as one unit (main caption + "in ShenZhen")
+        .from('.p0-subtitle', {
+          y: 24,
           opacity: 0,
           duration: 0.5,
-          stagger: 0.12,
-        }, 0.9)
-        .from('.p0-scroll-hint', { opacity: 0, duration: 0.6 }, 1.6);
+        }, 0.5)
+        // Enter button finally pops in
+        .from('.p0-enter-btn', {
+          y: 20,
+          opacity: 0,
+          scale: 0.9,
+          duration: 0.5,
+          ease: 'back.out(1.5)',
+        }, 0.95)
+        // Peripheral chrome — sidebar + scroll hint — fade in alongside
+        // the button so nothing ever feels like it's still animating after
+        // the user already sees the CTA.
+        .from('.p0-sidebar-btn', {
+          x: -20,
+          opacity: 0,
+          duration: 0.4,
+          stagger: 0.08,
+        }, 0.6)
+        .from('.p0-scroll-hint', { opacity: 0, duration: 0.4 }, 1.1);
 
       gsap.to('.p0-hero-content', {
         y: -80,
         opacity: 0,
         ease: 'none',
         scrollTrigger: {
-          trigger: '#page-0',
+          trigger: sectionRef.current,
           start: 'top top',
           end: 'bottom top',
           scrub: true,
         },
       });
-
-      gsap.to('.p0-particles-canvas', {
-        opacity: 0,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: '#page-0',
-          start: '30% top',
-          end: '70% top',
-          scrub: true,
-        },
-      });
-
     }, sectionRef);
 
     return () => ctx.revert();
@@ -150,20 +146,20 @@ export default function Page0Cover() {
 
   return (
     <section id="page-0" className="page page-0" ref={sectionRef}>
-      {/* ── background layers: video + particles ── */}
+      {/* ── background layers: video only ── */}
       <div className="p0-bg-wrap">
         <video
+          ref={videoRef}
           className="p0-bg-video"
           autoPlay
           muted
           loop
           playsInline
+          preload="metadata"
+          src={`${import.meta.env.BASE_URL}cover-bg.mp4`}
           poster={`${import.meta.env.BASE_URL}shenzhen-poster.jpg`}
-        >
-          <source src={`${import.meta.env.BASE_URL}shenzhen-drone-bg.mp4`} type="video/mp4" />
-        </video>
+        />
         <div className="p0-bg-overlay" />
-        <DroneParticles ref={droneRef} exploding={transitioning} />
         <div className="p0-bg-grain" />
       </div>
 
@@ -197,7 +193,15 @@ export default function Page0Cover() {
       )}
 
       {/* ── intro mask overlay ── */}
-      {!introDone && <IntroOverlay onComplete={handleIntroDone} />}
+      {!introDone && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, cursor: 'pointer' }}
+          onClick={handleIntroDone}
+          title="Click to skip"
+        >
+          <IntroOverlay onComplete={handleIntroDone} />
+        </div>
+      )}
 
       {/* ── hero content ── */}
       <div className={`p0-hero-content ${introDone ? '' : 'p0-hidden'}`} ref={heroContentRef}>
@@ -207,17 +211,15 @@ export default function Page0Cover() {
             {' '}
             <span className="p0-word-bold p0-glitch" data-text="elevated!">elevated!</span>
           </span>
-          <span className="p0-deco-dots" aria-hidden="true">
-            <span /><span /><span /><span />
-          </span>
         </h1>
 
         <p className="p0-subtitle">
-          <span className="p0-sub-light">Drone Delivery and the Rise of a New Urban Mobility System in</span>
+          <span className="p0-sub-light">Drone Delivery and the Rise of a New Urban Mobility System</span>
           {' '}
-          <span className="p0-sub-boxed">ShenZhen</span>
-          <span className="p0-deco-squares" aria-hidden="true">
-            <span /><span /><span />
+          <span className="p0-sub-shenzhen-wrap">
+            <span className="p0-sub-in">in</span>
+            {' '}
+            <span className="p0-sub-boxed">ShenZhen</span>
           </span>
         </p>
 

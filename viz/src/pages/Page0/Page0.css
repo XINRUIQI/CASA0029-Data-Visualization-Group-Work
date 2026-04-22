@@ -72,9 +72,16 @@
   inset: 0;
   z-index: 2;
   opacity: 0.04;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Smaller 128px tile (was 256px) + fewer turbulence octaves (was 4) to
+     keep the one-time SVG rasterisation cheap. Promoted to its own GPU
+     compositing layer so the underlying video + canvas don't have to be
+     re-blended on every repaint. */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 128 128' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat: repeat;
+  background-size: 128px 128px;
   pointer-events: none;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 /* ─── Top Bar ─── */
@@ -97,9 +104,11 @@
   height: 44px;
   border-radius: 50%;
   border: 1px solid rgba(100, 200, 255, 0.25);
-  background: rgba(10, 10, 30, 0.5);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  /* Solid semi-transparent fill — the previous backdrop-filter: blur(12px)
+     forced the browser to re-blur the busy video/particles background
+     on every frame for each of the 3 buttons, which was a measurable
+     compositing cost. */
+  background: rgba(10, 10, 30, 0.72);
   color: rgba(100, 200, 255, 0.7);
   display: flex;
   align-items: center;
@@ -208,9 +217,14 @@
 }
 
 .p0-word-light {
-  font-weight: 200;
-  letter-spacing: 4px;
-  color: rgba(220, 225, 240, 0.85);
+  /* "Delivery," — now a bolder, more distinctive geometric sans-serif
+     (Space Grotesk) instead of the previous ultra-light Inter 200, so it
+     balances visually with "elevated!" on the right. */
+  font-family: 'Space Grotesk', 'Inter', -apple-system, BlinkMacSystemFont,
+    'Helvetica Neue', sans-serif;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: rgba(240, 245, 255, 0.95);
 }
 
 .p0-word-bold {
@@ -264,33 +278,6 @@
   97% { clip-path: inset(5% 0 80% 0); transform: translate(-2px, 0); }
 }
 
-/* ─── Decorative digital dots (right of title) ─── */
-.p0-deco-dots {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  margin-left: 8px;
-  vertical-align: middle;
-}
-
-.p0-deco-dots span {
-  display: block;
-  width: 8px;
-  height: 8px;
-  border: 1.5px solid rgba(100, 200, 255, 0.5);
-  animation: p0-dotPulse 2s ease-in-out infinite;
-}
-
-.p0-deco-dots span:nth-child(1) { animation-delay: 0s; }
-.p0-deco-dots span:nth-child(2) { animation-delay: 0.3s; width: 6px; height: 6px; background: rgba(100, 200, 255, 0.4); }
-.p0-deco-dots span:nth-child(3) { animation-delay: 0.6s; }
-.p0-deco-dots span:nth-child(4) { animation-delay: 0.9s; width: 10px; height: 10px; border-color: rgba(0, 232, 150, 0.4); }
-
-@keyframes p0-dotPulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
-}
-
 /* ─── Subtitle ─── */
 .p0-subtitle {
   font-size: 1.15rem;
@@ -317,39 +304,29 @@
   font-weight: 800;
   font-size: 1.3rem;
   color: #fff;
-  padding: 4px 16px;
-  border: 1.5px solid rgba(100, 200, 255, 0.5);
-  background: rgba(100, 200, 255, 0.08);
+  /* No border / background — rendered as plain emphasized text now. */
+  padding: 0;
   letter-spacing: 3px;
   transform-origin: left center;
   position: relative;
 }
 
-.p0-sub-boxed::after {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border: 1px solid rgba(100, 200, 255, 0.15);
-  transform: translate(4px, 4px);
-  pointer-events: none;
-}
-
-/* ─── Decorative squares (right of subtitle) ─── */
-.p0-deco-squares {
+/* ─── Shenzhen wrapper (keeps "in ShenZhen" glued on one line) ─── */
+.p0-sub-shenzhen-wrap {
+  position: relative;
   display: inline-flex;
-  gap: 5px;
   align-items: center;
-  margin-left: 10px;
+  gap: 8px;
+  white-space: nowrap;   /* never let "in" and "ShenZhen" break apart */
 }
 
-.p0-deco-squares span {
-  display: block;
-  border: 1px solid rgba(100, 200, 255, 0.35);
+.p0-sub-in {
+  /* inherits the .p0-sub-light visual weight to keep the caption rhythm,
+     but sits inside the nowrap wrapper so it moves together with
+     ShenZhen onto whichever line has room for both. */
+  font-weight: 300;
+  letter-spacing: 2px;
 }
-
-.p0-deco-squares span:nth-child(1) { width: 12px; height: 12px; background: rgba(100, 200, 255, 0.15); }
-.p0-deco-squares span:nth-child(2) { width: 6px; height: 6px; background: rgba(100, 200, 255, 0.4); }
-.p0-deco-squares span:nth-child(3) { width: 9px; height: 9px; }
 
 /* ─── Enter Button (square) ─── */
 .p0-enter-btn {
@@ -367,13 +344,11 @@
   align-items: center;
   justify-content: center;
   margin: 40px auto 0;
+  /* The intro/entrance animation is owned by GSAP in Page0Cover.jsx
+     (keeps choreography in one place). Previously this element had a
+     CSS `animation: p0-enterAppear 0.8s 1.4s ... both` which would run
+     in parallel and cause jumpy double-animating. */
   transition: border-color 0.4s, background 0.4s, box-shadow 0.4s;
-  animation: p0-enterAppear 0.8s 1.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-@keyframes p0-enterAppear {
-  from { opacity: 0; transform: scale(0); }
-  to { opacity: 1; transform: scale(1); }
 }
 
 .p0-enter-text {
@@ -449,6 +424,17 @@
 
 .p0-hidden {
   visibility: hidden;
+}
+
+/* While the intro overlay is playing the hero content is hidden, but
+   `visibility: hidden` alone does NOT pause CSS animations. The glitch
+   pseudo-elements, dot pulse, enter-ring pulse, etc. would still tick
+   every frame and thrash the compositor. Force-pause them here. */
+.p0-hidden,
+.p0-hidden *,
+.p0-hidden *::before,
+.p0-hidden *::after {
+  animation-play-state: paused !important;
 }
 
 /* ─── Transition Canvas ─── */
@@ -542,11 +528,6 @@
 
   .p0-subtitle {
     font-size: 0.75rem;
-  }
-
-  .p0-deco-dots,
-  .p0-deco-squares {
-    display: none;
   }
 
   .p0-sidebar {

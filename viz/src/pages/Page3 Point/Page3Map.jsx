@@ -75,9 +75,13 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
   const [tooltip, setTooltip]               = useState(null);
   const [districtPanel, setDistrictPanel]   = useState(null);
   const [selectedHubIdx, setSelectedHubIdx] = useState(null);
-  const containerRef = useRef(null);
-  const mapRef       = useRef(null);
-  const viewStateRef = useRef(INITIAL_VIEW);
+  const [hoverDistrict, setHoverDistrict]   = useState(null);
+  const [autoPlaying, setAutoPlaying]       = useState(false);
+  const containerRef   = useRef(null);
+  const mapRef         = useRef(null);
+  const viewStateRef   = useRef(INITIAL_VIEW);
+  const autoTimerRef   = useRef(null);
+  const autoIdxRef     = useRef(0);
 
   useEffect(() => {
     setSelectedHubIdx(null);
@@ -106,7 +110,7 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
     }
   }, [activeTab, hexGrid]);
 
-  // ── Tab 3 数据（必须在 handleDeckClick 之前声明）──
+  // ── Tab 3 data (must be declared before handleDeckClick) ──
   const tab3Data = useMemo(() => {
     if (!data) return null;
     const hubs = data.filter(d => d.zone_type === 'commercial');
@@ -120,6 +124,59 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
     return { hubs, lms, connections };
   }, [data]);
 
+  // ── Auto-play: loop through hub routes when entering Routes tab ──
+  useEffect(() => {
+    if (activeTab !== 3 || !tab3Data) return;
+
+    clearTimeout(autoTimerRef.current);
+    autoIdxRef.current = 0;
+    setAutoPlaying(true);
+    setSelectedHubIdx(null);
+
+    // zoom back to full view first
+    setViewState(vs => ({ ...vs, ...INITIAL_VIEW, pitch: 45, bearing: -15, transitionDuration: 900 }));
+
+    const zoomToHub = (idx) => {
+      if (!containerRef.current || !tab3Data) return;
+      setSelectedHubIdx(idx);
+      const { hub, reachable } = tab3Data.connections[idx];
+      const allPts = [hub, ...reachable];
+      const lons = allPts.map(p => p.lon);
+      const lats = allPts.map(p => p.lat);
+      const bbox = [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)];
+      const { clientWidth: w, clientHeight: h } = containerRef.current;
+      const vp = new WebMercatorViewport({ ...viewStateRef.current, width: w, height: h });
+      const { longitude, latitude, zoom } = vp.fitBounds(
+        [[bbox[0], bbox[1]], [bbox[2], bbox[3]]], { padding: 100 }
+      );
+      setViewState(vs => ({ ...vs, longitude, latitude, zoom: Math.min(zoom, 13), transitionDuration: 900 }));
+    };
+
+    const step = () => {
+      const idx = autoIdxRef.current;
+      if (idx >= tab3Data.hubs.length) {
+        // loop done, zoom back to full view
+        setSelectedHubIdx(null);
+        setViewState(vs => ({ ...vs, ...INITIAL_VIEW, pitch: 45, bearing: -15, transitionDuration: 900 }));
+        setAutoPlaying(false);
+        return;
+      }
+      zoomToHub(idx);
+      autoIdxRef.current += 1;
+      autoTimerRef.current = setTimeout(step, 2800);
+    };
+
+    autoTimerRef.current = setTimeout(step, 1200);
+
+    return () => clearTimeout(autoTimerRef.current);
+  }, [activeTab, tab3Data]);
+
+  const stopAutoPlay = useCallback(() => {
+    clearTimeout(autoTimerRef.current);
+    setAutoPlaying(false);
+  }, []);
+
+
   const activeArcs = useMemo(() => {
     if (selectedHubIdx === null || !tab3Data) return [];
     const { hub, reachable } = tab3Data.connections[selectedHubIdx];
@@ -131,7 +188,7 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
     return new Set(tab3Data.connections[selectedHubIdx].reachable);
   }, [selectedHubIdx, tab3Data]);
 
-  // ── 事件处理 ──
+  // ── Event handlers ──
   const handleViewStateChange = useCallback(({ viewState: vs, interactionState }) => {
     setViewState(vs);
     viewStateRef.current = vs;
@@ -165,7 +222,10 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
   }, [focusDistrict, districtStats]);
 
   const handleDeckClick = useCallback((info) => {
-    // Tab 3：像素距离检测 hub
+    // stop auto-play
+    stopAutoPlay();
+
+    // Tab 3: pixel-distance hit test for hubs
     if (activeTab === 3 && tab3Data && containerRef.current) {
       const { clientWidth: w, clientHeight: h } = containerRef.current;
       const vp = new WebMercatorViewport({ ...viewStateRef.current, width: w, height: h });
@@ -196,7 +256,7 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
       }
     }
 
-    // 行政区检测
+    // district hit test
     const map = mapRef.current?.getMap?.();
     if (!map) return;
     const features = map.queryRenderedFeatures([info.x, info.y], { layers: ['sz-boundary-fill'] });
@@ -229,7 +289,29 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
     });
   }, [activeTab, tab3Data, districtStats, onDistrictFocus]);
 
-  // ── DeckGL 图层 ──
+  const handleDeckHover = useCallback((info) => {
+    const map = mapRef.current?.getMap?.();
+    if (!map) return;
+    const features = map.queryRenderedFeatures([info.x, info.y], { layers: ['sz-boundary-fill'] });
+    if (!features || features.length === 0) {
+      setDistrictPanel(null);
+      setHoverDistrict(null);
+      return;
+    }
+    const featureName = features[0].properties.name;
+    setHoverDistrict(featureName);
+    const enName   = DISTRICT_EN[featureName] || featureName;
+    const distInfo = DISTRICT_INFO[featureName] || {};
+    const stats    = districtStats?.find(d => d.name === enName) || {};
+    setDistrictPanel({
+      zhName: featureName, enName,
+      population: distInfo.population, area: distInfo.area,
+      commercial: stats.commercial ?? 0,
+      last_mile:  stats.last_mile  ?? 0,
+    });
+  }, [districtStats]);
+
+  // ── DeckGL layers ──
   const deckLayers = useMemo(() => {
     const layers = [];
 
@@ -255,12 +337,15 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
     return layers;
   }, [activeTab, activeArcs, data, selectedHubIdx]);
 
-  const highlightFeatures = useMemo(() => ({
-    type: 'FeatureCollection',
-    features: focusDistrict?.featureName && boundary
-      ? boundary.features.filter(f => f.properties.name === focusDistrict.featureName)
-      : [],
-  }), [focusDistrict, boundary]);
+  const highlightFeatures = useMemo(() => {
+    const name = hoverDistrict || focusDistrict?.featureName;
+    return {
+      type: 'FeatureCollection',
+      features: name && boundary
+        ? boundary.features.filter(f => f.properties.name === name)
+        : [],
+    };
+  }, [hoverDistrict, focusDistrict, boundary]);
 
   return (
     <div ref={containerRef} style={{ position: 'absolute', inset: 0 }}>
@@ -271,6 +356,7 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
         layers={deckLayers}
         style={{ position: 'absolute', inset: 0 }}
         onClick={handleDeckClick}
+        onHover={handleDeckHover}
       >
         <Map
           ref={mapRef}
@@ -278,8 +364,14 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
           mapStyle="mapbox://styles/mapbox/dark-v11"
           projection="mercator"
           style={{ width: '100%', height: '100%' }}
+          onLoad={e => {
+            const map = e.target;
+            map.getStyle().layers.forEach(l => {
+              if (l['source-layer'] === 'building') map.setLayoutProperty(l.id, 'visibility', 'none');
+            });
+          }}
         >
-          {/* Tab 3：3D 建筑 */}
+          {/* Tab 3: 3D buildings */}
           {activeTab === 3 && (
             <Layer id="3d-buildings" type="fill-extrusion" source="composite" source-layer="building"
               filter={['==', 'extrude', 'true']}
@@ -346,21 +438,21 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
             );
           })}
 
-          {/* Tab 4：Hex Grid（Mapbox 原生，在 marker 下面）*/}
+          {/* Tab 4: Hex Grid (Mapbox native, rendered below markers) */}
           {activeTab === 4 && hexGrid && (
             <Source id="hex-grid" type="geojson" data={hexGrid}>
               <Layer id="hex-grid-fill" type="fill"
                 paint={{
                   'fill-color': [
                     'step', ['get', 'coverage_ratio'],
-                    '#111118',    // 0  — 无覆盖
-                    0.001, '#0d3060',  // 极低
-                    50,   '#0a5a8a',   // 低
-                    100,  '#0b7a6a',   // 中低
-                    200,  '#1a9640',   // 中
-                    400,  '#c8a200',   // 中高
-                    800,  '#d04800',   // 高
-                    1500, '#b50000',   // 极高
+                    '#111118',    // 0  — no coverage
+                    0.001, '#0d3060',  // very low
+                    50,   '#0a5a8a',   // low
+                    100,  '#0b7a6a',   // medium-low
+                    200,  '#1a9640',   // medium
+                    400,  '#c8a200',   // medium-high
+                    800,  '#d04800',   // high
+                    1500, '#b50000',   // very high
                   ],
                   'fill-opacity': [
                     'step', ['get', 'coverage_ratio'],
@@ -380,7 +472,7 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
             </Source>
           )}
 
-          {/* Tab 4：起降点水滴图标 */}
+          {/* Tab 4: launch/landing point pin icons */}
           {activeTab === 4 && data?.map((d, i) => (
             <Marker key={`v${i}`} longitude={d.lon} latitude={d.lat} anchor="bottom"
               style={{ zIndex: 10 }}>
@@ -424,7 +516,21 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
         </div>
       )}
 
-      {/* 行政区信息 panel */}
+      {/* auto-play hint */}
+      {autoPlaying && (
+        <div style={{
+          position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(10,10,30,0.75)', backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(100,200,255,0.25)', borderRadius: 8,
+          padding: '8px 18px', color: 'rgba(200,220,255,0.8)', fontSize: 12,
+          letterSpacing: 1, pointerEvents: 'none', zIndex: 30,
+          animation: 'fadeInUp 0.4s ease both',
+        }}>
+          Click anywhere to stop autoplay
+        </div>
+      )}
+
+      {/* district info panel */}
       {districtPanel && (
         <div className="p3-district-panel">
           <div className="p3-dp-header">
@@ -434,7 +540,7 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
           <div className="p3-dp-divider" />
           <div className="p3-dp-row">
             <span className="p3-dp-label">Population</span>
-            <span className="p3-dp-val">{districtPanel.population} 万</span>
+            <span className="p3-dp-val">{districtPanel.population} ×10k</span>
           </div>
           <div className="p3-dp-row">
             <span className="p3-dp-label">Area</span>

@@ -4,99 +4,164 @@ const PARTICLE_COUNT = 1000;
 const CONNECT_DIST = 55;
 const MOUSE_RADIUS = 150;
 
+/**
+ * Generate target positions for a *side-view* quad-copter silhouette.
+ *
+ * Coordinate sketch (cx, cy is the fuselage center):
+ *
+ *          ─ ─ ─               ─ ─ ─         <- spinning rotors (horizontal
+ *           │                   │                blur strokes in side view)
+ *           ║                   ║             <- motor/strut posts
+ *            ╲                 ╱
+ *             ╲               ╱               <- arms, tilted upward
+ *        ╔═════╪═════════════╪═════╗          <- fuselage (horizontal ellipse)
+ *              │             │
+ *              ▼             ▼                <- landing gear legs
+ *
+ * We represent each part as a "layer" so draw-time code can style (colour,
+ * size, glow) and animate (spin) it differently. Propeller particles orbit
+ * a hub on an *extremely flattened ellipse* (orbitR wide, orbitRy tiny) so
+ * that from the side they read as a horizontal motion blur, not a disc.
+ */
 function generateDroneTargets(cx, cy, scale, count) {
-  const armLen = 105 * scale;
-  const bodyRx = 36 * scale;
-  const bodyRy = 22 * scale;
-  const propR = 36 * scale;
-  const armWidth = 7 * scale;
-  const armAngles = [Math.PI * 0.25, Math.PI * 0.75, Math.PI * 1.25, Math.PI * 1.75];
+  const bodyRx    = 82 * scale;   // fuselage half-length
+  const bodyRy    = 13 * scale;   // fuselage half-height
+  const armLen    = 54 * scale;   // length of each upward-tilted arm
+  const armAngle  = Math.PI * 0.18; // ~32° upward tilt
+  const propLen   = 50 * scale;   // rotor half-span (disc radius)
+  const propYLift = 4 * scale;    // rotor sits slightly above the motor tip
+  const gearH     = 18 * scale;   // landing-gear leg height
+
+  // Arm bases are lifted up by half the fuselage so arms appear to come out
+  // of the top-half of the hull, not the centerline.
+  const armBases = [
+    { bx: cx + bodyRx * 0.55, by: cy - bodyRy * 0.35, dir:  1 }, // front arm
+    { bx: cx - bodyRx * 0.55, by: cy - bodyRy * 0.35, dir: -1 }, // rear arm
+  ];
 
   const pts = [];
-  const bodyCount = Math.floor(count * 0.18);
-  const armCount = Math.floor(count * 0.18);
-  const propCount = Math.floor(count * 0.46);
-  const ambientCount = count - bodyCount - armCount - propCount;
 
-  // body — dense filled ellipse
+  const bodyCount    = Math.floor(count * 0.22);
+  const armCount     = Math.floor(count * 0.14);
+  const propCount    = Math.floor(count * 0.42);
+  const gearCount    = Math.floor(count * 0.06);
+  const ambientCount = count - bodyCount - armCount - propCount - gearCount;
+
+  // ── Fuselage: dense, horizontal ellipse (plus a subtle taper on both ends
+  //    to hint at a bullet-like silhouette) ──
   for (let i = 0; i < bodyCount; i++) {
-    const a = (Math.PI * 2 * i) / bodyCount;
+    const a = Math.random() * Math.PI * 2;
     const r = Math.sqrt(Math.random());
+    // Taper: narrow the ellipse near the ends so |cos(a)| ~ 1 → smaller ry.
+    const taper = 1 - Math.abs(Math.cos(a)) * 0.25;
     pts.push({
       x: cx + Math.cos(a) * bodyRx * r,
-      y: cy + Math.sin(a) * bodyRy * r,
+      y: cy + Math.sin(a) * bodyRy * taper * r,
       layer: 'body',
-      hubAngle: 0,
-      hubCx: 0,
-      hubCy: 0,
-      orbitR: 0,
+      hubAngle: 0, hubCx: 0, hubCy: 0, orbitR: 0, orbitRy: 0,
     });
   }
 
-  // arms — thick lines
-  const perArm = Math.floor(armCount / 4);
-  for (const angle of armAngles) {
+  // ── Arms + short vertical motor strut on the end of each arm ──
+  const perArm = Math.floor(armCount / 2);
+  for (const base of armBases) {
+    const endX = base.bx + base.dir * Math.cos(armAngle) * armLen;
+    const endY = base.by - Math.sin(armAngle) * armLen;
+    // Most particles trace the arm line.
+    const armJitter = 2 * scale;
     for (let i = 0; i < perArm; i++) {
-      const t = (i / perArm) * 0.92 + 0.08;
-      const perpAngle = angle + Math.PI / 2;
-      const offset = (Math.random() - 0.5) * armWidth;
+      const t = i / perArm;
+      const jx = (Math.random() - 0.5) * armJitter;
+      const jy = (Math.random() - 0.5) * armJitter;
       pts.push({
-        x: cx + Math.cos(angle) * armLen * t + Math.cos(perpAngle) * offset,
-        y: cy + Math.sin(angle) * armLen * t + Math.sin(perpAngle) * offset,
+        x: base.bx + (endX - base.bx) * t + jx,
+        y: base.by + (endY - base.by) * t + jy,
         layer: 'arm',
-        hubAngle: 0,
-        hubCx: 0,
-        hubCy: 0,
-        orbitR: 0,
+        hubAngle: 0, hubCx: 0, hubCy: 0, orbitR: 0, orbitRy: 0,
+      });
+    }
+    // A few more particles on the short vertical motor post above the tip.
+    const strutParticles = Math.max(4, Math.floor(perArm * 0.25));
+    for (let i = 0; i < strutParticles; i++) {
+      const u = i / strutParticles;
+      pts.push({
+        x: endX + (Math.random() - 0.5) * armJitter,
+        y: endY - u * 6 * scale,
+        layer: 'arm',
+        hubAngle: 0, hubCx: 0, hubCy: 0, orbitR: 0, orbitRy: 0,
       });
     }
   }
 
-  // propellers — particles with orbit data so they can spin
-  const perProp = Math.floor(propCount / 4);
-  for (const angle of armAngles) {
-    const hcx = cx + Math.cos(angle) * armLen;
-    const hcy = cy + Math.sin(angle) * armLen;
+  // ── Rotors: each rotor is a SET of particles orbiting a flattened ellipse
+  //    (wide in x, near-zero in y) so from the side they look like a
+  //    blurred horizontal stroke above each motor. ──
+  const perProp = Math.floor(propCount / 2);
+  for (const base of armBases) {
+    const endX = base.bx + base.dir * Math.cos(armAngle) * armLen;
+    const endY = base.by - Math.sin(armAngle) * armLen;
+    const hubX = endX;
+    const hubY = endY - propYLift;
     for (let i = 0; i < perProp; i++) {
-      const a = (Math.PI * 2 * i) / perProp;
-      const r = Math.sqrt(Math.random()) * propR;
+      const a = (Math.PI * 2 * i) / perProp + Math.random() * 0.4;
+      const rScale = 0.4 + Math.random() * 0.6; // density across span
       pts.push({
-        x: hcx + Math.cos(a) * r,
-        y: hcy + Math.sin(a) * r,
+        x: hubX + Math.cos(a) * propLen * rScale,
+        y: hubY + Math.sin(a) * 1.2 * scale * rScale,
         layer: 'prop',
         hubAngle: a,
-        hubCx: hcx,
-        hubCy: hcy,
-        orbitR: r,
+        hubCx: hubX,
+        hubCy: hubY,
+        orbitR:  propLen * rScale,       // horizontal radius (full span)
+        orbitRy: 1.2 * scale * rScale,   // near-zero vertical radius
       });
     }
   }
 
-  // ambient floating particles
+  // ── Landing gear: two short legs hanging off the belly ──
+  const gearBases = [
+    { bx: cx + bodyRx * 0.32 },
+    { bx: cx - bodyRx * 0.32 },
+  ];
+  const perGear = Math.max(1, Math.floor(gearCount / 2));
+  for (const g of gearBases) {
+    for (let i = 0; i < perGear; i++) {
+      const t = i / perGear;
+      pts.push({
+        x: g.bx + (Math.random() - 0.5) * 2 * scale,
+        y: cy + bodyRy * 0.8 + t * gearH,
+        layer: 'arm', // reuse arm styling for legs
+        hubAngle: 0, hubCx: 0, hubCy: 0, orbitR: 0, orbitRy: 0,
+      });
+    }
+  }
+
+  // ── Ambient atmosphere: soft floating sparks around the craft. Compressed
+  //    vertically so the overall cloud reads as "flying drone in a wide
+  //    horizontal scene", matching the side-profile framing. ──
   for (let i = 0; i < ambientCount; i++) {
     const a = Math.random() * Math.PI * 2;
-    const r = (armLen + propR) * (1.15 + Math.random() * 1.3);
+    const r = (bodyRx + armLen + propLen) * (1.0 + Math.random() * 1.2);
     pts.push({
       x: cx + Math.cos(a) * r,
-      y: cy + Math.sin(a) * r,
+      y: cy + Math.sin(a) * r * 0.55,
       layer: 'ambient',
-      hubAngle: 0,
-      hubCx: 0,
-      hubCy: 0,
-      orbitR: 0,
+      hubAngle: 0, hubCx: 0, hubCy: 0, orbitR: 0, orbitRy: 0,
     });
   }
 
   return pts;
 }
 
-const DroneParticles = forwardRef(function DroneParticles({ exploding }, ref) {
+const DroneParticles = forwardRef(function DroneParticles({ exploding, paused = false }, ref) {
   const canvasRef = useRef(null);
   const mouse = useRef({ x: -9999, y: -9999 });
   const animRef = useRef(null);
   const particlesRef = useRef([]);
   const explodeRef = useRef(false);
   const explodeStartRef = useRef(null);
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
 
   useImperativeHandle(ref, () => ({
     getPositions() {
@@ -158,6 +223,7 @@ const DroneParticles = forwardRef(function DroneParticles({ exploding }, ref) {
           hubCx: t.hubCx,
           hubCy: t.hubCy,
           orbitR: t.orbitR,
+          orbitRy: t.orbitRy || 0,
           vx: 0,
           vy: 0,
           size:
@@ -188,6 +254,13 @@ const DroneParticles = forwardRef(function DroneParticles({ exploding }, ref) {
     const EXPLODE_DURATION = 1200;
 
     const draw = (time) => {
+      // While paused (e.g. during the intro overlay) skip all simulation
+      // and drawing work, but keep a low-cost rAF alive so we can resume
+      // immediately once the host flips `paused` back to false.
+      if (pausedRef.current) {
+        animRef.current = requestAnimationFrame(draw);
+        return;
+      }
       ctx.clearRect(0, 0, w, h);
       const t = time * 0.001;
       const mx = mouse.current.x;
@@ -198,7 +271,9 @@ const DroneParticles = forwardRef(function DroneParticles({ exploding }, ref) {
         : 0;
       const explodeProgress = Math.min(explodeElapsed / EXPLODE_DURATION, 1);
 
-      const spinSpeed = 2.5;
+      const spinSpeed = 9; // rotor spins faster (and along an ellipse, not a
+                         // disc), giving the visual impression of a blurred
+                         // horizontal blade from the side.
 
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
@@ -232,7 +307,7 @@ const DroneParticles = forwardRef(function DroneParticles({ exploding }, ref) {
           if (p.layer === 'prop') {
             const angle = p.hubAngle + t * spinSpeed;
             goalX = p.hubCx + Math.cos(angle) * p.orbitR;
-            goalY = p.hubCy + Math.sin(angle) * p.orbitR;
+            goalY = p.hubCy + Math.sin(angle) * p.orbitRy;
           } else {
             const floatX = Math.sin(t * 1.5 + p.phase) * 2;
             const floatY = Math.cos(t * 1.2 + p.phase * 1.3) * 2;

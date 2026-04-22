@@ -1,14 +1,60 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Page0Cover from './pages/Page0/Page0Cover';
-import Page1Landing from './pages/Page1 overview/Page1Landing';
-import Page2Entry from './pages/Page2 analysis/Page2Entry';
-import Page2FullMap from './pages/Page2 analysis/Page2FullMap';
-import Page3Friction from './pages/Page3 Point/Page3Friction';
-import Page4Demand from './pages/Page4/Page4Demand';
-import Page5Strategy from './pages/Page5/Page5Strategy';
-import Page6Summary from './pages/Page6/Page6Summary';
 import './App.css';
+
+// Route-level code-splitting: only Page0 is in the initial bundle.
+// Each of Page1-6 is split into its own chunk and is mounted lazily
+// once its viewport-anchor section is close to being scrolled into view.
+const Page1Landing   = lazy(() => import('./pages/Page1 overview/Page1Landing'));
+const Page2Entry     = lazy(() => import('./pages/Page2 analysis/Page2Entry'));
+const Page2FullMap   = lazy(() => import('./pages/Page2 analysis/Page2FullMap'));
+const Page3Friction  = lazy(() => import('./pages/Page3 Point/Page3Friction'));
+const Page4Demand    = lazy(() => import('./pages/Page4/Page4Demand'));
+const Page5Strategy  = lazy(() => import('./pages/Page5/Page5Strategy'));
+const Page6Summary   = lazy(() => import('./pages/Page6/Page6Summary'));
+
+/**
+ * LazyPage: renders a full-viewport placeholder <section id="page-N" /> so
+ * anchor scroll / nav-dot IntersectionObservers still work, and only mounts
+ * the real (heavy) page component once the placeholder is about to enter the
+ * viewport. Once mounted, it stays mounted (one-way latch) so scroll position
+ * and internal state are preserved.
+ *
+ * rootMargin is generous (default 600px) so the next page is warmed up a
+ * little before the user actually reaches it.
+ */
+function LazyPage({ pageId, component: Component, rootMargin = '600px', mountKey }) {
+  const [visible, setVisible] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (visible) return;
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          obs.disconnect();
+        }
+      },
+      { rootMargin }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [visible, rootMargin]);
+
+  if (visible) {
+    return (
+      <Suspense fallback={<section id={pageId} className="page lazy-placeholder" />}>
+        <Component key={mountKey} />
+      </Suspense>
+    );
+  }
+
+  return <section id={pageId} className="page lazy-placeholder" ref={ref} />;
+}
 
 const NAV_PAGES = [
   { id: 0, label: 'Cover' },
@@ -94,10 +140,23 @@ function PageNav({ pages, onNavigate }) {
   const [activeId, setActiveId] = useState(0);
 
   useEffect(() => {
-    const observers = pages
-      .map((p) => {
+    // Because Page1-6 are lazy-mounted (the placeholder <section id="page-N" />
+    // is replaced by the real page section once it scrolls into view), the
+    // DOM nodes we originally observed can be detached. We therefore (1) bind
+    // once on mount to whatever exists, and (2) re-bind whenever a page-*
+    // anchor node is added or removed under <body>.
+    const observed = new Map(); // pageId -> { el, obs }
+
+    const bindAll = () => {
+      for (const p of pages) {
         const el = document.getElementById(`page-${p.id}`);
-        if (!el) return null;
+        const current = observed.get(p.id);
+        if (current && current.el === el) continue;
+        if (current) current.obs.disconnect();
+        if (!el) {
+          observed.delete(p.id);
+          continue;
+        }
         const obs = new IntersectionObserver(
           ([entry]) => {
             if (entry.intersectionRatio > 0.5) setActiveId(p.id);
@@ -105,10 +164,29 @@ function PageNav({ pages, onNavigate }) {
           { threshold: [0, 0.5, 1] }
         );
         obs.observe(el);
-        return obs;
-      })
-      .filter(Boolean);
-    return () => observers.forEach((o) => o.disconnect());
+        observed.set(p.id, { el, obs });
+      }
+    };
+
+    bindAll();
+
+    const mo = new MutationObserver((mutations) => {
+      const touchesPageAnchor = mutations.some((m) => {
+        const check = (n) =>
+          n.nodeType === 1 && typeof n.id === 'string' && n.id.startsWith('page-');
+        for (const n of m.addedNodes) if (check(n)) return true;
+        for (const n of m.removedNodes) if (check(n)) return true;
+        return false;
+      });
+      if (touchesPageAnchor) bindAll();
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      mo.disconnect();
+      observed.forEach(({ obs }) => obs.disconnect());
+      observed.clear();
+    };
   }, [pages]);
 
   return (
@@ -148,12 +226,12 @@ function MainNarrative() {
       <PageNav pages={NAV_PAGES} onNavigate={handleNavClick} />
 
       <Page0Cover />
-      <Page1Landing />
-      <Page2Entry key={p2Key} />
-      <Page3Friction />
-      <Page4Demand />
-      <Page5Strategy />
-      <Page6Summary />
+      <LazyPage pageId="page-1" component={Page1Landing} />
+      <LazyPage pageId="page-2" component={Page2Entry} mountKey={p2Key} />
+      <LazyPage pageId="page-3" component={Page3Friction} />
+      <LazyPage pageId="page-4" component={Page4Demand} />
+      <LazyPage pageId="page-5" component={Page5Strategy} />
+      <LazyPage pageId="page-6" component={Page6Summary} />
     </div>
   );
 }
@@ -171,13 +249,28 @@ function GlobalCursor() {
 
     let hovering = false;
 
-    const onMove = (e) => {
-      const t = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
+    // Synchronously write the transform. We use `pointermove` instead of
+    // `mousemove` because it is not throttled to vsync and pairs with
+    // `getCoalescedEvents` to give us the freshest physical pointer sample
+    // the browser has received, which visibly reduces "cursor lag" when
+    // the main thread is busy.
+    const onPointerMove = (e) => {
+      let cx = e.clientX;
+      let cy = e.clientY;
+      if (typeof e.getCoalescedEvents === 'function') {
+        const list = e.getCoalescedEvents();
+        if (list && list.length) {
+          const last = list[list.length - 1];
+          cx = last.clientX;
+          cy = last.clientY;
+        }
+      }
+      const t = `translate3d(${cx}px, ${cy}px, 0)`;
       wrap.style.transform = t;
       dot.style.transform = t;
     };
 
-    const onMouseOver = (e) => {
+    const onPointerOver = (e) => {
       const next = !!e.target.closest?.(
         'a, button, input, textarea, select, label, [role="button"]'
       );
@@ -186,19 +279,19 @@ function GlobalCursor() {
       ring.classList.toggle('hovering', next);
     };
 
-    const onMouseDown = () => ring.classList.add('pressed');
-    const onMouseUp = () => ring.classList.remove('pressed');
+    const onPointerDown = () => ring.classList.add('pressed');
+    const onPointerUp = () => ring.classList.remove('pressed');
 
-    window.addEventListener('mousemove', onMove, { passive: true });
-    window.addEventListener('mousedown', onMouseDown);
-    window.addEventListener('mouseup', onMouseUp);
-    document.addEventListener('mouseover', onMouseOver);
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    window.addEventListener('pointerdown', onPointerDown, { passive: true });
+    window.addEventListener('pointerup', onPointerUp, { passive: true });
+    document.addEventListener('pointerover', onPointerOver, { passive: true });
 
     return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mousedown', onMouseDown);
-      window.removeEventListener('mouseup', onMouseUp);
-      document.removeEventListener('mouseover', onMouseOver);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointerup', onPointerUp);
+      document.removeEventListener('pointerover', onPointerOver);
     };
   }, []);
 
@@ -218,7 +311,14 @@ export default function App() {
       <GlobalCursor />
       <Routes>
         <Route path="/" element={<MainNarrative />} />
-        <Route path="/analysis" element={<Page2FullMap />} />
+        <Route
+          path="/analysis"
+          element={
+            <Suspense fallback={<div className="lazy-placeholder" />}>
+              <Page2FullMap />
+            </Suspense>
+          }
+        />
       </Routes>
     </>
   );

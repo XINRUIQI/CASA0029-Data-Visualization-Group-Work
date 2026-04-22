@@ -8,6 +8,17 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Placeholder for pages that have not yet been lazy-mounted.
+   Keeps the page anchor (#page-N) in the DOM so nav dots / topbar links
+   and scroll-anchoring still work, and reserves full-viewport height so
+   the document size is stable before the real page boots up. */
+.lazy-placeholder {
+  display: block;
+  min-height: 100vh;
+  width: 100%;
+  background: #050518;
+}
+
 /* ── Hide native cursor everywhere (custom white cursor takes over) ── */
 html,
 body,
@@ -40,15 +51,20 @@ body,
   border-radius: 50%;
   border: 1.5px solid rgba(255, 255, 255, 0.9);
   background: transparent;
-  opacity: 0;
+  opacity: 0.3;
   transform: scale(1);
-  transition: opacity 0.22s ease, transform 0.15s ease;
-  will-change: transform, opacity;
+  /* Only transition opacity. Putting `transform` on transition here was
+     causing ring-scale animations to run whenever the parent translate
+     changed on some browsers, which showed up as a perceived "cursor lag".
+     The parent .global-cursor handles position; ring only changes scale
+     on hover/press which we let snap instantly. */
+  transition: opacity 0.06s ease;
+  will-change: opacity;
 }
 
 .global-cursor-ring.hovering {
-  opacity: 0.55;
-  transform: scale(1);
+  opacity: 0.7;
+  transform: scale(1.4);
 }
 
 .global-cursor-ring.pressed {
