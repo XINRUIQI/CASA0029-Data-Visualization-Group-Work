@@ -332,7 +332,7 @@ export default function Page3Friction() {
                   <path d="M20 0C8.954 0 0 8.954 0 20c0 13.333 20 32 20 32S40 33.333 40 20C40 8.954 31.046 0 20 0z" fill="#ffa028" />
                   <circle cx="20" cy="19" r="8" fill="white" opacity="0.9" />
                 </svg>
-                Hub Sites <span className="p3-il-count">45</span>
+                Commercial area pick-up/drop-off points <span className="p3-il-count">45</span>
               </button>
               <button className={`p3-il-btn ${showLastMile ? 'active' : ''}`} style={{ '--ilc': '#c864ff' }}
                 onClick={() => setShowLastMile(v => !v)}>
@@ -340,7 +340,7 @@ export default function Page3Friction() {
                   <path d="M20 0C8.954 0 0 8.954 0 20c0 13.333 20 32 20 32S40 33.333 40 20C40 8.954 31.046 0 20 0z" fill="#c864ff" />
                   <circle cx="20" cy="19" r="8" fill="white" opacity="0.9" />
                 </svg>
-                Last-mile <span className="p3-il-count">161</span>
+                Last-mile pick-up/drop-off points <span className="p3-il-count">161</span>
               </button>
             </>}
             {activeTab === 4 && [
@@ -422,7 +422,7 @@ export default function Page3Friction() {
                     label={{ value: 'Sites (n)', angle: 0, position: 'top', fill: '#555', fontSize: 10, dy: -8, dx: 20, textAnchor: 'middle' }} />
                   <Tooltip contentStyle={{ background: '#0f0f24', border: '1px solid #2a2a4a', borderRadius: 8, fontSize: 12 }}
                     labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                    formatter={(value, name) => [value, name === 'commercial' ? 'Hub Sites' : 'Last-mile Sites']} />
+                    formatter={(value, name) => [value, name === 'commercial' ? 'Commercial area pick-up/drop-off points' : 'Last-mile pick-up/drop-off points']} />
                   <Bar dataKey="commercial" fill="#ffa028" fillOpacity={showCommercial ? 0.85 : 0.15} maxBarSize={18} cursor="pointer"
                     onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
                     <LabelList dataKey="commercial" position="top" style={{ fill: showCommercial ? '#ccc' : 'transparent', fontSize: 9 }} formatter={v => v > 0 ? v : ''} />

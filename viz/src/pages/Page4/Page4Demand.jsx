@@ -4,6 +4,13 @@ import Page4Charts from './Page4Charts';
 import { publicDataUrl } from '../../config';
 import './Page4.css';
 
+const CLASS_LABELS = {
+  hub:      'Commercial area pick-up/drop-off points',
+  station:  'Commercial area pick-up/drop-off points',
+  endpoint: 'Last-mile pick-up/drop-off points',
+};
+const siteLabel = (cls) => CLASS_LABELS[cls] || cls;
+
 const STRATEGIES = [
   { id: 'demand', label: 'Demand-first', desc: 'Prioritize highest POI density zones' },
   { id: 'friction', label: 'Friction-first', desc: 'Prioritize highest ground friction zones' },
@@ -128,7 +135,7 @@ export default function Page4Demand() {
           {hoveredSite && (
             <div className="p4-site-tooltip">
               <div className="st-rank">#{hoveredSite.rank}</div>
-              <div className="st-class">{hoveredSite.site_class}</div>
+              <div className="st-class">{siteLabel(hoveredSite.site_class)}</div>
               <div className="st-gap">Gap: {(hoveredSite.gap_index || 0).toFixed(3)}</div>
             </div>
           )}
@@ -189,7 +196,7 @@ export default function Page4Demand() {
                 <div className="p4-site-detail">
                   <div className="sd-header">
                     <span className="sd-rank">#{selectedSiteDetail.rank}</span>
-                    <span className={`rk-class ${selectedSiteDetail.site_class}`}>{selectedSiteDetail.site_class}</span>
+                    <span className={`rk-class ${selectedSiteDetail.site_class}`}>{siteLabel(selectedSiteDetail.site_class)}</span>
                     <button className="sd-close" onClick={() => setSelectedSiteDetail(null)}>x</button>
                   </div>
                   <div className="sd-row">
@@ -225,7 +232,7 @@ export default function Page4Demand() {
                     style={{ cursor: 'pointer' }}
                   >
                     <span className="rk-num">#{s.rank}</span>
-                    <span className={`rk-class ${s.site_class}`}>{s.site_class}</span>
+                    <span className={`rk-class ${s.site_class}`}>{siteLabel(s.site_class)}</span>
                     <div className="rk-bar-wrap">
                       <div className="rk-bar" style={{ width: `${(s.gap_index || 0) / (rankedSites[0]?.gap_index || 1) * 100}%` }} />
                     </div>

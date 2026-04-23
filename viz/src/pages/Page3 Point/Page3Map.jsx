@@ -16,8 +16,8 @@ const INITIAL_VIEW = {
 };
 
 const ZONE_META = {
-  commercial: { hex: '#ffa028', label: 'Hub Site' },
-  last_mile:  { hex: '#c864ff', label: 'Last-mile Site' },
+  commercial: { hex: '#ffa028', label: 'Commercial area pick-up/drop-off points' },
+  last_mile:  { hex: '#c864ff', label: 'Last-mile pick-up/drop-off points' },
 };
 
 const DISTRICT_EN = {
@@ -560,7 +560,7 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
             <span className="p3-dp-val">{districtPanel.commercial + districtPanel.last_mile}</span>
           </div>
           <div className="p3-dp-row">
-            <span className="p3-dp-label" style={{ color: '#ffa028' }}>Hub</span>
+            <span className="p3-dp-label" style={{ color: '#ffa028' }}>Commercial area</span>
             <span className="p3-dp-val">{districtPanel.commercial}</span>
           </div>
           <div className="p3-dp-row">

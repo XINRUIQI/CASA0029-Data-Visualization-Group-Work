@@ -159,9 +159,9 @@ function PageNav({ pages, onNavigate }) {
         }
         const obs = new IntersectionObserver(
           ([entry]) => {
-            if (entry.intersectionRatio > 0.5) setActiveId(p.id);
+            if (entry.isIntersecting) setActiveId(p.id);
           },
-          { threshold: [0, 0.5, 1] }
+          { rootMargin: '-49% 0px -49% 0px', threshold: 0 }
         );
         obs.observe(el);
         observed.set(p.id, { el, obs });
