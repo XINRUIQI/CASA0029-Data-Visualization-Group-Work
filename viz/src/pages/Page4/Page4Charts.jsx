@@ -1,65 +1,171 @@
-import { useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-         BarChart, Bar, Cell } from 'recharts';
-import './Page4Charts.css';
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  CartesianGrid, Legend,
+} from 'recharts';
 
-export default function Page4Charts({ strategy, budget, sites }) {
-  // Marginal gain curve: cumulative gap as sites are added
-  const marginalData = useMemo(() => {
-    if (!sites?.length) return [];
-    let cum = 0;
-    return sites.slice(0, 15).map((s, i) => {
-      cum += s.gap_index || 0;
-      return {
-        n: i + 1,
-        marginal: +(s.gap_index || 0).toFixed(4),
-        cumulative: +cum.toFixed(4),
-      };
-    });
-  }, [sites]);
+const TT_STYLE = {
+  background: '#0f0f24',
+  border: '1px solid #2a2a4a',
+  borderRadius: 8,
+  fontSize: 12,
+};
 
-  // Strategy comparison (simulated)
-  const stratCompare = [
-    { name: '+3', demand: 32, friction: 28, gap: 35 },
-    { name: '+5', demand: 48, friction: 42, gap: 55 },
-    { name: '+10', demand: 68, friction: 60, gap: 78 },
+/**
+ * "The Current Mismatch" — stacked horizontal bars showing what share of
+ * Shenzhen's population and POIs the existing 34 vertiports actually cover
+ * (at 3 km and 5 km flight radii). Drives home the "supply ≠ demand" point.
+ */
+export function MismatchChart({ coverage }) {
+  if (!coverage?.radii) return null;
+  const r3 = coverage.radii['3km'];
+  const r5 = coverage.radii['5km'];
+
+  const rows = [
+    { label: 'Population · 3 km', covered: r3.population_coverage_pct, total: 100 },
+    { label: 'POI · 3 km',        covered: r3.poi_coverage_pct,        total: 100 },
+    { label: 'Population · 5 km', covered: r5.population_coverage_pct, total: 100 },
+    { label: 'POI · 5 km',        covered: r5.poi_coverage_pct,        total: 100 },
   ];
 
   return (
-    <div className="p4c">
-      {/* Marginal gain curve */}
-      <div className="p4c-section">
-        <h4>Marginal Gain Curve</h4>
-        <p className="p4c-note">Gap index of each additional site — diminishing returns after ~8 sites</p>
-        <ResponsiveContainer width="100%" height={140}>
-          <LineChart data={marginalData} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
-            <CartesianGrid stroke="#1e1e3a" />
-            <XAxis dataKey="n" tick={{ fill: '#555', fontSize: 10 }} label={{ value: 'Sites added', position: 'bottom', fill: '#555', fontSize: 10 }} />
-            <YAxis tick={{ fill: '#555', fontSize: 10 }} />
-            <Tooltip contentStyle={{ background: '#1a1a2e', border: '1px solid #333', borderRadius: 8, fontSize: 12 }} />
-            <Line type="monotone" dataKey="marginal" stroke="#ffa028" strokeWidth={2} dot={{ r: 3 }} name="Marginal" />
-            <Line type="monotone" dataKey="cumulative" stroke="#64c8ff" strokeWidth={2} dot={false} name="Cumulative" strokeDasharray="4 4" />
-          </LineChart>
-        </ResponsiveContainer>
+    <div className="p4-chart">
+      <div className="p4-chart-kpis">
+        <div className="p4-kpi">
+          <div className="p4-kpi-val">{coverage.site_count}</div>
+          <div className="p4-kpi-lab">Existing vertiports</div>
+        </div>
+        <div className="p4-kpi">
+          <div className="p4-kpi-val" style={{ color: '#ff7a5c' }}>
+            {(100 - r3.population_coverage_pct).toFixed(1)}%
+          </div>
+          <div className="p4-kpi-lab">Population outside 3 km</div>
+        </div>
+        <div className="p4-kpi">
+          <div className="p4-kpi-val" style={{ color: '#ff7a5c' }}>
+            {(100 - r3.poi_coverage_pct).toFixed(1)}%
+          </div>
+          <div className="p4-kpi-lab">POIs outside 3 km</div>
+        </div>
       </div>
 
-      {/* Strategy comparison */}
-      <div className="p4c-section">
-        <h4>Strategy Comparison (% demand covered)</h4>
-        <ResponsiveContainer width="100%" height={130}>
-          <BarChart data={stratCompare} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
-            <XAxis dataKey="name" tick={{ fill: '#777', fontSize: 10 }} />
-            <YAxis tick={{ fill: '#555', fontSize: 10 }} domain={[0, 100]} />
-            <Tooltip contentStyle={{ background: '#1a1a2e', border: '1px solid #333', borderRadius: 8, fontSize: 12 }} />
-            <Bar dataKey="demand" fill="#ff8c00" fillOpacity={0.7} radius={[3, 3, 0, 0]} name="Demand-first" />
-            <Bar dataKey="friction" fill="#ff3264" fillOpacity={0.7} radius={[3, 3, 0, 0]} name="Friction-first" />
-            <Bar dataKey="gap" fill="#c864ff" fillOpacity={0.8} radius={[3, 3, 0, 0]} name="Composite-gap" />
-          </BarChart>
-        </ResponsiveContainer>
-        <p className="p4c-insight">
-          Composite-gap consistently outperforms single-dimension strategies — especially at lower budgets.
-        </p>
+      <div className="p4-bars">
+        {rows.map(r => (
+          <div className="p4-bar-row" key={r.label}>
+            <div className="p4-bar-label">{r.label}</div>
+            <div className="p4-bar-track">
+              <div
+                className="p4-bar-fill"
+                style={{ width: `${r.covered}%` }}
+              />
+              <span className="p4-bar-val">{r.covered.toFixed(1)}%</span>
+            </div>
+          </div>
+        ))}
       </div>
+
+      <p className="p4-chart-note">
+        Covered vs. uncovered share at 3 km and 5 km flight radii.
+        More than half of Shenzhen still sits outside any vertiport's reach.
+      </p>
+    </div>
+  );
+}
+
+/**
+ * "The Optimisation Logic" — diminishing-returns curve from the greedy
+ * complementarity simulation. Shows how quickly demand/pop/area coverage
+ * climbs as the algorithm adds complementary sites one by one.
+ */
+export function OptimisationChart({ strategy }) {
+  if (!strategy?.length) return null;
+
+  const data = strategy.map(d => ({
+    n:      d.n_sites,
+    demand: d.demand_coverage_pct,
+    pop:    d.pop_coverage_pct,
+    area:   d.coverage_area_pct,
+  }));
+
+  return (
+    <div className="p4-chart">
+      <ResponsiveContainer width="100%" height={260}>
+        <LineChart
+          data={data}
+          margin={{ top: 14, right: 24, bottom: 28, left: 8 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#1e2040" vertical={false} />
+          <XAxis
+            dataKey="n"
+            type="number"
+            scale="log"
+            domain={[3, 100]}
+            ticks={[3, 5, 10, 20, 50, 100]}
+            tick={{ fill: '#888', fontSize: 11 }}
+            axisLine={{ stroke: '#2a2a4a' }}
+            tickLine={false}
+            label={{
+              value: 'Number of sites (log)',
+              position: 'bottom',
+              fill: '#666',
+              fontSize: 11,
+              offset: 6,
+            }}
+          />
+          <YAxis
+            domain={[0, 100]}
+            tickFormatter={v => `${v}%`}
+            tick={{ fill: '#888', fontSize: 11 }}
+            axisLine={{ stroke: '#2a2a4a' }}
+            tickLine={false}
+            width={42}
+          />
+          <Tooltip
+            contentStyle={TT_STYLE}
+            labelStyle={{ color: '#aaa' }}
+            formatter={(v, name) => [`${v.toFixed(1)}%`, name]}
+            labelFormatter={l => `${l} sites`}
+          />
+          <Legend
+            verticalAlign="top"
+            align="right"
+            wrapperStyle={{ fontSize: 11, color: '#aaa', paddingBottom: 4 }}
+            iconType="plainline"
+            iconSize={18}
+          />
+          <Line
+            type="monotone"
+            dataKey="demand"
+            name="Demand coverage"
+            stroke="#ff7a5c"
+            strokeWidth={2.2}
+            dot={{ r: 3, stroke: '#ff7a5c', fill: '#0a0a1a', strokeWidth: 1.5 }}
+            activeDot={{ r: 5 }}
+          />
+          <Line
+            type="monotone"
+            dataKey="pop"
+            name="Population coverage"
+            stroke="#64c8ff"
+            strokeWidth={2}
+            dot={{ r: 3, stroke: '#64c8ff', fill: '#0a0a1a', strokeWidth: 1.5 }}
+          />
+          <Line
+            type="monotone"
+            dataKey="area"
+            name="Area coverage"
+            stroke="#8a8d99"
+            strokeWidth={1.8}
+            strokeDasharray="4 3"
+            dot={{ r: 2.5, stroke: '#8a8d99', fill: '#0a0a1a', strokeWidth: 1.2 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+
+      <p className="p4-chart-note">
+        Greedy complementarity simulation: each added site maximises
+        <em> newly</em> covered demand. Marginal gain shrinks quickly &mdash;
+        the first 20 sites win almost half of the demand.
+      </p>
     </div>
   );
 }

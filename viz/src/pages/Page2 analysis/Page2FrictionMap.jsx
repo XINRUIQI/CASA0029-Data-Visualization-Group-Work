@@ -21,6 +21,21 @@ const VIEW = {
   bearing: 0,
 };
 
+// Nice-number scale bar: pick the largest "nice" length (1/2/5 × 10^n meters)
+// that fits under a target pixel width, given the current zoom/latitude.
+const SCALE_OPTIONS = [1, 2, 5, 10, 20, 50, 100, 200, 500,
+  1000, 2000, 5000, 10000, 20000, 50000, 100000];
+function computeScale(vs, targetPx = 110) {
+  const mpp = (40075016.686 * Math.abs(Math.cos(vs.latitude * Math.PI / 180)))
+              / Math.pow(2, vs.zoom + 8);
+  const rawMeters = targetPx * mpp;
+  let nice = SCALE_OPTIONS[0];
+  for (const v of SCALE_OPTIONS) if (v <= rawMeters) nice = v;
+  const widthPx = nice / mpp;
+  const label = nice >= 1000 ? `${nice / 1000} km` : `${nice} m`;
+  return { widthPx, label };
+}
+
 function hexColor(mode, d, highlight, tw) {
   if (!d) return [80, 80, 80, 40];
 
@@ -32,29 +47,24 @@ function hexColor(mode, d, highlight, tw) {
 
   const dp = d.dp || 0;
   const fr = d.avg_friction || 0;
-  if (mode === 'demand') {
-    const v = Math.min(dp / 200, 1) * tw;
+  const tdi = d.takeout_demand_index || 0;
+  if (mode === 'supply') {
+    const v = Math.min(dp / 200, 1);
     return [255, Math.round(160 * (1 - v)), 0, Math.round(10 + 220 * v)];
+  }
+  if (mode === 'demand') {
+    const v = Math.min(tdi, 1) * tw;
+    return [255, Math.round(100 * (1 - v)), Math.round(50 * (1 - v)), Math.round(15 + 220 * v)];
   }
   if (mode === 'friction') {
     const v = Math.min(fr, 1);
     return [255, 50 * (1 - v), 100 * (1 - v), 30 + 200 * v];
   }
-  if (mode === 'overlap') {
-    const dv = Math.min(dp / 200, 1);
+  if (mode === 'priority') {
+    const dv = Math.min(tdi, 1) * tw;
     const fv = Math.min(fr, 1);
     const v = dv * fv;
     return [120 + 135 * v, 40 * (1 - v), 180 + 75 * v, 30 + 200 * v];
-  }
-  if (mode === 'takeout') {
-    const tdi = d.takeout_demand_index || 0;
-    const v = Math.min(tdi, 1);
-    return [255, Math.round(100 * (1 - v)), Math.round(50 * (1 - v)), Math.round(15 + 220 * v)];
-  }
-  if (mode === 'coverage') {
-    const acc = d.food_access_2km || 0;
-    const v = Math.min(acc / 3000, 1);
-    return [Math.round(30 + 50 * v), Math.round(200 * (1 - v * 0.4)), Math.round(255 - 100 * v), Math.round(15 + 220 * v)];
   }
   return [80, 80, 80, 40];
 }
@@ -162,20 +172,62 @@ export default function Page2FrictionMap({
     return result;
   }, [barriers, activeBarriers, showBarriers, activeMode, mergedHex, routes, showRoutes, onHoverHex, highlightFilter, timeWeight]);
 
+  const scale = computeScale(viewState);
+
   return (
-    <DeckGL
-      viewState={viewState}
-      onViewStateChange={({ viewState: vs }) => setViewState(vs)}
-      controller={true}
-      layers={layers}
-      style={{ width: '100%', height: '100%' }}
-      useDevicePixels={false}
-    >
-      <Map
-        mapboxAccessToken={MAPBOX_TOKEN}
-        mapStyle="mapbox://styles/mapbox/dark-v11"
-        reuseMaps
-      />
-    </DeckGL>
+    <>
+      <DeckGL
+        viewState={viewState}
+        onViewStateChange={({ viewState: vs }) => setViewState(vs)}
+        controller={true}
+        layers={layers}
+        style={{ width: '100%', height: '100%' }}
+        useDevicePixels={false}
+      >
+        <Map
+          mapboxAccessToken={MAPBOX_TOKEN}
+          mapStyle="mapbox://styles/mapbox/dark-v11"
+          reuseMaps
+        />
+      </DeckGL>
+
+      {/* Map controls: home / compass / scale */}
+      <div className="p2f-ctrl">
+        <button
+          className="p2f-ctrl-btn"
+          title="Reset view"
+          onClick={() => setViewState(VIEW)}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" strokeWidth="2"
+               strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 12 L12 3 L21 12" />
+            <path d="M5 10 V21 H19 V10" />
+          </svg>
+        </button>
+
+        <button
+          className="p2f-ctrl-btn p2f-compass"
+          title="Reset bearing"
+          onClick={() => setViewState(v => ({ ...v, bearing: 0, pitch: 0 }))}
+        >
+          <svg width="28" height="28" viewBox="0 0 32 32"
+               style={{ transform: `rotate(${-viewState.bearing}deg)`,
+                        transition: 'transform 0.15s' }}>
+            <circle cx="16" cy="16" r="14" fill="none"
+                    stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+            <polygon points="16,4 20,16 16,13 12,16" fill="#ff4500" />
+            <polygon points="16,28 20,16 16,19 12,16" fill="#888" />
+            <text x="16" y="3.5" fill="#fff" fontSize="5"
+                  textAnchor="middle" fontWeight="700">N</text>
+          </svg>
+        </button>
+
+        <div className="p2f-scale">
+          <div className="p2f-scale-bar" style={{ width: `${scale.widthPx}px` }} />
+          <span className="p2f-scale-label">{scale.label}</span>
+        </div>
+      </div>
+    </>
   );
 }

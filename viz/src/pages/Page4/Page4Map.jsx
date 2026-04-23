@@ -1,167 +1,103 @@
-import { useState } from 'react';
-import Map from 'react-map-gl/mapbox';
-import DeckGL from '@deck.gl/react';
-import { ScatterplotLayer } from '@deck.gl/layers';
-import { H3HexagonLayer } from '@deck.gl/geo-layers';
+import { useState, useEffect, useRef } from 'react';
+import Map, { Marker, Source, Layer } from 'react-map-gl/mapbox';
+import { WebMercatorViewport } from '@deck.gl/core';
 import { MAPBOX_TOKEN, SHENZHEN_CENTER, SHENZHEN_ZOOM, SHENZHEN_MAX_BOUNDS } from '../../config';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-const CLASS_COLORS = {
-  hub: [255, 50, 50, 220],
-  station: [255, 180, 0, 200],
-  endpoint: [100, 200, 255, 180],
-};
-
-const VIEW = {
+const INITIAL_VIEW = {
   longitude: SHENZHEN_CENTER[0],
-  latitude: SHENZHEN_CENTER[1],
-  zoom: SHENZHEN_ZOOM,
+  latitude:  SHENZHEN_CENTER[1],
+  zoom:      SHENZHEN_ZOOM,
   pitch: 0,
   bearing: 0,
 };
 
-export default function Page4Map({ sites, allSites, h3Demand, showCoverage, showCoveredOnly, showBeforeAfter, onHoverSite, onClickSite }) {
-  const [viewState, setViewState] = useState(VIEW);
+function PinIcon({ color, size = 14 }) {
+  return (
+    <svg viewBox="0 0 40 52" width={size} height={size * 1.3}
+      style={{ display: 'block', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}>
+      <path d="M20 0C8.954 0 0 8.954 0 20c0 13.333 20 32 20 32S40 33.333 40 20C40 8.954 31.046 0 20 0z" fill={color} />
+      <circle cx="20" cy="19" r="8" fill="white" opacity="0.9" />
+    </svg>
+  );
+}
 
-  const layers = [];
+export default function Page4Map({ sites, boundary, hexGrid }) {
+  const [viewState, setViewState] = useState(INITIAL_VIEW);
+  const containerRef = useRef(null);
 
-  if (h3Demand && showBeforeAfter === 'before') {
-    layers.push(
-      new H3HexagonLayer({
-        id: 'demand-bg',
-        data: h3Demand,
-        getHexagon: d => d.h3,
-        getFillColor: d => {
-          const dp = d.dp || 0;
-          if (showCoveredOnly && dp < 30) return [0, 0, 0, 0];
-          const v = Math.min(dp / 200, 1);
-          return [255, 160 * (1 - v), 0, 25 + 120 * v];
-        },
-        extruded: false,
-        stroked: true,
-        getLineColor: [255, 255, 255, 8],
-        getLineWidth: 1,
-        lineWidthMinPixels: 0,
-        updateTriggers: { getFillColor: [showCoveredOnly] },
-      })
+  // Fit to the hex grid extent on load (same behaviour as Page3 Coverage tab)
+  useEffect(() => {
+    if (!hexGrid || !containerRef.current) return;
+    let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
+    hexGrid.features.forEach(f => {
+      f.geometry.coordinates[0].forEach(([lon, lat]) => {
+        if (lon < minLon) minLon = lon;
+        if (lat < minLat) minLat = lat;
+        if (lon > maxLon) maxLon = lon;
+        if (lat > maxLat) maxLat = lat;
+      });
+    });
+    const { clientWidth: w, clientHeight: h } = containerRef.current;
+    if (!w || !h) return;
+    const vp = new WebMercatorViewport({ width: w, height: h });
+    const { longitude, latitude, zoom } = vp.fitBounds(
+      [[minLon, minLat], [maxLon, maxLat]], { padding: 24 }
     );
-  }
-
-  if (h3Demand && showBeforeAfter === 'after') {
-    layers.push(
-      new H3HexagonLayer({
-        id: 'demand-bg-after',
-        data: h3Demand,
-        getHexagon: d => d.h3,
-        getFillColor: d => {
-          const dp = d.dp || 0;
-          if (showCoveredOnly && dp < 30) return [0, 0, 0, 0];
-          const v = Math.min(dp / 200, 1);
-          return [255, 140 * (1 - v), 30, 10 + 45 * v];
-        },
-        extruded: false,
-        stroked: true,
-        getLineColor: [255, 255, 255, 5],
-        getLineWidth: 1,
-        lineWidthMinPixels: 0,
-        updateTriggers: { getFillColor: [showCoveredOnly] },
-      })
-    );
-  }
-
-  if (showCoverage && showBeforeAfter === 'after' && sites?.length) {
-    layers.push(
-      new ScatterplotLayer({
-        id: 'coverage-fill',
-        data: sites,
-        getPosition: d => [d.lon, d.lat],
-        getRadius: 3000,
-        getFillColor: [100, 200, 255, 20],
-        getLineColor: [100, 200, 255, 50],
-        lineWidthMinPixels: 1,
-        stroked: true,
-        filled: true,
-      })
-    );
-
-    if (h3Demand) {
-      layers.push(
-        new H3HexagonLayer({
-          id: 'newly-covered',
-          data: h3Demand,
-          getHexagon: d => d.h3,
-          getFillColor: d => {
-            const dp = d.dp || 0;
-            if (dp < 20 && showCoveredOnly) return [0, 0, 0, 0];
-            return [0, 232, 150, 40 + Math.min(dp / 100, 1) * 100];
-          },
-          extruded: false,
-          stroked: false,
-          updateTriggers: { getFillColor: [showCoveredOnly, sites] },
-        })
-      );
-    }
-  }
-
-  if (allSites?.length) {
-    const unselected = allSites.filter(s => !sites?.some(sel => sel.lon === s.lon && sel.lat === s.lat));
-    layers.push(
-      new ScatterplotLayer({
-        id: 'ghost-sites',
-        data: unselected,
-        getPosition: d => [d.lon, d.lat],
-        getRadius: 100,
-        getFillColor: [80, 80, 100, 60],
-        radiusMinPixels: 2,
-        radiusMaxPixels: 6,
-      })
-    );
-  }
-
-  if (sites?.length) {
-    layers.push(
-      new ScatterplotLayer({
-        id: 'site-glow',
-        data: sites,
-        getPosition: d => [d.lon, d.lat],
-        getRadius: 600,
-        getFillColor: d => [...(CLASS_COLORS[d.site_class] || [200, 200, 200]).slice(0, 3), 40],
-        radiusMinPixels: 10,
-        radiusMaxPixels: 35,
-      })
-    );
-    layers.push(
-      new ScatterplotLayer({
-        id: 'selected-sites',
-        data: sites,
-        getPosition: d => [d.lon, d.lat],
-        getRadius: 200,
-        getFillColor: d => CLASS_COLORS[d.site_class] || [200, 200, 200, 200],
-        radiusMinPixels: 5,
-        radiusMaxPixels: 16,
-        pickable: true,
-        onHover: info => onHoverSite?.(info.object || null),
-        onClick: info => onClickSite?.(info.object || null),
-      })
-    );
-  }
+    setViewState(vs => ({ ...vs, longitude, latitude, zoom, transitionDuration: 600 }));
+  }, [hexGrid]);
 
   return (
-    <DeckGL
-      viewState={viewState}
-      onViewStateChange={({ viewState: vs }) => setViewState(vs)}
-      controller={true}
-      layers={layers}
-      style={{ width: '100%', height: '100%' }}
-    >
+    <div ref={containerRef} style={{ position: 'absolute', inset: 0 }}>
       <Map
+        {...viewState}
+        onMove={e => setViewState(e.viewState)}
         mapboxAccessToken={MAPBOX_TOKEN}
         mapStyle="mapbox://styles/mapbox/dark-v11"
+        projection="mercator"
         reuseMaps
         maxBounds={SHENZHEN_MAX_BOUNDS}
         minZoom={9}
         maxZoom={14}
-      />
-    </DeckGL>
+        style={{ width: '100%', height: '100%' }}
+        onLoad={e => {
+          const map = e.target;
+          map.getStyle().layers.forEach(l => {
+            if (l['source-layer'] === 'building') map.setLayoutProperty(l.id, 'visibility', 'none');
+          });
+        }}
+      >
+        {boundary && (
+          <Source id="p4-boundary" type="geojson" data={boundary}>
+            <Layer id="p4-boundary-fill" type="fill"
+              paint={{ 'fill-color': '#ffffff', 'fill-opacity': 0.03 }} />
+            <Layer id="p4-boundary-line" type="line"
+              paint={{ 'line-color': 'rgba(200,200,210,0.6)', 'line-width': 1, 'line-dasharray': [6, 4] }} />
+          </Source>
+        )}
+
+        {hexGrid && (
+          <Source id="p4-hex-grid" type="geojson" data={hexGrid}>
+            <Layer id="p4-hex-grid-fill" type="fill"
+              paint={{
+                'fill-color': '#ffffff',
+                'fill-opacity': 0.02,
+              }}
+            />
+            <Layer id="p4-hex-grid-line" type="line"
+              paint={{ 'line-color': '#ffffff', 'line-width': 0.4, 'line-opacity': 0.12 }} />
+          </Source>
+        )}
+
+        {sites?.map((d, i) => (
+          <Marker key={`v${i}`} longitude={d.lon} latitude={d.lat} anchor="bottom"
+            style={{ zIndex: 10 }}>
+            <div style={{ pointerEvents: 'none' }}>
+              <PinIcon color="#8a8d99" size={14} />
+            </div>
+          </Marker>
+        ))}
+      </Map>
+    </div>
   );
 }

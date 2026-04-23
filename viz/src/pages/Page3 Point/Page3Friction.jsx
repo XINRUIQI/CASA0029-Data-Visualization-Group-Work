@@ -173,13 +173,44 @@ export default function Page3Friction() {
     const byStatus = { existing: 0, planned: 0 };
     const byCompound = {};
     const byPoiType = {};
+    const byZone = { commercial: 0, last_mile: 0 };
     sites.forEach(s => {
       byStatus[s.status] = (byStatus[s.status] || 0) + 1;
       byCompound[s.compound_type] = (byCompound[s.compound_type] || 0) + 1;
       if (s.dominant_poi) byPoiType[s.dominant_poi] = (byPoiType[s.dominant_poi] || 0) + 1;
+      if (s.zone_type && byZone[s.zone_type] !== undefined) byZone[s.zone_type]++;
     });
-    return { byStatus, byCompound, byPoiType, total: sites.length };
+    return { byStatus, byCompound, byPoiType, byZone, total: sites.length };
   }, [sites]);
+
+  const panelMeta = useMemo(() => {
+    const takeoff = siteStats?.byZone?.commercial ?? 0;
+    const landing = siteStats?.byZone?.last_mile ?? 0;
+    switch (activeTab) {
+      case 1:
+        return {
+          title: 'Take-off & Landing Network',
+          subtitle: `Spatial Distribution of current ${takeoff} Take-off and ${landing} Landing Sites`,
+        };
+      case 2:
+        return {
+          title: 'Urban Context',
+          subtitle: 'Functional POI Layers Informing Vertiport Placement Strategy',
+        };
+      case 3:
+        return {
+          title: 'Aerial Routes',
+          subtitle: 'Simulated Flight Paths Connecting Vertiport Nodes',
+        };
+      case 4:
+        return {
+          title: 'Accessibility Coverage',
+          subtitle: 'Population Served per Vertiport (10,000 persons per site)',
+        };
+      default:
+        return { title: '', subtitle: '' };
+    }
+  }, [activeTab, siteStats]);
 
   function getDistrictView(districtName) {
     if (!boundary) return null;
@@ -380,12 +411,8 @@ export default function Page3Friction() {
         <div className="p3-panel-card">
           <div className="p3p-header">
             <div className="p3p-tag">Infrastructure · Shenzhen 2024</div>
-            <h2 className="p3p-title">Vertiport Site Distribution</h2>
-            <p className="p3p-desc">
-              Influenced by terrain, zoning policy, and operator strategies,
-              vertiport sites cluster near commercial hubs, parks, and residential
-              compounds. Existing pads reflect demand; planned pads signal expansion.
-            </p>
+            <h2 className="p3p-title">{panelMeta.title}</h2>
+            <p className="p3p-desc">{panelMeta.subtitle}</p>
           </div>
 
           {loadError && <div className="p3p-loading" style={{ color: '#ff6b6b' }}>加载失败：{loadError}</div>}

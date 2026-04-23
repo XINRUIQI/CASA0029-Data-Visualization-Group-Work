@@ -209,11 +209,6 @@ export default function Page2FrictionCharts({
     return buildBins(vals, 0.05);
   }, [h3Takeout]);
 
-  const coverageBins = useMemo(() => {
-    if (!h3Takeout?.length) return [];
-    return buildBins(h3Takeout.map(d => d.food_access_2km || 0).filter(v => v > 0), 200);
-  }, [h3Takeout]);
-
   const takeoutComponents = useMemo(() => {
     if (!h3Takeout?.length) return [];
     const avg = (key) => {
@@ -229,19 +224,6 @@ export default function Page2FrictionCharts({
       { axis: 'Xiaoqu', value: avg('xiaoqu_count') },
       { axis: 'Food POI', value: avg('food_count') },
       { axis: 'Access 2km', value: avg('food_access_2km') },
-    ];
-  }, [h3Takeout]);
-
-  const coverageStats = useMemo(() => {
-    if (!h3Takeout?.length) return null;
-    const total = h3Takeout.length;
-    const a1 = h3Takeout.filter(d => (d.food_access_1km || 0) > 0).length;
-    const a2 = h3Takeout.filter(d => (d.food_access_2km || 0) > 0).length;
-    const a3 = h3Takeout.filter(d => (d.food_access_3km || 0) > 0).length;
-    return [
-      { radius: '1 km', covered: a1, pct: +((a1 / total) * 100).toFixed(1), color: '#ff4500' },
-      { radius: '2 km', covered: a2, pct: +((a2 / total) * 100).toFixed(1), color: '#00c8ff' },
-      { radius: '3 km', covered: a3, pct: +((a3 / total) * 100).toFixed(1), color: '#00e896' },
     ];
   }, [h3Takeout]);
 
@@ -273,11 +255,10 @@ export default function Page2FrictionCharts({
       }));
   }, [h3Takeout]);
 
-  const isDemand = activeMode === 'demand';
+  const isSupply = activeMode === 'supply';
   const isFriction = activeMode === 'friction';
-  const isOverlap = activeMode === 'overlap';
-  const isTakeout = activeMode === 'takeout';
-  const isCoverage = activeMode === 'coverage';
+  const isPriority = activeMode === 'priority';
+  const isDemand = activeMode === 'demand';
 
   return (
     <div className="p2c">
@@ -297,10 +278,10 @@ export default function Page2FrictionCharts({
         </div>
       </div>
 
-      {/* Demand mode: POI ranking */}
-      {isDemand && poiRanking.length > 0 && (
+      {/* Supply mode: POI ranking */}
+      {isSupply && poiRanking.length > 0 && (
         <div className="p2c-section">
-          <h4>POI Demand Contribution</h4>
+          <h4>POI Supply Contribution</h4>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={poiRanking} layout="vertical" margin={{ left: 80, right: 10, top: 5, bottom: 5 }}>
               <XAxis type="number" tick={{ fill: '#555', fontSize: 9 }}
@@ -317,15 +298,15 @@ export default function Page2FrictionCharts({
             </BarChart>
           </ResponsiveContainer>
           <p className="p2c-note">
-            Which POI category drives the most delivery demand across Shenzhen?
+            Which POI category drives the most delivery supply across Shenzhen?
           </p>
         </div>
       )}
 
-      {/* Demand mode: Top 10 hexagons */}
-      {isDemand && topHexagons.length > 0 && (
+      {/* Supply mode: Top 10 hexagons */}
+      {isSupply && topHexagons.length > 0 && (
         <div className="p2c-section">
-          <h4>Top 10 Demand Hexagons <span className="p2c-click-hint">click for detail</span></h4>
+          <h4>Top 10 Supply Hexagons <span className="p2c-click-hint">click for detail</span></h4>
           <div className="p2c-hex-rank">
             {topHexagons.map(hex => {
               const barW = (hex.dp / topHexagons[0].dp) * 100;
@@ -356,7 +337,7 @@ export default function Page2FrictionCharts({
             <div className="p2c-hex-detail">
               <div className="p2c-hd-header">
                 <span className="p2c-hd-rank">#{selectedHex.rank}</span>
-                <span className="p2c-hd-dp">Demand Pressure: <strong>{selectedHex.dp.toFixed(2)}</strong></span>
+                <span className="p2c-hd-dp">Supply Pressure: <strong>{selectedHex.dp.toFixed(2)}</strong></span>
                 <button className="p2c-hd-close" onClick={() => { setSelectedHex(null); onHighlight?.(null); }}>×</button>
               </div>
               <div className="p2c-hd-top-pois">
@@ -372,16 +353,16 @@ export default function Page2FrictionCharts({
         </div>
       )}
 
-      {/* Demand + Overlap: scatter */}
-      {(isDemand || isOverlap) && scatterData.length > 0 && (
+      {/* Supply + Priority: scatter */}
+      {(isSupply || isPriority) && scatterData.length > 0 && (
         <div className="p2c-section">
-          <h4>Demand vs Friction (per hex) <span className="p2c-click-hint">click to highlight</span></h4>
+          <h4>Supply vs Friction (per hex) <span className="p2c-click-hint">click to highlight</span></h4>
           <ResponsiveContainer width="100%" height={200}>
             <ScatterChart margin={{ left: 5, right: 10, top: 5, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e2040" />
-              <XAxis dataKey="demand" type="number" name="Demand"
+              <XAxis dataKey="demand" type="number" name="Supply"
                 tick={{ fill: '#666', fontSize: 9 }} axisLine={{ stroke: '#2a2a4a' }}
-                label={{ value: 'Demand', position: 'bottom', fill: '#555', fontSize: 10, offset: -2 }}
+                label={{ value: 'Supply', position: 'bottom', fill: '#555', fontSize: 10, offset: -2 }}
               />
               <YAxis dataKey="friction" type="number" name="Friction"
                 tick={{ fill: '#666', fontSize: 9 }} axisLine={{ stroke: '#2a2a4a' }}
@@ -404,12 +385,12 @@ export default function Page2FrictionCharts({
               />
             </ScatterChart>
           </ResponsiveContainer>
-          <p className="p2c-note">Top-right = high demand + high friction. Click a point to highlight its hex on the map.</p>
+          <p className="p2c-note">Top-right = high supply + high friction. Click a point to highlight its hex on the map.</p>
         </div>
       )}
 
-      {/* Friction mode charts */}
-      {(isFriction || isOverlap) && (
+      {/* Friction / Priority mode charts */}
+      {(isFriction || isPriority) && (
         <>
           {barrierRates && (
             <div className="p2c-section">
@@ -524,12 +505,12 @@ export default function Page2FrictionCharts({
         </>
       )}
 
-      {/* Takeout mode charts */}
-      {isTakeout && (
+      {/* Demand / Priority mode charts */}
+      {(isDemand || isPriority) && (
         <>
           {takeoutBins.length > 0 && (
             <div className="p2c-section">
-              <h4>Takeout Demand Distribution</h4>
+              <h4>Demand Distribution</h4>
               <ResponsiveContainer width="100%" height={160}>
                 <BarChart data={takeoutBins} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
                   <XAxis dataKey="range" tick={{ fill: '#666', fontSize: 9 }} />
@@ -589,7 +570,7 @@ export default function Page2FrictionCharts({
 
           {topTakeout.length > 0 && (
             <div className="p2c-section">
-              <h4>Top Takeout Demand Hexagons</h4>
+              <h4>Top Demand Hexagons</h4>
               <div className="p2c-hex-rank">
                 {topTakeout.map(hex => {
                   const barW = (hex.tdi / topTakeout[0].tdi) * 100;
@@ -616,50 +597,6 @@ export default function Page2FrictionCharts({
                   );
                 })}
               </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Coverage mode charts */}
-      {isCoverage && (
-        <>
-          {coverageStats && (
-            <div className="p2c-section">
-              <h4>Food Accessibility Coverage</h4>
-              <ResponsiveContainer width="100%" height={130}>
-                <BarChart data={coverageStats} layout="vertical" margin={{ left: 40, right: 20, top: 5, bottom: 5 }}>
-                  <XAxis type="number" domain={[0, 100]} tick={{ fill: '#555', fontSize: 10 }}
-                    tickFormatter={(v) => `${v}%`} />
-                  <YAxis type="category" dataKey="radius" tick={{ fill: '#999', fontSize: 11 }} width={38} />
-                  <Tooltip contentStyle={TT_STYLE}
-                    formatter={(v, _, props) => [`${v}% (${props.payload.covered} hexagons)`, 'Coverage']} />
-                  <Bar dataKey="pct" radius={[0, 4, 4, 0]} name="Coverage">
-                    {coverageStats.map((s, i) => <Cell key={i} fill={s.color} fillOpacity={0.8} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-              <p className="p2c-note">
-                Percentage of hexagons with at least 1 food POI within each radius
-              </p>
-            </div>
-          )}
-
-          {coverageBins.length > 0 && (
-            <div className="p2c-section">
-              <h4>Food Access 2km Distribution</h4>
-              <ResponsiveContainer width="100%" height={160}>
-                <BarChart data={coverageBins} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
-                  <XAxis dataKey="range" tick={{ fill: '#666', fontSize: 9 }}
-                    label={{ value: 'Restaurants within 2km', position: 'bottom', fill: '#555', fontSize: 10, offset: -2 }} />
-                  <YAxis tick={{ fill: '#555', fontSize: 9 }} />
-                  <Tooltip contentStyle={TT_STYLE}
-                    formatter={(v) => [v, 'Hexagons']}
-                    labelFormatter={(l) => `${l}–${parseInt(l) + 200} restaurants`}
-                  />
-                  <Bar dataKey="count" fill="#00c8ff" fillOpacity={0.7} radius={[3, 3, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
             </div>
           )}
         </>

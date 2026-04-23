@@ -1,12 +1,12 @@
-.p4c {
+.p6c {
   margin-top: 16px;
 }
 
-.p4c-section {
+.p6c-section {
   margin-bottom: 20px;
 }
 
-.p4c-section h4 {
+.p6c-section h4 {
   font-size: 0.75rem;
   color: #888;
   text-transform: uppercase;
@@ -14,13 +14,13 @@
   margin-bottom: 4px;
 }
 
-.p4c-note {
+.p6c-note {
   font-size: 0.7rem;
   color: #555;
   margin-bottom: 8px;
 }
 
-.p4c-insight {
+.p6c-insight {
   font-size: 0.72rem;
   color: #c864ff;
   font-style: italic;

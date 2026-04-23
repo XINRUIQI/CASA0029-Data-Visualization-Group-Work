@@ -1,11 +1,17 @@
 .page-summary {
   background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%);
   color: #f0f0f5;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 40px;
 }
 
 .summary-container {
+  width: 100%;
   max-width: 900px;
-  padding: 60px 40px;
+  margin: 0 auto;
   text-align: center;
 }
 
@@ -45,6 +51,32 @@
   font-size: 0.95rem;
   line-height: 1.7;
   color: #c8c8d8;
+}
+
+.summary-block {
+  margin-top: 48px;
+  padding: 32px 36px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  text-align: center;
+}
+
+.summary-block h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+}
+
+.summary-block p {
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: #c8c8d8;
+  margin: 0 auto;
+  max-width: 760px;
+  text-align: center;
 }
 
 .summary-footer {

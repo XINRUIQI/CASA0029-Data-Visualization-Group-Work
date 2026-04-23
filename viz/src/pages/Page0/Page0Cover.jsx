@@ -7,6 +7,13 @@ import './Page0.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
+// Module-level flag: remembers whether the Page0 intro overlay has already
+// played during this tab's lifetime. Unlike sessionStorage, it is reset on
+// full page reload, so a real "first visit" always gets the intro — but an
+// in-app route round-trip (e.g. Page2FullMap's "Back to Main") does not
+// replay it.
+let introPlayedInSession = false;
+
 const INFO_ITEMS = [
   {
     icon: (
@@ -57,19 +64,33 @@ export default function Page0Cover() {
   const [activeInfo, setActiveInfo] = useState(null);
   const [transitioning, setTransitioning] = useState(false);
   const [spawnPoints, setSpawnPoints] = useState(null);
-  const [introDone, setIntroDone] = useState(false);
+  // Only play the full intro overlay the first time the user lands on the
+  // cover during this tab's lifetime. When they come back from a sub-route
+  // (e.g. the /analysis full map's "Back to Main" button), Page0Cover
+  // remounts, and replaying the fixed-position intro would visually block
+  // the scroll restoration target (page-2) for several seconds — making it
+  // feel like back-to-main dumped them on page 0. A full page reload clears
+  // the module flag, so a genuine first visit always gets the intro.
+  const [introDone, setIntroDone] = useState(() => introPlayedInSession);
 
   const handleIntroDone = useCallback(() => {
     setIntroDone(true);
   }, []);
 
+  // Flip the module flag as soon as the intro finishes (or is skipped) so
+  // subsequent remounts of Page0Cover within the same tab skip the overlay.
+  useEffect(() => {
+    if (introDone) introPlayedInSession = true;
+  }, [introDone]);
+
   // Safety fallback: ensure intro completes even if animation fails.
   // IntroOverlay's natural run-time is ~7.1s (900+2700+1800+1700), so we
   // give it a comfortable margin before forcing the page forward.
   useEffect(() => {
+    if (introDone) return;
     const timer = setTimeout(() => setIntroDone(true), 9000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [introDone]);
 
   const handleEnter = useCallback(() => {
     // Drone particles were removed, so there are no source points to sample.

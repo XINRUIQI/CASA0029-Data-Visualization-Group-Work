@@ -173,6 +173,32 @@ TAKEOUT_PATH = NB / "14 Takeout Demand Coverage" / "data_out" / "sz_takeout_dema
 if TAKEOUT_PATH.exists():
     print("\nExporting h3_takeout.json …")
     takeout = gpd.read_file(TAKEOUT_PATH)
+
+    # ── Recompute takeout_demand_index with updated weights ──
+    # New formula (decoupled from supply-side POI):
+    #   0.50 * real_order_norm + 0.30 * pop_norm + 0.20 * residential_norm
+    # Dropped from previous version: food_count (overlaps with supply layer),
+    # xiaoqu_count (redundant with residential_count).
+    def _minmax(series):
+        mn, mx = series.min(), series.max()
+        if mx == mn:
+            return series * 0
+        return (series - mn) / (mx - mn)
+
+    if {"real_order_count", "pop_count", "residential_count"}.issubset(takeout.columns):
+        order_n = _minmax(takeout["real_order_count"].fillna(0))
+        pop_n   = _minmax(takeout["pop_count"].fillna(0))
+        res_n   = _minmax(takeout["residential_count"].fillna(0))
+        takeout["takeout_demand_index"] = 0.50 * order_n + 0.30 * pop_n + 0.20 * res_n
+        idx_mn, idx_mx = takeout["takeout_demand_index"].min(), takeout["takeout_demand_index"].max()
+        takeout["takeout_demand_norm"] = (
+            (takeout["takeout_demand_index"] - idx_mn) / (idx_mx - idx_mn)
+            if idx_mx > idx_mn else takeout["takeout_demand_index"] * 0
+        )
+        print(f"  Recomputed takeout_demand_index: "
+              f"max={takeout['takeout_demand_index'].max():.4f}, "
+              f"mean={takeout['takeout_demand_index'].mean():.4f}")
+
     takeout_records = []
     takeout_cols = [c for c in takeout.columns if c not in ("geometry", "h3_id")]
     for _, r in takeout.iterrows():

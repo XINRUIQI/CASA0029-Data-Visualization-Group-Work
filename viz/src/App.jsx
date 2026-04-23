@@ -1,18 +1,19 @@
 import { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Page0Cover from './pages/Page0/Page0Cover';
 import './App.css';
 
 // Route-level code-splitting: only Page0 is in the initial bundle.
-// Each of Page1-6 is split into its own chunk and is mounted lazily
+// Each of Page1-7 is split into its own chunk and is mounted lazily
 // once its viewport-anchor section is close to being scrolled into view.
-const Page1Landing   = lazy(() => import('./pages/Page1 overview/Page1Landing'));
-const Page2Entry     = lazy(() => import('./pages/Page2 analysis/Page2Entry'));
-const Page2FullMap   = lazy(() => import('./pages/Page2 analysis/Page2FullMap'));
-const Page3Friction  = lazy(() => import('./pages/Page3 Point/Page3Friction'));
-const Page4Demand    = lazy(() => import('./pages/Page4/Page4Demand'));
-const Page5Strategy  = lazy(() => import('./pages/Page5/Page5Strategy'));
-const Page6Summary   = lazy(() => import('./pages/Page6/Page6Summary'));
+const Page1Landing     = lazy(() => import('./pages/Page1 overview/Page1Landing'));
+const Page2Entry       = lazy(() => import('./pages/Page2 analysis/Page2Entry'));
+const Page2FullMap     = lazy(() => import('./pages/Page2 analysis/Page2FullMap'));
+const Page3Friction    = lazy(() => import('./pages/Page3 Point/Page3Friction'));
+const Page4Placeholder = lazy(() => import('./pages/Page4/Page4Placeholder'));
+const Page5Strategy    = lazy(() => import('./pages/Page5/Page5Strategy'));
+const Page6Demand      = lazy(() => import('./pages/Page6/Page6Demand'));
+const Page7Summary     = lazy(() => import('./pages/Page7/Page7Summary'));
 
 /**
  * LazyPage: renders a full-viewport placeholder <section id="page-N" /> so
@@ -61,18 +62,20 @@ const NAV_PAGES = [
   { id: 1, label: 'Overview' },
   { id: 2, label: 'Friction' },
   { id: 3, label: 'Sites' },
-  { id: 4, label: 'Demand' },
+  { id: 4, label: 'Page 4' },
   { id: 5, label: 'Strategy' },
-  { id: 6, label: 'Summary' },
+  { id: 6, label: 'Demand' },
+  { id: 7, label: 'Summary' },
 ];
 
 const NAV_LINKS = [
   { target: 'page-1', label: 'Overview' },
   { target: 'page-2', label: 'Analysis' },
   { target: 'page-3', label: 'Status Quo' },
-  { target: 'page-4', label: 'Optimization' },
+  { target: 'page-4', label: 'Page 4' },
   { target: 'page-5', label: 'Strategy' },
-  { target: 'page-6', label: 'Summary' },
+  { target: 'page-6', label: 'Optimization' },
+  { target: 'page-7', label: 'Summary' },
 ];
 
 function GlobalTopbar() {
@@ -208,6 +211,7 @@ function PageNav({ pages, onNavigate }) {
 
 function MainNarrative() {
   const [p2Key, setP2Key] = useState(0);
+  const location = useLocation();
 
   const handleNavClick = useCallback((id) => {
     if (id === 2) {
@@ -219,6 +223,58 @@ function MainNarrative() {
     }, 50);
   }, []);
 
+  // Honor navigation state like `navigate('/', { state: { scrollTo: 'page-2' } })`
+  // sent from sub-routes (e.g. the "Back to Main" button on Page2FullMap), so
+  // returning from those routes lands on the originating section instead of
+  // the top of the page. We disable smooth behavior and re-assert the scroll
+  // several times because lazy-mounted sections above the target can shift
+  // layout well after the initial scroll (the preceding placeholder is
+  // 100vh but the real Page1 is taller, pushing page-2 down).
+  useEffect(() => {
+    const target = location.state?.scrollTo;
+    if (!target) return;
+
+    let cancelled = false;
+    let stateCleared = false;
+
+    const snapToTarget = () => {
+      if (cancelled) return false;
+      const el = document.getElementById(target);
+      if (!el) return false;
+      // Only re-scroll if we have drifted more than a couple of pixels; this
+      // avoids fighting the user if they scroll away on their own.
+      const rect = el.getBoundingClientRect();
+      if (Math.abs(rect.top) > 2) {
+        el.scrollIntoView({ behavior: 'auto', block: 'start' });
+      }
+      if (!stateCleared) {
+        stateCleared = true;
+        window.history.replaceState({}, document.title);
+      }
+      return true;
+    };
+
+    // Poll aggressively until the anchor exists, then keep re-asserting the
+    // scroll across the window where lazy pages typically finish hydrating.
+    let attempts = 0;
+    const maxAttempts = 40;
+    const waitForAnchor = () => {
+      if (cancelled) return;
+      if (snapToTarget()) return;
+      if (attempts++ < maxAttempts) setTimeout(waitForAnchor, 50);
+    };
+    waitForAnchor();
+
+    const reassertTimers = [100, 250, 500, 900, 1400, 2000].map((ms) =>
+      setTimeout(snapToTarget, ms)
+    );
+
+    return () => {
+      cancelled = true;
+      reassertTimers.forEach(clearTimeout);
+    };
+  }, [location.state]);
+
   return (
     <div className="app">
       <GlobalTopbar />
@@ -229,9 +285,10 @@ function MainNarrative() {
       <LazyPage pageId="page-1" component={Page1Landing} />
       <LazyPage pageId="page-2" component={Page2Entry} mountKey={p2Key} />
       <LazyPage pageId="page-3" component={Page3Friction} />
-      <LazyPage pageId="page-4" component={Page4Demand} />
+      <LazyPage pageId="page-4" component={Page4Placeholder} />
       <LazyPage pageId="page-5" component={Page5Strategy} />
-      <LazyPage pageId="page-6" component={Page6Summary} />
+      <LazyPage pageId="page-6" component={Page6Demand} />
+      <LazyPage pageId="page-7" component={Page7Summary} />
     </div>
   );
 }

@@ -1,17 +1,16 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceArea } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceArea } from 'recharts';
 import Page2FrictionMap from './Page2FrictionMap';
 import Page2FrictionCharts from './Page2FrictionCharts';
 import { publicDataUrl } from '../../config';
 import './Page2FullMap.css';
 
 const LAYER_MODES = [
-  { id: 'demand', label: 'Demand', color: '#ff8c00' },
+  { id: 'demand', label: 'Demand', color: '#ff4500' },
+  { id: 'supply', label: 'Supply', color: '#ff8c00' },
   { id: 'friction', label: 'Friction', color: '#ff3264' },
-  { id: 'overlap', label: 'Overlap', color: '#c864ff' },
-  { id: 'takeout', label: 'Takeout', color: '#ff4500' },
-  { id: 'coverage', label: 'Coverage', color: '#00c8ff' },
+  { id: 'priority', label: 'Priority', color: '#c864ff' },
 ];
 
 const BARRIER_TYPES = [
@@ -22,11 +21,10 @@ const BARRIER_TYPES = [
 ];
 
 const MODE_DESC = {
-  demand: '490K+ POIs reveal delivery pressure — darker = higher demand',
+  supply: '490K+ POIs reveal service supply — darker = richer POI supply',
+  demand: 'Real orders (50%) + population (30%) + residential (20%) — where takeout orders originate',
   friction: 'Detour, barriers, congestion compound into ground friction',
-  overlap: 'High demand × high friction = where drones create the most value',
-  takeout: 'Population × residential × food POI — who orders takeout?',
-  coverage: 'Food accessibility — how many restaurants within 2km of each cell',
+  priority: 'Demand × friction — composite score: where drones create the most value',
 };
 
 const POI_ITEMS = [
@@ -46,7 +44,7 @@ export default function Page2FullMap() {
   const [h3Takeout, setH3Takeout] = useState(null);
   const [odAnalysis, setOdAnalysis] = useState(null);
   const [routes, setRoutes] = useState(null);
-  const [activeMode, setActiveMode] = useState('overlap');
+  const [activeMode, setActiveMode] = useState('demand');
   const [activeBarriers, setActiveBarriers] = useState(new Set(['water', 'railway', 'highway_major']));
   const [hoveredHex, setHoveredHex] = useState(null);
   const [showBarriers, setShowBarriers] = useState(true);
@@ -98,7 +96,7 @@ export default function Page2FullMap() {
   }, []);
 
   const timeWeight = useMemo(() => {
-    if (!hourlyDemand || activeMode !== 'demand') return 1;
+    if (!hourlyDemand || (activeMode !== 'demand' && activeMode !== 'priority')) return 1;
     const maxOrders = Math.max(...hourlyDemand.map(d => d.orders));
     if (maxOrders === 0) return 1;
     const entry = hourlyDemand.find(d => d.hour === selectedHour);
@@ -142,7 +140,7 @@ export default function Page2FullMap() {
     : 1;
 
   return (
-    <div className="p3f">
+    <div className="p2f">
       <button
         className="p2f-back"
         onClick={() => navigate('/', { state: { scrollTo: 'page-2' } })}
@@ -188,42 +186,49 @@ export default function Page2FullMap() {
             timeWeight={timeWeight}
           />
 
-          {/* Hover tooltip — expanded with POI + pop */}
-          {hoveredHex && (
+          {/* Hover tooltip — contents depend on active mode; priority has no tooltip */}
+          {hoveredHex && activeMode !== 'priority' && (
             <div className="p2f-hex-tooltip">
-              <div className="p2f-hv-row">
-                <div className="p2f-hv"><span>Demand</span> {hoveredHex.dp?.toFixed(1) ?? '—'}</div>
-                <div className="p2f-hv"><span>Friction</span> {hoveredHex.avg_friction?.toFixed(3) ?? '—'}</div>
-                <div className="p2f-hv"><span>Gap</span> {hoveredHex.gap_index?.toFixed(4) ?? '—'}</div>
-                <div className="p2f-hv"><span>Pop</span> {hoveredHex.pop_count?.toFixed(0) ?? '—'}</div>
-              </div>
-              {(activeMode === 'takeout' || activeMode === 'coverage') && (
-                <div className="p2f-hv-row" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '0.3rem', marginTop: '0.3rem' }}>
+              {activeMode === 'demand' && (
+                <div className="p2f-hv-row">
                   <div className="p2f-hv"><span>Orders</span> {hoveredHex.real_order_count?.toLocaleString() ?? '—'}</div>
-                  <div className="p2f-hv"><span>Takeout</span> {hoveredHex.takeout_demand_index?.toFixed(3) ?? '—'}</div>
+                  <div className="p2f-hv"><span>Demand</span> {hoveredHex.takeout_demand_index?.toFixed(3) ?? '—'}</div>
                   <div className="p2f-hv"><span>1km</span> {hoveredHex.food_access_1km?.toLocaleString() ?? '—'}</div>
                   <div className="p2f-hv"><span>2km</span> {hoveredHex.food_access_2km?.toLocaleString() ?? '—'}</div>
                   <div className="p2f-hv"><span>3km</span> {hoveredHex.food_access_3km?.toLocaleString() ?? '—'}</div>
                 </div>
               )}
-              <div className="p2f-hv-poi">
-                {POI_ITEMS.map(p => {
-                  const v = hoveredHex[p.key] || 0;
-                  if (v === 0) return null;
-                  return (
-                    <div key={p.key} className="p2f-poi-bar">
-                      <span className="p2f-poi-label">{p.label}</span>
-                      <div className="p2f-poi-track">
-                        <div
-                          className="p2f-poi-fill"
-                          style={{ width: `${(v / poiMax) * 100}%`, background: p.color }}
-                        />
-                      </div>
-                      <span className="p2f-poi-val">{v}</span>
-                    </div>
-                  );
-                })}
-              </div>
+              {activeMode === 'supply' && (
+                <>
+                  <div className="p2f-hv-row">
+                    <div className="p2f-hv"><span>Supply</span> {hoveredHex.dp?.toFixed(1) ?? '—'}</div>
+                    <div className="p2f-hv"><span>Pop</span> {hoveredHex.pop_count?.toFixed(0) ?? '—'}</div>
+                  </div>
+                  <div className="p2f-hv-poi">
+                    {POI_ITEMS.map(p => {
+                      const v = hoveredHex[p.key] || 0;
+                      if (v === 0) return null;
+                      return (
+                        <div key={p.key} className="p2f-poi-bar">
+                          <span className="p2f-poi-label">{p.label}</span>
+                          <div className="p2f-poi-track">
+                            <div
+                              className="p2f-poi-fill"
+                              style={{ width: `${(v / poiMax) * 100}%`, background: p.color }}
+                            />
+                          </div>
+                          <span className="p2f-poi-val">{v}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+              {activeMode === 'friction' && (
+                <div className="p2f-hv-row">
+                  <div className="p2f-hv"><span>Friction</span> {hoveredHex.avg_friction?.toFixed(3) ?? '—'}</div>
+                </div>
+              )}
             </div>
           )}
 
@@ -253,8 +258,8 @@ export default function Page2FullMap() {
             </div>
           </div>
 
-          {/* Demand mode: 24h timeline with slider */}
-          {activeMode === 'demand' && hourlyDemand && (
+          {/* Demand / Priority mode: 24h timeline with slider */}
+          {(activeMode === 'demand' || activeMode === 'priority') && hourlyDemand && (
             <div className="p2f-timeline">
               <div className="p2f-tl-header">
                 <button
