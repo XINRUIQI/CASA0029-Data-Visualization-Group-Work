@@ -177,7 +177,7 @@ export default function Page0Cover() {
           loop
           playsInline
           preload="metadata"
-          src={`${import.meta.env.BASE_URL}cover-bg.mp4`}
+          src={`${import.meta.env.BASE_URL}Cover-ai.mp4`}
           poster={`${import.meta.env.BASE_URL}shenzhen-poster.jpg`}
         />
         <div className="p0-bg-overlay" />

@@ -12,8 +12,8 @@
 
 .p3c-metric {
   flex: 1;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(90, 50, 110, 0.12);
   border-radius: 12px;
   padding: 14px 10px;
   text-align: center;
@@ -26,7 +26,7 @@
 
 .m-label {
   font-size: 0.68rem;
-  color: #666;
+  color: #a898b0;
   margin-top: 4px;
 }
 
@@ -36,7 +36,7 @@
 
 .p3c-section h4 {
   font-size: 0.78rem;
-  color: #888;
+  color: #8a78a0;
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-bottom: 10px;
@@ -44,19 +44,19 @@
 
 .p3c-note {
   font-size: 0.72rem;
-  color: #666;
+  color: #a898b0;
   margin-top: 4px;
   font-style: italic;
 }
 
 .p3c-insight {
   font-size: 0.75rem;
-  color: #64c8ff;
+  color: #c87868;
   font-style: italic;
   margin-top: 8px;
   line-height: 1.5;
   padding: 8px 12px;
-  background: rgba(100, 200, 255, 0.06);
-  border-left: 3px solid #64c8ff;
+  background: rgba(200, 120, 104, 0.08);
+  border-left: 3px solid #c87868;
   border-radius: 0 8px 8px 0;
 }

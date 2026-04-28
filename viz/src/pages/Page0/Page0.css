@@ -18,7 +18,7 @@
   inset: 0;
   z-index: 0;
   overflow: hidden;
-  background: #050518;
+  background: #f0e8ee;
 }
 
 /* city aerial photo — bottom layer */
@@ -39,10 +39,10 @@
   inset: 0;
   background:
     linear-gradient(180deg,
-      rgba(6, 6, 26, 0.4) 0%,
-      rgba(6, 6, 26, 0.15) 35%,
-      rgba(6, 6, 26, 0.2) 65%,
-      rgba(6, 6, 26, 0.7) 100%
+      rgba(200, 225, 250, 0.4) 0%,
+      rgba(200, 225, 250, 0.15) 35%,
+      rgba(200, 225, 250, 0.2) 65%,
+      rgba(200, 225, 250, 0.7) 100%
     );
   z-index: 1;
 }
@@ -103,13 +103,13 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 1px solid rgba(100, 200, 255, 0.25);
+  border: 1px solid rgba(200, 120, 104, 0.25);
   /* Solid semi-transparent fill — the previous backdrop-filter: blur(12px)
      forced the browser to re-blur the busy video/particles background
      on every frame for each of the 3 buttons, which was a measurable
      compositing cost. */
-  background: rgba(10, 10, 30, 0.72);
-  color: rgba(100, 200, 255, 0.7);
+  background: rgba(255, 255, 255, 0.75);
+  color: rgba(200, 120, 104, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -119,11 +119,11 @@
 
 .p0-sidebar-btn:hover,
 .p0-sidebar-btn.active {
-  border-color: #64c8ff;
-  background: rgba(100, 200, 255, 0.12);
-  color: #64c8ff;
+  border-color: #c87868;
+  background: rgba(200, 120, 104, 0.12);
+  color: #c87868;
   transform: scale(1.12);
-  box-shadow: 0 0 20px rgba(100, 200, 255, 0.15);
+  box-shadow: 0 0 20px rgba(200, 120, 104, 0.15);
 }
 
 /* ─── Sidebar Popup ─── */
@@ -135,10 +135,10 @@
   z-index: 25;
   width: 300px;
   padding: 28px 24px;
-  background: rgba(10, 10, 30, 0.85);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(100, 200, 255, 0.15);
+  border: 1px solid rgba(200, 120, 104, 0.2);
   border-radius: 14px;
   animation: p0-popupIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -160,7 +160,7 @@
   right: 14px;
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(60, 30, 70, 0.4);
   font-size: 1.3rem;
   cursor: pointer;
   transition: color 0.2s;
@@ -168,20 +168,20 @@
 }
 
 .p0-popup-close:hover {
-  color: #fff;
+  color: #2d1e3a;
 }
 
 .p0-popup-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #64c8ff;
+  color: #c87868;
   margin-bottom: 10px;
   letter-spacing: 0.5px;
 }
 
 .p0-popup-body {
   font-size: 0.82rem;
-  color: rgba(220, 220, 240, 0.75);
+  color: rgba(30, 60, 100, 0.75);
   line-height: 1.65;
 }
 
@@ -211,7 +211,7 @@
   font-size: 5rem;
   line-height: 1.1;
   letter-spacing: -1px;
-  color: #f0f0f5;
+  color: #2d1e3a;
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -224,14 +224,14 @@
     'Helvetica Neue', sans-serif;
   font-weight: 700;
   letter-spacing: 1px;
-  color: rgba(240, 245, 255, 0.95);
+  color: rgba(13, 33, 55, 0.95);
 }
 
 .p0-word-bold {
   font-weight: 900;
-  color: #fff;
+  color: #2d1e3a;
   position: relative;
-  text-shadow: 0 0 20px rgba(100, 200, 255, 0.3);
+  text-shadow: 0 0 20px rgba(200, 120, 104, 0.3);
 }
 
 /* ─── Glitch effect ─── */
@@ -251,13 +251,13 @@
 }
 
 .p0-glitch::before {
-  color: #0ff;
+  color: #c87868;
   z-index: -1;
   animation: p0-glitch1 3s infinite linear alternate-reverse;
 }
 
 .p0-glitch::after {
-  color: #f0f;
+  color: #e8a090;
   z-index: -2;
   animation: p0-glitch2 2.5s infinite linear alternate-reverse;
 }
@@ -281,7 +281,7 @@
 /* ─── Subtitle ─── */
 .p0-subtitle {
   font-size: 1.15rem;
-  color: rgba(200, 200, 220, 0.7);
+  color: rgba(30, 60, 100, 0.6);
   line-height: 1.75;
   margin-top: 28px;
   margin-bottom: 40px;
@@ -303,7 +303,7 @@
   display: inline-block;
   font-weight: 800;
   font-size: 1.3rem;
-  color: #fff;
+  color: #2d1e3a;
   /* No border / background — rendered as plain emphasized text now. */
   padding: 0;
   letter-spacing: 3px;
@@ -334,11 +334,11 @@
   width: 140px;
   height: 52px;
   border-radius: 4px;
-  border: 1.5px solid rgba(100, 200, 255, 0.4);
-  background: rgba(10, 10, 30, 0.3);
+  border: 1.5px solid rgba(200, 120, 104, 0.4);
+  background: rgba(255, 255, 255, 0.4);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  color: #64c8ff;
+  color: #c87868;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -364,7 +364,7 @@
   position: absolute;
   inset: -5px;
   border-radius: 6px;
-  border: 1px solid rgba(100, 200, 255, 0.15);
+  border: 1px solid rgba(200, 120, 104, 0.2);
   animation: p0-ringPulse 2.5s ease-in-out infinite;
 }
 
@@ -373,7 +373,7 @@
   position: absolute;
   inset: -5px;
   border-radius: 8px;
-  border: 1px solid rgba(100, 200, 255, 0.08);
+  border: 1px solid rgba(200, 120, 104, 0.1);
   animation: p0-ringPulse 2.5s ease-in-out infinite 0.5s;
 }
 
@@ -383,21 +383,21 @@
 }
 
 .p0-enter-btn:hover {
-  border-color: #64c8ff;
-  background: rgba(100, 200, 255, 0.08);
+  border-color: #c87868;
+  background: rgba(200, 120, 104, 0.08);
   transform: scale(1.08);
   box-shadow:
-    0 0 30px rgba(100, 200, 255, 0.15),
-    inset 0 0 30px rgba(100, 200, 255, 0.05);
+    0 0 30px rgba(200, 120, 104, 0.15),
+    inset 0 0 30px rgba(200, 120, 104, 0.05);
 }
 
 .p0-enter-btn:hover .p0-enter-text {
-  color: #fff;
-  text-shadow: 0 0 12px rgba(100, 200, 255, 0.6);
+  color: #2d1e3a;
+  text-shadow: 0 0 12px rgba(200, 120, 104, 0.6);
 }
 
 .p0-enter-btn:hover .p0-enter-ring {
-  border-color: rgba(100, 200, 255, 0.35);
+  border-color: rgba(200, 120, 104, 0.35);
   animation-duration: 1.5s;
 }
 
@@ -464,7 +464,7 @@
   display: block;
   width: 1px;
   height: 36px;
-  background: linear-gradient(180deg, rgba(100, 200, 255, 0.6), transparent);
+  background: linear-gradient(180deg, rgba(200, 120, 104, 0.6), transparent);
   animation: p0-scrollPulse 2s ease-in-out infinite;
 }
 
@@ -477,7 +477,7 @@
   font-size: 0.65rem;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.25);
+  color: rgba(60, 30, 70, 0.35);
 }
 
 /* ═══════════════════════════════════════════

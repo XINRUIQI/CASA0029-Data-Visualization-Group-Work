@@ -2,10 +2,27 @@ import { useEffect, useRef, useCallback } from 'react';
 
 const CLOUD_COUNT = 65;
 const BUILDING_COUNT = 50;
+const ENTRANCE_MS = 1000;
+const ENTRANCE_BLUR_MAX = 9;
 
 function seeded(seed) {
   const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
   return x - Math.floor(x);
+}
+
+function smoothNoise(x, y) {
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  const fx = x - x0;
+  const fy = y - y0;
+  const smooth = (t) => t * t * (3 - 2 * t);
+  const ux = smooth(fx);
+  const uy = smooth(fy);
+  const a = seeded(x0 * 1.7 + y0 * 9.2);
+  const b = seeded((x0 + 1) * 1.7 + y0 * 9.2);
+  const c = seeded(x0 * 1.7 + (y0 + 1) * 9.2);
+  const d = seeded((x0 + 1) * 1.7 + (y0 + 1) * 9.2);
+  return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
 }
 
 export default function CloudDiveBg({ onIntroComplete }) {
@@ -19,6 +36,17 @@ export default function CloudDiveBg({ onIntroComplete }) {
     const clouds = [];
     for (let i = 0; i < CLOUD_COUNT; i++) {
       const layer = i < 22 ? 0 : i < 44 ? 1 : 2;
+      const blobs = [];
+      for (let b = 0; b < 3; b++) {
+        const s = seeded(i * 11.7 + b * 19.3);
+        const s2 = seeded(i * 4.1 + b * 29.9);
+        blobs.push({
+          ox: (s - 0.5) * (b === 0 ? 0.15 : 0.95),
+          oy: (s2 - 0.5) * (b === 0 ? 0.12 : 0.75),
+          rxm: b === 0 ? 1 : 0.42 + seeded(i * 2.9 + b) * 0.38,
+          rym: b === 0 ? 1 : 0.38 + seeded(i * 5.3 + b) * 0.35,
+        });
+      }
       clouds.push({
         x: seeded(i * 3.1) * w * 1.4 - w * 0.2,
         y: h * 0.1 + seeded(i * 7.3) * h * 0.6,
@@ -28,6 +56,9 @@ export default function CloudDiveBg({ onIntroComplete }) {
         speed: 0.06 + seeded(i * 4.2) * 0.18,
         phase: seeded(i * 9.1) * Math.PI * 2,
         layer,
+        layerDrift: 0.72 + layer * 0.18,
+        parallaxYmul: 1 + layer * 0.62,
+        blobs,
       });
     }
 
@@ -94,23 +125,69 @@ export default function CloudDiveBg({ onIntroComplete }) {
       ctx.fill();
     };
 
-    const drawClouds = (t, dp) => {
+    const drawClouds = (t, dp, elapsed) => {
+      const sunX = w * 0.55;
+      const sunY = h * (0.28 - dp * 0.55);
       const cameraY = dp * h * 2.2;
-      scene.clouds.forEach(c => {
-        const parallax = 1 + c.layer * 0.6;
-        const cy = c.y - cameraY * parallax;
-        if (cy < -250 || cy > h + 250) return;
+      const entranceT = Math.min(1, elapsed / ENTRANCE_MS);
+      const entranceEase = 1 - Math.pow(1 - entranceT, 3);
+      const introScale = 0.96 + 0.04 * entranceEase;
+      const introOpacity = 0.18 + 0.82 * entranceEase;
+      const blurPx = (1 - entranceEase) * ENTRANCE_BLUR_MAX;
 
-        const driftX = Math.sin(t * c.speed + c.phase) * 18;
-        const cx = c.x + driftX;
-        const scale = 1 + dp * c.layer * 0.35;
-        const alpha = c.alpha * Math.max(0, 1 - dp * 0.55);
+      const drawPuffs = () => {
+        scene.clouds.forEach((c) => {
+          const parallax = c.parallaxYmul;
+          let cy = c.y - cameraY * parallax;
+          const driftAmp = 14 + c.layer * 12;
+          const driftX = Math.sin(t * c.speed * c.layerDrift + c.phase) * driftAmp;
+          let cx = c.x + driftX;
+          cy += Math.sin(t * c.speed * 0.85 * c.layerDrift + c.phase + 1.7) * (4 + c.layer * 3);
 
-        ctx.beginPath();
-        ctx.ellipse(cx, cy, c.rx * scale, c.ry * scale, 0, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-        ctx.fill();
-      });
+          const n1 = smoothNoise(cx * 0.006 + t * 0.11 * c.layerDrift, cy * 0.006 + c.phase * 2);
+          const n2 = smoothNoise(cx * 0.009 + 17.2, cy * 0.009 + t * 0.08);
+          cx += (n1 - 0.5) * 9;
+          cy += (n2 - 0.5) * 6.4;
+          cy += (1 - entranceEase) * (10 + c.layer * 6);
+
+          if (cy < -280 || cy > h + 280) return;
+
+          const scale = introScale * (1 + dp * c.layer * 0.35);
+          const diveDim = Math.max(0, 1 - dp * 0.55);
+          const noiseA = 0.82 + 0.18 * smoothNoise(cx * 0.012 + c.phase, cy * 0.012 + t * 0.03);
+          const baseAlpha = c.alpha * diveDim * introOpacity * noiseA;
+
+          const dx = sunX - cx;
+          const dy = sunY - cy;
+          const warmBias = Math.min(1, 1100 / (Math.hypot(dx, dy) + 80));
+
+          for (const b of c.blobs) {
+            const bx = cx + b.ox * c.rx * scale;
+            const by = cy + b.oy * c.ry * scale;
+            const brx = c.rx * b.rxm * scale;
+            const bry = c.ry * b.rym * scale;
+            const rMax = Math.max(brx, bry) * 1.2;
+            const grd = ctx.createRadialGradient(bx, by, 0, bx, by, rMax);
+            const peak = baseAlpha * (0.52 + 0.48 * warmBias);
+            const midA = baseAlpha * (0.32 + 0.22 * warmBias);
+            const edgeA = baseAlpha * 0.09;
+            grd.addColorStop(0, `rgba(255, 252, 248, ${peak})`);
+            grd.addColorStop(0.28, `rgba(248, 244, 255, ${midA})`);
+            grd.addColorStop(0.55, `rgba(255, 230, 224, ${edgeA})`);
+            grd.addColorStop(0.82, `rgba(228, 236, 248, ${edgeA * 0.35})`);
+            grd.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.beginPath();
+            ctx.ellipse(bx, by, brx, bry, 0, 0, Math.PI * 2);
+            ctx.fillStyle = grd;
+            ctx.fill();
+          }
+        });
+      };
+
+      ctx.save();
+      if (blurPx > 0.45) ctx.filter = `blur(${blurPx}px)`;
+      drawPuffs();
+      ctx.restore();
     };
 
     const drawCity = (dp) => {
@@ -144,7 +221,7 @@ export default function CloudDiveBg({ onIntroComplete }) {
 
       const grd = ctx.createLinearGradient(0, baseY - 5, 0, baseY + 15);
       grd.addColorStop(0, `rgba(12, 15, 30, ${cityAlpha})`);
-      grd.addColorStop(1, `rgba(10, 10, 26, ${cityAlpha})`);
+      grd.addColorStop(1, `rgba(240, 230, 238, ${cityAlpha})`);
       ctx.fillStyle = grd;
       ctx.fillRect(0, baseY - 5, w, 25);
     };
@@ -219,7 +296,7 @@ export default function CloudDiveBg({ onIntroComplete }) {
       ctx.clearRect(0, 0, w, h);
       drawSky(dp);
       drawSun(dp);
-      drawClouds(t, dp);
+      drawClouds(t, dp, elapsed);
       drawCity(dp);
       drawDrone(t, dp);
 

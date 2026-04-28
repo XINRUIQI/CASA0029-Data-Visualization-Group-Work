@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react';
 import Map from 'react-map-gl/mapbox';
 import DeckGL from '@deck.gl/react';
-import { GeoJsonLayer, ScatterplotLayer } from '@deck.gl/layers';
+import { GeoJsonLayer, ScatterplotLayer, ArcLayer } from '@deck.gl/layers';
 import { H3HexagonLayer } from '@deck.gl/geo-layers';
+import { cellToLatLng } from 'h3-js';
 import { MAPBOX_TOKEN, SHENZHEN_CENTER } from '../../config';
+import MapControls from '../../components/MapControls';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 const BARRIER_COLORS = {
@@ -14,27 +16,13 @@ const BARRIER_COLORS = {
 };
 
 const VIEW = {
-  longitude: SHENZHEN_CENTER[0],
-  latitude: SHENZHEN_CENTER[1],
-  zoom: 11,
+  longitude: 114.18,
+  latitude: 22.63,
+  zoom: 9.5,
   pitch: 0,
   bearing: 0,
 };
 
-// Nice-number scale bar: pick the largest "nice" length (1/2/5 × 10^n meters)
-// that fits under a target pixel width, given the current zoom/latitude.
-const SCALE_OPTIONS = [1, 2, 5, 10, 20, 50, 100, 200, 500,
-  1000, 2000, 5000, 10000, 20000, 50000, 100000];
-function computeScale(vs, targetPx = 110) {
-  const mpp = (40075016.686 * Math.abs(Math.cos(vs.latitude * Math.PI / 180)))
-              / Math.pow(2, vs.zoom + 8);
-  const rawMeters = targetPx * mpp;
-  let nice = SCALE_OPTIONS[0];
-  for (const v of SCALE_OPTIONS) if (v <= rawMeters) nice = v;
-  const widthPx = nice / mpp;
-  const label = nice >= 1000 ? `${nice / 1000} km` : `${nice} m`;
-  return { widthPx, label };
-}
 
 function hexColor(mode, d, highlight, tw) {
   if (!d) return [80, 80, 80, 40];
@@ -48,6 +36,9 @@ function hexColor(mode, d, highlight, tw) {
   const dp = d.dp || 0;
   const fr = d.avg_friction || 0;
   const tdi = d.takeout_demand_index || 0;
+  if ((mode === 'friction' || mode === 'priority') && !(fr > 0)) {
+    return [0, 0, 0, 0];
+  }
   if (mode === 'supply') {
     const v = Math.min(dp / 200, 1);
     return [255, Math.round(160 * (1 - v)), 0, Math.round(10 + 220 * v)];
@@ -57,22 +48,35 @@ function hexColor(mode, d, highlight, tw) {
     return [255, Math.round(100 * (1 - v)), Math.round(50 * (1 - v)), Math.round(15 + 220 * v)];
   }
   if (mode === 'friction') {
-    const v = Math.min(fr, 1);
-    return [255, 50 * (1 - v), 100 * (1 - v), 30 + 200 * v];
+    const t = Math.min(Math.max(fr, 0), 1);
+    // Stronger stretch: slight gain + lower gamma so mid/low values spread across more of the ramp
+    const v = Math.pow(Math.min(1, t * 1.18), 0.38);
+    return [
+      255,
+      Math.round(235 * (1 - v)),
+      Math.round(175 * (1 - v)),
+      Math.round(28 + 227 * v),
+    ];
   }
   if (mode === 'priority') {
     const dv = Math.min(tdi, 1) * tw;
     const fv = Math.min(fr, 1);
-    const v = dv * fv;
-    return [120 + 135 * v, 40 * (1 - v), 180 + 75 * v, 30 + 200 * v];
+    const raw = Math.min(1, dv * fv);
+    const v = Math.pow(Math.min(1, raw * 1.28), 0.34);
+    return [
+      Math.round(118 + 137 * v),
+      Math.round(238 * (1 - v)),
+      Math.round(168 + 87 * v),
+      Math.round(26 + 229 * v),
+    ];
   }
   return [80, 80, 80, 40];
 }
 
 export default function Page2FrictionMap({
   barriers, activeBarriers, showBarriers, activeMode,
-  h3Demand, h3Gap, h3Takeout, routes, showRoutes, onHoverHex, highlightFilter,
-  timeWeight = 1
+  h3Demand, h3Gap, h3Takeout, onHoverHex, highlightFilter,
+  timeWeight = 1, odAnalysis, showOdArcs, hoveredHexData,
 }) {
   const [viewState, setViewState] = useState(VIEW);
 
@@ -102,6 +106,8 @@ export default function Page2FrictionMap({
         food_access_2km: tk?.food_access_2km || 0,
         food_access_3km: tk?.food_access_3km || 0,
         xiaoqu_count: tk?.xiaoqu_count || 0,
+        relief_vulnerability: gap?.relief_vulnerability || 0,
+        intensity_index: gap?.intensity_index || 0,
       };
     });
   }, [h3Demand, h3Gap, h3Takeout]);
@@ -151,31 +157,87 @@ export default function Page2FrictionMap({
       );
     }
 
-    if (showRoutes && routes) {
+    if (showOdArcs && odAnalysis?.length) {
       result.push(
-        new GeoJsonLayer({
-          id: 'od-routes',
-          data: routes,
-          getLineColor: f => {
-            const fr = f.properties?.ground_friction ?? 0;
-            const v = Math.min(fr / 0.6, 1);
-            return [0, Math.round(255 * (1 - v * 0.6)), Math.round(220 - 100 * v), 50 + Math.round(130 * v)];
+        new ArcLayer({
+          id: 'od-arcs',
+          data: odAnalysis,
+          getSourcePosition: d => [d.o_lon, d.o_lat],
+          getTargetPosition: d => [d.d_lon, d.d_lat],
+          getSourceColor: d => {
+            const f = Math.min((d.ground_friction ?? 0) / 0.35, 1);
+            return [Math.round(60 + 195 * f), Math.round(200 * (1 - f)), Math.round(255 * (1 - f)), 100 + Math.round(100 * f)];
           },
-          getLineWidth: 1.5,
-          lineWidthMinPixels: 0.5,
-          lineWidthMaxPixels: 3,
-          pickable: false,
+          getTargetColor: d => {
+            const f = Math.min((d.ground_friction ?? 0) / 0.35, 1);
+            return [Math.round(60 + 195 * f), Math.round(200 * (1 - f)), Math.round(255 * (1 - f)), 60 + Math.round(80 * f)];
+          },
+          getWidth: 1.2,
+          getHeight: 0.15,
+          greatCircle: false,
+          pickable: true,
+          onHover: () => {},
         })
       );
     }
 
-    return result;
-  }, [barriers, activeBarriers, showBarriers, activeMode, mergedHex, routes, showRoutes, onHoverHex, highlightFilter, timeWeight]);
+    if (activeMode === 'supply' && hoveredHexData?.h3) {
+      try {
+        const [lat, lng] = cellToLatLng(hoveredHexData.h3);
+        const center = [lng, lat];
+        const a1 = hoveredHexData.food_access_1km || 0;
+        const a2 = hoveredHexData.food_access_2km || 0;
+        const a3 = hoveredHexData.food_access_3km || 0;
+        const aMax = Math.max(a1, a2, a3, 1);
 
-  const scale = computeScale(viewState);
+        const rings = [
+          { id: 'buf-3km', radius: 3000, access: a3, color: [255, 140, 0] },
+          { id: 'buf-2km', radius: 2000, access: a2, color: [255, 100, 0] },
+          { id: 'buf-1km', radius: 1000, access: a1, color: [255, 69, 0] },
+        ];
+
+        rings.forEach(ring => {
+          const intensity = ring.access / aMax;
+          result.push(
+            new ScatterplotLayer({
+              id: `${ring.id}-fill`,
+              data: [{ pos: center }],
+              getPosition: d => d.pos,
+              getRadius: ring.radius,
+              radiusUnits: 'meters',
+              getFillColor: [...ring.color, Math.round(15 + 70 * intensity)],
+              getLineColor: [...ring.color, Math.round(80 + 150 * intensity)],
+              stroked: true,
+              lineWidthMinPixels: 1.5,
+              getLineWidth: 2,
+              pickable: false,
+            })
+          );
+        });
+
+        result.push(
+          new ScatterplotLayer({
+            id: 'buf-center',
+            data: [{ pos: center }],
+            getPosition: d => d.pos,
+            getRadius: 80,
+            radiusUnits: 'meters',
+            getFillColor: [255, 255, 255, 220],
+            getLineColor: [255, 69, 0, 200],
+            stroked: true,
+            lineWidthMinPixels: 2,
+            getLineWidth: 3,
+            pickable: false,
+          })
+        );
+      } catch (_) { /* invalid h3 index */ }
+    }
+
+    return result;
+  }, [barriers, activeBarriers, showBarriers, activeMode, mergedHex, onHoverHex, highlightFilter, timeWeight, odAnalysis, showOdArcs, hoveredHexData]);
 
   return (
-    <>
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <DeckGL
         viewState={viewState}
         onViewStateChange={({ viewState: vs }) => setViewState(vs)}
@@ -186,48 +248,15 @@ export default function Page2FrictionMap({
       >
         <Map
           mapboxAccessToken={MAPBOX_TOKEN}
-          mapStyle="mapbox://styles/mapbox/dark-v11"
+          mapStyle="mapbox://styles/mapbox/light-v11"
           reuseMaps
         />
       </DeckGL>
-
-      {/* Map controls: home / compass / scale */}
-      <div className="p2f-ctrl">
-        <button
-          className="p2f-ctrl-btn"
-          title="Reset view"
-          onClick={() => setViewState(VIEW)}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" strokeWidth="2"
-               strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 12 L12 3 L21 12" />
-            <path d="M5 10 V21 H19 V10" />
-          </svg>
-        </button>
-
-        <button
-          className="p2f-ctrl-btn p2f-compass"
-          title="Reset bearing"
-          onClick={() => setViewState(v => ({ ...v, bearing: 0, pitch: 0 }))}
-        >
-          <svg width="28" height="28" viewBox="0 0 32 32"
-               style={{ transform: `rotate(${-viewState.bearing}deg)`,
-                        transition: 'transform 0.15s' }}>
-            <circle cx="16" cy="16" r="14" fill="none"
-                    stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-            <polygon points="16,4 20,16 16,13 12,16" fill="#ff4500" />
-            <polygon points="16,28 20,16 16,19 12,16" fill="#888" />
-            <text x="16" y="3.5" fill="#fff" fontSize="5"
-                  textAnchor="middle" fontWeight="700">N</text>
-          </svg>
-        </button>
-
-        <div className="p2f-scale">
-          <div className="p2f-scale-bar" style={{ width: `${scale.widthPx}px` }} />
-          <span className="p2f-scale-label">{scale.label}</span>
-        </div>
-      </div>
-    </>
+      <MapControls
+        viewState={viewState}
+        onResetView={() => setViewState(VIEW)}
+        onResetBearing={() => setViewState(v => ({ ...v, bearing: 0, pitch: 0 }))}
+      />
+    </div>
   );
 }

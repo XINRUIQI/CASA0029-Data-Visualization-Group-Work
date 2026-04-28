@@ -1,10 +1,34 @@
-import { useMemo, useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
+import { useMemo, useState, useRef, useEffect } from 'react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
          RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-         ScatterChart, Scatter, ZAxis, CartesianGrid, ReferenceArea } from 'recharts';
+         ScatterChart, Scatter, ZAxis, CartesianGrid, ReferenceArea, ReferenceLine,
+         AreaChart, Area, Legend } from 'recharts';
 import './Page2FrictionCharts.css';
 
 const TT_STYLE = { background: '#1a1a2e', border: '1px solid #333', borderRadius: 8, fontSize: 11 };
+
+const POI_RADAR_INFO =
+  'Each axis = that category’s share of the citywide total (eight summed category counts on the H3 grid). '
+  + 'Only a few spokes look long because food, retail, and service dominate the aggregate — scenic/leisure/medical '
+  + 'are small slices of the same 100%. The outer ring is scaled to the largest slice so side-by-side contrasts '
+  + 'stay faithful; use the tooltip for exact percentages.';
+
+const DEMAND_DIST_INFO =
+  'Histogram of fused demand index (takeout_demand_index) for H3 hexagons with index > 0. Bars are 0.05-wide bins '
+  + 'on the index scale; bar height = count of hexagons in that bin. Per-hex index: 50% min–max normalized real '
+  + 'orders + 30% population + 20% residential (see convert_all_to_h3.py). On the map, Demand mode '
+  + 'also multiplies hex colour by a time-of-day weight from the Meituan hourly profile.';
+
+const GROUND_AIR_INFO =
+  'Each point is one origin–destination pair: horizontal axis = straight-line (bee-line) distance in km; '
+  + 'vertical axis = ground routing distance in km (road network shortest path). Points above the dashed y = x line '
+  + 'mean the ground trip is longer than the direct span — i.e. detour from barriers, grid layout, and one-way rules. '
+  + 'The vertical gap to that line is extra ground kilometrage; flying a similar straight path is one way to read '
+  + 'potential distance savings for drones (airspace and climb not modeled). Subsampled OD pairs for clarity.';
+
+const REAL_ORDERS_SCATTER_INFO =
+  'Each point is one H3 hexagon. Axes: population (horizontal) vs real order count in that hex (vertical). '
+  + 'Only cells with at least one RL-Dispatch order are shown.';
 
 function buildBins(values, binWidth) {
   const bins = {};
@@ -18,7 +42,8 @@ function buildBins(values, binWidth) {
 }
 
 export default function Page2FrictionCharts({
-  activeMode, hoveredHex, h3Gap, h3Takeout, odAnalysis, liveMetrics, onHighlight
+  activeMode, hoveredHex, h3Demand, h3Gap, h3Takeout, odAnalysis, liveMetrics, onHighlight,
+  timeWeight = 1,
 }) {
   const scatterData = useMemo(() => {
     if (!h3Gap?.length) return [];
@@ -30,27 +55,6 @@ export default function Page2FrictionCharts({
         gap: +(d.gap_index ?? 0).toFixed(4),
       }));
   }, [h3Gap]);
-
-  const detourBins = useMemo(() => {
-    if (!odAnalysis?.length) return [];
-    return buildBins(odAnalysis.map(d => d.detour_ratio).filter(Boolean), 0.1);
-  }, [odAnalysis]);
-
-  const detourStats = useMemo(() => {
-    if (!odAnalysis?.length) return null;
-    const ratios = odAnalysis.map(d => d.detour_ratio).filter(Boolean).sort((a, b) => a - b);
-    const n = ratios.length;
-    return {
-      median: ratios[Math.floor(n / 2)]?.toFixed(2),
-      p90: ratios[Math.floor(n * 0.9)]?.toFixed(2),
-      max: ratios[n - 1]?.toFixed(2),
-    };
-  }, [odAnalysis]);
-
-  const congestionBins = useMemo(() => {
-    if (!odAnalysis?.length) return [];
-    return buildBins(odAnalysis.map(d => d.congestion_amplifier).filter(Boolean), 0.1);
-  }, [odAnalysis]);
 
   const barrierCrossings = useMemo(() => {
     if (!odAnalysis?.length) return null;
@@ -64,6 +68,11 @@ export default function Page2FrictionCharts({
     ];
   }, [odAnalysis]);
 
+  const barrierCrossingMax = useMemo(() => {
+    if (!barrierCrossings?.length) return 0.01;
+    return Math.max(...barrierCrossings.map(b => b.avg), 0.01);
+  }, [barrierCrossings]);
+
   const distCompare = useMemo(() => {
     if (!odAnalysis?.length) return [];
     return odAnalysis.filter((_, i) => i % 6 === 0).map((d, i) => ({
@@ -71,18 +80,6 @@ export default function Page2FrictionCharts({
       ground: +((d.net_m || 0) / 1000).toFixed(1),
       air: +((d.fly_m || 0) / 1000).toFixed(1),
     }));
-  }, [odAnalysis]);
-
-  const barrierRates = useMemo(() => {
-    if (!odAnalysis?.length) return null;
-    const n = odAnalysis.length;
-    const pct = (key) => +((odAnalysis.filter(d => d[key]).length / n) * 100).toFixed(1);
-    return [
-      { name: 'Water', rate: pct('crosses_water'), color: '#4688dc' },
-      { name: 'Waterway', rate: pct('crosses_waterway'), color: '#64a0f0' },
-      { name: 'Railway', rate: pct('crosses_railway'), color: '#aaa' },
-      { name: 'Highway', rate: pct('crosses_highway_major'), color: '#dc3c3c' },
-    ];
   }, [odAnalysis]);
 
   const frictionComposition = useMemo(() => {
@@ -100,34 +97,6 @@ export default function Page2FrictionCharts({
     ];
   }, [odAnalysis]);
 
-  const featureImportance = useMemo(() => {
-    if (!odAnalysis?.length) return null;
-    const fields = [
-      { key: 'detour_norm', name: 'Detour ratio', color: '#ff8c00' },
-      { key: 'barrier_norm', name: 'Barrier cross.', color: '#4688dc' },
-      { key: 'congestion_norm', name: 'Congestion', color: '#ff3264' },
-      { key: 'bridge_score', name: 'Bridge dep.', color: '#aaa' },
-      { key: 'tunnel_score', name: 'Tunnel dep.', color: '#888' },
-    ];
-    const frictions = odAnalysis.map(d => d.ground_friction || 0);
-    const mean = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
-    const fMean = mean(frictions);
-    const fVar = mean(frictions.map(v => (v - fMean) ** 2));
-    if (fVar === 0) return null;
-
-    const corrs = fields.map(f => {
-      const vals = odAnalysis.map(d => d[f.key] || 0);
-      const vMean = mean(vals);
-      const cov = mean(vals.map((v, i) => (v - vMean) * (frictions[i] - fMean)));
-      const vStd = Math.sqrt(mean(vals.map(v => (v - vMean) ** 2)));
-      const r = vStd > 0 ? Math.abs(cov / (vStd * Math.sqrt(fVar))) : 0;
-      return { ...f, imp: +r.toFixed(3) };
-    });
-
-    const total = corrs.reduce((s, c) => s + c.imp, 0) || 1;
-    return corrs.map(c => ({ ...c, imp: +(c.imp / total).toFixed(3) }));
-  }, [odAnalysis]);
-
   const handleScatterClick = (entry) => {
     const pt = entry?.payload ?? entry;
     if (!pt?.demand && pt?.demand !== 0) return;
@@ -137,17 +106,6 @@ export default function Page2FrictionCharts({
       const dp = hex.dp || 0;
       const fr = hex.avg_friction || 0;
       if (Math.abs(dp - d) < 1 && Math.abs(fr - f) < 0.05) return true;
-      return false;
-    });
-  };
-
-  const handleDetourBinClick = (data) => {
-    if (!data?.range) return;
-    const lo = parseFloat(data.range);
-    const hi = lo + 0.1;
-    onHighlight?.((hex) => {
-      const fr = hex.avg_friction || 0;
-      if (fr >= (lo - 1) * 0.15 && fr < hi * 0.15) return true;
       return false;
     });
   };
@@ -201,30 +159,57 @@ export default function Page2FrictionCharts({
       });
   }, [h3Gap]);
 
+  const poiRadar = useMemo(() => {
+    if (!poiRanking.length) return [];
+    const sumTotals = poiRanking.reduce((s, p) => s + p.total, 0) || 1;
+    return poiRanking.map(p => ({
+      axis: p.name.length > 14 ? `${p.name.slice(0, 12)}…` : p.name,
+      value: +(p.total / sumTotals).toFixed(4),
+      total: p.total,
+      color: p.color,
+    }));
+  }, [poiRanking]);
+
+  const poiRadarRMax = useMemo(() => {
+    if (!poiRadar.length) return 1;
+    return Math.max(...poiRadar.map(d => d.value), 1e-6);
+  }, [poiRadar]);
+
   const [selectedHex, setSelectedHex] = useState(null);
+  const [poiSupplyInfoOpen, setPoiSupplyInfoOpen] = useState(false);
+  const [demandDistInfoOpen, setDemandDistInfoOpen] = useState(false);
+  const [groundAirInfoOpen, setGroundAirInfoOpen] = useState(false);
+  const [ordersScatterInfoOpen, setOrdersScatterInfoOpen] = useState(false);
+  const poiSupplyInfoRef = useRef(null);
+  const demandDistInfoRef = useRef(null);
+  const groundAirInfoRef = useRef(null);
+  const ordersScatterInfoRef = useRef(null);
+
+  useEffect(() => {
+    if (activeMode !== 'supply') setPoiSupplyInfoOpen(false);
+    if (activeMode !== 'demand') {
+      setDemandDistInfoOpen(false);
+      setOrdersScatterInfoOpen(false);
+    }
+    if (activeMode !== 'friction') setGroundAirInfoOpen(false);
+  }, [activeMode]);
+
+  useEffect(() => {
+    if (!poiSupplyInfoOpen && !demandDistInfoOpen && !groundAirInfoOpen && !ordersScatterInfoOpen) return;
+    const onDoc = (e) => {
+      if (poiSupplyInfoOpen && !poiSupplyInfoRef.current?.contains(e.target)) setPoiSupplyInfoOpen(false);
+      if (demandDistInfoOpen && !demandDistInfoRef.current?.contains(e.target)) setDemandDistInfoOpen(false);
+      if (groundAirInfoOpen && !groundAirInfoRef.current?.contains(e.target)) setGroundAirInfoOpen(false);
+      if (ordersScatterInfoOpen && !ordersScatterInfoRef.current?.contains(e.target)) setOrdersScatterInfoOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [poiSupplyInfoOpen, demandDistInfoOpen, groundAirInfoOpen, ordersScatterInfoOpen]);
 
   const takeoutBins = useMemo(() => {
     if (!h3Takeout?.length) return [];
     const vals = h3Takeout.map(d => d.takeout_demand_index || 0).filter(v => v > 0);
     return buildBins(vals, 0.05);
-  }, [h3Takeout]);
-
-  const takeoutComponents = useMemo(() => {
-    if (!h3Takeout?.length) return [];
-    const avg = (key) => {
-      const vals = h3Takeout.map(d => d[key] || 0);
-      const s = vals.reduce((a, b) => a + b, 0);
-      const mx = Math.max(...vals);
-      return mx > 0 ? +(s / vals.length / mx).toFixed(3) : 0;
-    };
-    return [
-      { axis: 'Real Orders', value: avg('real_order_count') },
-      { axis: 'Population', value: avg('pop_count') },
-      { axis: 'Residential', value: avg('residential_count') },
-      { axis: 'Xiaoqu', value: avg('xiaoqu_count') },
-      { axis: 'Food POI', value: avg('food_count') },
-      { axis: 'Access 2km', value: avg('food_access_2km') },
-    ];
   }, [h3Takeout]);
 
   const topTakeout = useMemo(() => {
@@ -255,6 +240,68 @@ export default function Page2FrictionCharts({
       }));
   }, [h3Takeout]);
 
+  const topPriorityHexagons = useMemo(() => {
+    if (!h3Demand?.length) return [];
+    const gapMap = new Map((h3Gap || []).map(g => [g.h3, g]));
+    const takeoutMap = new Map((h3Takeout || []).map(t => [t.h3, t]));
+    const rows = [];
+    for (const d of h3Demand) {
+      const g = gapMap.get(d.h3);
+      const tk = takeoutMap.get(d.h3);
+      const fr = g?.avg_friction ?? 0;
+      if (!(fr > 0)) continue;
+      const tdi = tk?.takeout_demand_index ?? 0;
+      const dv = Math.min(tdi, 1) * timeWeight;
+      const fv = Math.min(fr, 1);
+      const score = dv * fv;
+      if (score <= 0) continue;
+      rows.push({ h3: d.h3, score });
+    }
+    rows.sort((a, b) => b.score - a.score);
+    return rows.slice(0, 10).map((r, i) => ({ ...r, rank: i + 1 }));
+  }, [h3Demand, h3Gap, h3Takeout, timeWeight]);
+
+  const congestionBins = useMemo(() => {
+    if (!odAnalysis?.length) return [];
+    const vals = odAnalysis.map(d => d.congestion_amplifier).filter(v => v != null && v > 0);
+    return buildBins(vals, 0.2);
+  }, [odAnalysis]);
+
+  const freeVsPeak = useMemo(() => {
+    if (!odAnalysis?.length) return [];
+    return odAnalysis.filter((_, i) => i % 4 === 0).map(d => ({
+      free: +((d.tt_free_s || 0) / 60).toFixed(1),
+      peak: +((d.tt_peak_s || 0) / 60).toFixed(1),
+    }));
+  }, [odAnalysis]);
+
+  const foodAccessCity = useMemo(() => {
+    if (!h3Takeout?.length) return null;
+    const active = h3Takeout.filter(d => (d.takeout_demand_index || 0) > 0);
+    if (!active.length) return null;
+    const avg = (key) => +(active.reduce((s, d) => s + (d[key] || 0), 0) / active.length).toFixed(1);
+    return [
+      { radius: '1 km', count: avg('food_access_1km') },
+      { radius: '2 km', count: avg('food_access_2km') },
+      { radius: '3 km', count: avg('food_access_3km') },
+    ];
+  }, [h3Takeout]);
+
+  const foodAccessData = useMemo(() => {
+    if (hoveredHex && (hoveredHex.food_access_1km > 0 || hoveredHex.food_access_2km > 0 || hoveredHex.food_access_3km > 0)) {
+      return {
+        isHex: true,
+        data: [
+          { radius: '1 km', count: hoveredHex.food_access_1km || 0, avg: foodAccessCity?.[0]?.count || 0 },
+          { radius: '2 km', count: hoveredHex.food_access_2km || 0, avg: foodAccessCity?.[1]?.count || 0 },
+          { radius: '3 km', count: hoveredHex.food_access_3km || 0, avg: foodAccessCity?.[2]?.count || 0 },
+        ],
+      };
+    }
+    if (!foodAccessCity) return null;
+    return { isHex: false, data: foodAccessCity };
+  }, [hoveredHex, foodAccessCity]);
+
   const isSupply = activeMode === 'supply';
   const isFriction = activeMode === 'friction';
   const isPriority = activeMode === 'priority';
@@ -262,44 +309,76 @@ export default function Page2FrictionCharts({
 
   return (
     <div className="p2c">
-      {/* Key metrics — live from data */}
-      <div className="p2c-metrics">
-        <div className="p2c-metric">
-          <div className="m-value" style={{ color: '#ff8c00' }}>{liveMetrics?.avgDetour ?? '—'}</div>
-          <div className="m-label">Avg detour ratio</div>
+      {/* Key metrics — OD-level friction stats; Friction only */}
+      {isFriction && (
+        <div className="p2c-metrics">
+          <div className="p2c-metric">
+            <div className="m-value" style={{ color: '#ff8c00' }}>{liveMetrics?.avgDetour ?? '—'}</div>
+            <div className="m-label">Avg detour ratio</div>
+          </div>
+          <div className="p2c-metric">
+            <div className="m-value" style={{ color: '#ff3264' }}>{liveMetrics?.peakCong ? `${liveMetrics.peakCong}×` : '—'}</div>
+            <div className="m-label">Peak congestion</div>
+          </div>
+          <div className="p2c-metric">
+            <div className="m-value" style={{ color: '#c864ff' }}>{liveMetrics?.waterPct ? `${liveMetrics.waterPct}%` : '—'}</div>
+            <div className="m-label">ODs cross water</div>
+          </div>
         </div>
-        <div className="p2c-metric">
-          <div className="m-value" style={{ color: '#ff3264' }}>{liveMetrics?.peakCong ? `${liveMetrics.peakCong}×` : '—'}</div>
-          <div className="m-label">Peak congestion</div>
-        </div>
-        <div className="p2c-metric">
-          <div className="m-value" style={{ color: '#c864ff' }}>{liveMetrics?.waterPct ? `${liveMetrics.waterPct}%` : '—'}</div>
-          <div className="m-label">ODs cross water</div>
-        </div>
-      </div>
+      )}
 
       {/* Supply mode: POI ranking */}
-      {isSupply && poiRanking.length > 0 && (
+      {isSupply && poiRadar.length > 0 && (
         <div className="p2c-section">
-          <h4>POI Supply Contribution</h4>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={poiRanking} layout="vertical" margin={{ left: 80, right: 10, top: 5, bottom: 5 }}>
-              <XAxis type="number" tick={{ fill: '#555', fontSize: 9 }}
-                tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v}
+          <div className="p2c-section-head" ref={poiSupplyInfoRef}>
+            <h4>POI Supply Contribution</h4>
+            <div className="p2c-head-actions">
+              <button
+                type="button"
+                className="p2c-info-icon"
+                aria-label="About this chart"
+                aria-expanded={poiSupplyInfoOpen}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPoiSupplyInfoOpen((o) => !o);
+                }}
+              >
+                i
+              </button>
+              {poiSupplyInfoOpen && (
+                <div className="p2c-info-popover" role="tooltip">
+                  {POI_RADAR_INFO}
+                </div>
+              )}
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={260}>
+            <RadarChart data={poiRadar} cx="50%" cy="52%" outerRadius="72%">
+              <PolarGrid stroke="rgba(90, 50, 110, 0.15)" />
+              <PolarAngleAxis dataKey="axis" tick={{ fill: '#888', fontSize: 9 }} />
+              <PolarRadiusAxis tick={false} axisLine={false} domain={[0, poiRadarRMax]} />
+              <Radar
+                name="Share of citywide POI pool"
+                dataKey="value"
+                stroke="#ff8c00"
+                fill="#ff8c00"
+                fillOpacity={0.22}
+                strokeWidth={2}
               />
-              <YAxis type="category" dataKey="name" tick={{ fill: '#999', fontSize: 10 }} width={75} />
               <Tooltip
                 contentStyle={TT_STYLE}
-                formatter={(v) => [v.toLocaleString(), 'Total POIs']}
+                formatter={(v, _n, item) => {
+                  const row = item?.payload;
+                  const raw = row?.total;
+                  const pct = typeof v === 'number' ? (v * 100).toFixed(1) : '0';
+                  return [
+                    `${pct}% of summed categories (${raw != null ? raw.toLocaleString() : '—'} POIs)`,
+                    row?.axis || '',
+                  ];
+                }}
               />
-              <Bar dataKey="total" radius={[0, 4, 4, 0]}>
-                {poiRanking.map((c, i) => <Cell key={i} fill={c.color} fillOpacity={0.8} />)}
-              </Bar>
-            </BarChart>
+            </RadarChart>
           </ResponsiveContainer>
-          <p className="p2c-note">
-            Which POI category drives the most delivery supply across Shenzhen?
-          </p>
         </div>
       )}
 
@@ -353,19 +432,65 @@ export default function Page2FrictionCharts({
         </div>
       )}
 
-      {/* Supply + Priority: scatter */}
-      {(isSupply || isPriority) && scatterData.length > 0 && (
+      {/* Supply mode: Food Accessibility */}
+      {isSupply && foodAccessData && (
+        <div className="p2c-section">
+          <h4>
+            Food Accessibility
+            {foodAccessData.isHex
+              ? <span className="p2c-fa-badge">Hovered Hex</span>
+              : <span className="p2c-fa-badge p2c-fa-badge--avg">City Avg</span>
+            }
+          </h4>
+          <div className="p2c-food-access">
+            {foodAccessData.data.map((d, i) => {
+              const colors = ['#ff4500', '#ff8c00', '#ffc040'];
+              const allVals = foodAccessData.data.map(x => x.count);
+              if (foodAccessData.isHex) allVals.push(...foodAccessData.data.map(x => x.avg));
+              const maxVal = Math.max(...allVals, 1);
+              return (
+                <div key={d.radius} className="p2c-fa-row-group">
+                  <div className="p2c-fa-row">
+                    <span className="p2c-fa-label" style={{ color: colors[i] }}>{d.radius}</span>
+                    <div className="p2c-fa-track">
+                      <div className="p2c-fa-fill" style={{ width: `${(d.count / maxVal) * 100}%`, background: colors[i] }} />
+                    </div>
+                    <span className="p2c-fa-val">{d.count}</span>
+                  </div>
+                  {foodAccessData.isHex && (
+                    <div className="p2c-fa-row p2c-fa-row--avg">
+                      <span className="p2c-fa-label" style={{ color: '#b0a0b8', fontSize: '0.6rem' }}>avg</span>
+                      <div className="p2c-fa-track">
+                        <div className="p2c-fa-fill p2c-fa-fill--avg" style={{ width: `${(d.avg / maxVal) * 100}%` }} />
+                      </div>
+                      <span className="p2c-fa-val" style={{ color: '#b0a0b8' }}>{d.avg}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <p className="p2c-note">
+            {foodAccessData.isHex
+              ? 'This hex vs city average. Hover other hexagons to compare.'
+              : 'Hover a hexagon on the map to see its food accessibility.'}
+          </p>
+        </div>
+      )}
+
+      {/* Priority: supply vs friction scatter */}
+      {isPriority && scatterData.length > 0 && (
         <div className="p2c-section">
           <h4>Supply vs Friction (per hex) <span className="p2c-click-hint">click to highlight</span></h4>
           <ResponsiveContainer width="100%" height={200}>
             <ScatterChart margin={{ left: 5, right: 10, top: 5, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e2040" />
               <XAxis dataKey="demand" type="number" name="Supply"
-                tick={{ fill: '#666', fontSize: 9 }} axisLine={{ stroke: '#2a2a4a' }}
+                tick={{ fill: '#9888a8', fontSize: 9 }} axisLine={{ stroke: 'rgba(90, 50, 110, 0.15)' }}
                 label={{ value: 'Supply', position: 'bottom', fill: '#555', fontSize: 10, offset: -2 }}
               />
               <YAxis dataKey="friction" type="number" name="Friction"
-                tick={{ fill: '#666', fontSize: 9 }} axisLine={{ stroke: '#2a2a4a' }}
+                tick={{ fill: '#9888a8', fontSize: 9 }} axisLine={{ stroke: 'rgba(90, 50, 110, 0.15)' }}
                 label={{ value: 'Friction', angle: -90, position: 'insideLeft', fill: '#555', fontSize: 10 }}
               />
               <ZAxis dataKey="gap" range={[8, 8]} />
@@ -389,31 +514,45 @@ export default function Page2FrictionCharts({
         </div>
       )}
 
-      {/* Friction / Priority mode charts */}
-      {(isFriction || isPriority) && (
-        <>
-          {barrierRates && (
-            <div className="p2c-section">
-              <h4>Barrier Crossing Rate (%)</h4>
-              <ResponsiveContainer width="100%" height={140}>
-                <BarChart data={barrierRates} layout="vertical" margin={{ left: 60, right: 10, top: 5, bottom: 5 }}>
-                  <XAxis type="number" domain={[0, 100]} tick={{ fill: '#555', fontSize: 10 }} />
-                  <YAxis type="category" dataKey="name" tick={{ fill: '#999', fontSize: 11 }} width={60} />
-                  <Tooltip contentStyle={TT_STYLE} labelStyle={{ color: '#aaa' }} />
-                  <Bar dataKey="rate" radius={[0, 4, 4, 0]}>
-                    {barrierRates.map((s, i) => <Cell key={i} fill={s.color} fillOpacity={0.8} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+      {isPriority && topPriorityHexagons.length > 0 && (
+        <div className="p2c-section">
+          <h4>Top 10 Priority (D×F) <span className="p2c-click-hint">click to highlight</span></h4>
+          <div className="p2c-hex-rank">
+            {topPriorityHexagons.map(hex => {
+              const maxS = topPriorityHexagons[0].score || 1;
+              const barW = (hex.score / maxS) * 100;
+              return (
+                <div
+                  key={hex.h3}
+                  className="p2c-hr-row"
+                  onClick={() => onHighlight?.((cell) => cell.h3 === hex.h3)}
+                >
+                  <span className="p2c-hr-rank">#{hex.rank}</span>
+                  <div className="p2c-hr-body">
+                    <div className="p2c-hr-bar-wrap">
+                      <div
+                        className="p2c-hr-bar"
+                        style={{ width: `${barW}%`, background: '#c864ff' }}
+                      />
+                      <span className="p2c-hr-dp">{hex.score.toFixed(4)}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
+      {/* Friction mode charts */}
+      {isFriction && (
+        <>
           {frictionComposition && (
             <div className="p2c-section">
               <h4>Friction Composition</h4>
               <ResponsiveContainer width="100%" height={180}>
                 <RadarChart data={frictionComposition} cx="50%" cy="50%" outerRadius="70%">
-                  <PolarGrid stroke="#2a2a4a" />
+                  <PolarGrid stroke="rgba(90, 50, 110, 0.15)" />
                   <PolarAngleAxis dataKey="axis" tick={{ fill: '#888', fontSize: 10 }} />
                   <PolarRadiusAxis tick={false} axisLine={false} domain={[0, 1]} />
                   <Radar dataKey="value" stroke="#c864ff" fill="#c864ff" fillOpacity={0.25} strokeWidth={2} />
@@ -422,138 +561,116 @@ export default function Page2FrictionCharts({
             </div>
           )}
 
-          {featureImportance && (
+          {barrierCrossings && (
             <div className="p2c-section">
-              <h4>Feature Importance</h4>
-              <ResponsiveContainer width="100%" height={130}>
-                <BarChart data={featureImportance} layout="vertical" margin={{ left: 85, right: 10, top: 5, bottom: 5 }}>
-                  <XAxis type="number" domain={[0, 'auto']} tick={{ fill: '#555', fontSize: 10 }} />
-                  <YAxis type="category" dataKey="name" tick={{ fill: '#999', fontSize: 10 }} width={80} />
-                  <Tooltip contentStyle={TT_STYLE} />
-                  <Bar dataKey="imp" radius={[0, 4, 4, 0]} name="Importance">
-                    {featureImportance.map((s, i) => <Cell key={i} fill={s.color} fillOpacity={0.8} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {detourBins.length > 0 && (
-            <div className="p2c-section">
-              <h4>Detour Ratio Distribution <span className="p2c-click-hint">click bin to highlight</span></h4>
-              <ResponsiveContainer width="100%" height={140}>
-                <BarChart data={detourBins} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}
-                  onClick={(e) => e?.activePayload?.[0] && handleDetourBinClick(e.activePayload[0].payload)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <XAxis dataKey="range" tick={{ fill: '#666', fontSize: 9 }} />
-                  <YAxis tick={{ fill: '#555', fontSize: 9 }} />
-                  <Tooltip contentStyle={TT_STYLE}
-                    formatter={(v) => [v, 'OD pairs']}
-                    labelFormatter={(l) => `Detour ${l}×–${(parseFloat(l) + 0.1).toFixed(1)}×`}
-                  />
-                  <Bar dataKey="count" fill="#ff3264" fillOpacity={0.7} radius={[3, 3, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-              {detourStats && (
-                <div className="p2c-detour-stats">
-                  <span>Median <strong>{detourStats.median}×</strong></span>
-                  <span>P90 <strong>{detourStats.p90}×</strong></span>
-                  <span>Max <strong>{detourStats.max}×</strong></span>
-                </div>
-              )}
+              <h4>Avg crossings / trip</h4>
+              <div className="p2c-crossing-lanes">
+                {barrierCrossings.map(b => (
+                  <div key={b.type} className="p2c-crossing-lane">
+                    <span className="p2c-crossing-name" style={{ color: b.color }}>{b.type}</span>
+                    <div className="p2c-crossing-track">
+                      <div
+                        className="p2c-crossing-fill"
+                        style={{
+                          width: `${Math.min(100, (b.avg / barrierCrossingMax) * 100)}%`,
+                          background: b.color,
+                        }}
+                      />
+                    </div>
+                    <span className="p2c-crossing-num">{b.avg}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
           {congestionBins.length > 0 && (
             <div className="p2c-section">
-              <h4>Congestion Amplifier Distribution</h4>
-              <ResponsiveContainer width="100%" height={140}>
-                <BarChart data={congestionBins} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
-                  <XAxis dataKey="range" tick={{ fill: '#666', fontSize: 9 }}
-                    label={{ value: 'Peak / Free-flow', position: 'bottom', fill: '#555', fontSize: 10, offset: -2 }}
-                  />
+              <h4>Congestion Amplifier</h4>
+              <ResponsiveContainer width="100%" height={150}>
+                <BarChart data={congestionBins} margin={{ left: 5, right: 10, top: 5, bottom: 5 }}>
+                  <XAxis dataKey="range" tick={{ fill: '#9888a8', fontSize: 9 }}
+                    label={{ value: 'Peak / Free-flow', position: 'bottom', fill: '#555', fontSize: 9, offset: -2 }} />
                   <YAxis tick={{ fill: '#555', fontSize: 9 }} />
                   <Tooltip contentStyle={TT_STYLE}
                     formatter={(v) => [v, 'OD pairs']}
-                    labelFormatter={(l) => `${l}×–${(parseFloat(l) + 0.1).toFixed(1)}× slowdown`}
+                    labelFormatter={(l) => `${l}×`}
                   />
-                  <Bar dataKey="count" fill="#ffa028" fillOpacity={0.7} radius={[3, 3, 0, 0]} />
+                  <ReferenceLine x="1.0" stroke="#00e896" strokeDasharray="4 4" strokeWidth={1.5} />
+                  <Bar dataKey="count" fill="#ff3264" fillOpacity={0.65} radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+              <p className="p2c-note">Peak-hour travel time vs free-flow. Higher = more congestion impact.</p>
             </div>
           )}
 
-          {barrierCrossings && (
+          {freeVsPeak.length > 0 && (
             <div className="p2c-section">
-              <h4>Avg Barrier Crossings per Trip</h4>
-              <ResponsiveContainer width="100%" height={140}>
-                <BarChart data={barrierCrossings} layout="vertical" margin={{ left: 65, right: 10, top: 5, bottom: 5 }}>
-                  <XAxis type="number" tick={{ fill: '#555', fontSize: 10 }} />
-                  <YAxis type="category" dataKey="type" tick={{ fill: '#999', fontSize: 11 }} width={62} />
-                  <Tooltip contentStyle={TT_STYLE} formatter={(v) => [v, 'avg crossings']} />
-                  <Bar dataKey="avg" radius={[0, 4, 4, 0]}>
-                    {barrierCrossings.map((b, i) => <Cell key={i} fill={b.color} fillOpacity={0.8} />)}
-                  </Bar>
-                </BarChart>
+              <h4>Free-flow vs Peak Time (min)</h4>
+              <ResponsiveContainer width="100%" height={160}>
+                <ScatterChart margin={{ left: 5, right: 10, top: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e2040" />
+                  <XAxis dataKey="free" type="number" name="Free-flow"
+                    tick={{ fill: '#9888a8', fontSize: 9 }} axisLine={{ stroke: 'rgba(90, 50, 110, 0.15)' }}
+                    label={{ value: 'Free-flow (min)', position: 'bottom', fill: '#555', fontSize: 10, offset: -2 }}
+                  />
+                  <YAxis dataKey="peak" type="number" name="Peak"
+                    tick={{ fill: '#9888a8', fontSize: 9 }} axisLine={{ stroke: 'rgba(90, 50, 110, 0.15)' }}
+                    label={{ value: 'Peak (min)', angle: -90, position: 'insideLeft', fill: '#555', fontSize: 10 }}
+                  />
+                  <ZAxis range={[8, 8]} />
+                  <Tooltip contentStyle={TT_STYLE} formatter={(v, name) => [`${v} min`, name]} />
+                  <Scatter data={freeVsPeak} fill="#ff8c00" fillOpacity={0.4} r={2} />
+                  <ReferenceLine
+                    segment={[{ x: 0, y: 0 }, { x: Math.max(...freeVsPeak.map(d => d.free)), y: Math.max(...freeVsPeak.map(d => d.free)) }]}
+                    stroke="#444" strokeDasharray="4 4"
+                    label={{ value: 'y = x', fill: '#555', fontSize: 8, position: 'insideTopLeft' }}
+                  />
+                </ScatterChart>
               </ResponsiveContainer>
-              <p className="p2c-note">
-                Each delivery crosses ~{barrierCrossings.reduce((s, b) => s + b.avg, 0).toFixed(1)} barriers on average.
-              </p>
+              <p className="p2c-note">Points above the diagonal: peak congestion adds extra travel time.</p>
             </div>
           )}
         </>
       )}
 
-      {/* Demand / Priority mode charts */}
-      {(isDemand || isPriority) && (
+      {/* Demand mode charts */}
+      {isDemand && (
         <>
-          {takeoutBins.length > 0 && (
-            <div className="p2c-section">
-              <h4>Demand Distribution</h4>
-              <ResponsiveContainer width="100%" height={160}>
-                <BarChart data={takeoutBins} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
-                  <XAxis dataKey="range" tick={{ fill: '#666', fontSize: 9 }} />
-                  <YAxis tick={{ fill: '#555', fontSize: 9 }} />
-                  <Tooltip contentStyle={TT_STYLE}
-                    formatter={(v) => [v, 'Hexagons']}
-                    labelFormatter={(l) => `Index ${l}`}
-                  />
-                  <Bar dataKey="count" fill="#ff4500" fillOpacity={0.7} radius={[3, 3, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-              <p className="p2c-note">
-                Fused: real orders (35%) + population (25%) + xiaoqu (15%) + food POI (15%) + residential (10%)
-              </p>
-            </div>
-          )}
-
-          {takeoutComponents.length > 0 && (
-            <div className="p2c-section">
-              <h4>Demand Components</h4>
-              <ResponsiveContainer width="100%" height={180}>
-                <RadarChart data={takeoutComponents} cx="50%" cy="50%" outerRadius="70%">
-                  <PolarGrid stroke="#2a2a4a" />
-                  <PolarAngleAxis dataKey="axis" tick={{ fill: '#888', fontSize: 10 }} />
-                  <PolarRadiusAxis tick={false} axisLine={false} domain={[0, 1]} />
-                  <Radar dataKey="value" stroke="#ff4500" fill="#ff4500" fillOpacity={0.25} strokeWidth={2} />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
           {orderVsProxy.length > 0 && (
             <div className="p2c-section">
-              <h4>Real Orders vs Population</h4>
+              <div className="p2c-section-head" ref={ordersScatterInfoRef}>
+                <h4>Real Orders vs Population</h4>
+                <div className="p2c-head-actions">
+                  <button
+                    type="button"
+                    className="p2c-info-icon"
+                    aria-label="About this chart"
+                    aria-expanded={ordersScatterInfoOpen}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOrdersScatterInfoOpen((o) => !o);
+                    }}
+                  >
+                    i
+                  </button>
+                  {ordersScatterInfoOpen && (
+                    <div className="p2c-info-popover" role="tooltip">
+                      <strong>{orderVsProxy.length.toLocaleString()} hexagons</strong>
+                      {' '}with real delivery orders (RL-Dispatch). {REAL_ORDERS_SCATTER_INFO}
+                    </div>
+                  )}
+                </div>
+              </div>
               <ResponsiveContainer width="100%" height={180}>
                 <ScatterChart margin={{ left: 5, right: 10, top: 5, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e2040" />
                   <XAxis dataKey="pop" type="number" name="Population"
-                    tick={{ fill: '#666', fontSize: 9 }} axisLine={{ stroke: '#2a2a4a' }}
+                    tick={{ fill: '#9888a8', fontSize: 9 }} axisLine={{ stroke: 'rgba(90, 50, 110, 0.15)' }}
                     label={{ value: 'Population', position: 'bottom', fill: '#555', fontSize: 10, offset: -2 }}
                   />
                   <YAxis dataKey="orders" type="number" name="Orders"
-                    tick={{ fill: '#666', fontSize: 9 }} axisLine={{ stroke: '#2a2a4a' }}
+                    tick={{ fill: '#9888a8', fontSize: 9 }} axisLine={{ stroke: 'rgba(90, 50, 110, 0.15)' }}
                     label={{ value: 'Real Orders', angle: -90, position: 'insideLeft', fill: '#555', fontSize: 10 }}
                   />
                   <ZAxis range={[8, 8]} />
@@ -562,9 +679,44 @@ export default function Page2FrictionCharts({
                   <Scatter data={orderVsProxy} fill="#ff4500" fillOpacity={0.4} r={2.5} />
                 </ScatterChart>
               </ResponsiveContainer>
-              <p className="p2c-note">
-                {orderVsProxy.length.toLocaleString()} hexagons with real delivery orders (RL-Dispatch)
-              </p>
+            </div>
+          )}
+
+          {takeoutBins.length > 0 && (
+            <div className="p2c-section">
+              <div className="p2c-section-head" ref={demandDistInfoRef}>
+                <h4>Demand Distribution</h4>
+                <div className="p2c-head-actions">
+                  <button
+                    type="button"
+                    className="p2c-info-icon"
+                    aria-label="About this chart"
+                    aria-expanded={demandDistInfoOpen}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDemandDistInfoOpen((o) => !o);
+                    }}
+                  >
+                    i
+                  </button>
+                  {demandDistInfoOpen && (
+                    <div className="p2c-info-popover" role="tooltip">
+                      {DEMAND_DIST_INFO}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={takeoutBins} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
+                  <XAxis dataKey="range" tick={{ fill: '#9888a8', fontSize: 9 }} />
+                  <YAxis tick={{ fill: '#555', fontSize: 9 }} />
+                  <Tooltip contentStyle={TT_STYLE}
+                    formatter={(v) => [v, 'Hexagons']}
+                    labelFormatter={(l) => `Index ${l}`}
+                  />
+                  <Bar dataKey="count" fill="#ff4500" fillOpacity={0.7} radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           )}
 
@@ -602,19 +754,40 @@ export default function Page2FrictionCharts({
         </>
       )}
 
-      {/* Ground vs Air — shown in all modes */}
-      {distCompare.length > 0 && (
+      {/* Ground vs Air — OD sample; Friction only */}
+      {distCompare.length > 0 && isFriction && (
         <div className="p2c-section">
-          <h4>Ground vs Air Distance (km)</h4>
+          <div className="p2c-section-head" ref={groundAirInfoRef}>
+            <h4>Ground vs Air Distance (km)</h4>
+            <div className="p2c-head-actions">
+              <button
+                type="button"
+                className="p2c-info-icon"
+                aria-label="About this chart"
+                aria-expanded={groundAirInfoOpen}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setGroundAirInfoOpen((o) => !o);
+                }}
+              >
+                i
+              </button>
+              {groundAirInfoOpen && (
+                <div className="p2c-info-popover" role="tooltip">
+                  {GROUND_AIR_INFO}
+                </div>
+              )}
+            </div>
+          </div>
           <ResponsiveContainer width="100%" height={160}>
             <ScatterChart margin={{ left: 5, right: 10, top: 5, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e2040" />
               <XAxis dataKey="air" type="number" name="Air (km)"
-                tick={{ fill: '#666', fontSize: 9 }} axisLine={{ stroke: '#2a2a4a' }}
+                tick={{ fill: '#9888a8', fontSize: 9 }} axisLine={{ stroke: 'rgba(90, 50, 110, 0.15)' }}
                 label={{ value: 'Straight-line (km)', position: 'bottom', fill: '#555', fontSize: 10, offset: -2 }}
               />
               <YAxis dataKey="ground" type="number" name="Ground (km)"
-                tick={{ fill: '#666', fontSize: 9 }} axisLine={{ stroke: '#2a2a4a' }}
+                tick={{ fill: '#9888a8', fontSize: 9 }} axisLine={{ stroke: 'rgba(90, 50, 110, 0.15)' }}
                 label={{ value: 'Ground (km)', angle: -90, position: 'insideLeft', fill: '#555', fontSize: 10 }}
               />
               <ZAxis range={[10, 10]} />
@@ -628,7 +801,6 @@ export default function Page2FrictionCharts({
               />
             </ScatterChart>
           </ResponsiveContainer>
-          <p className="p2c-note">Points above y=x = ground detour. Gap = distance drones save.</p>
         </div>
       )}
     </div>

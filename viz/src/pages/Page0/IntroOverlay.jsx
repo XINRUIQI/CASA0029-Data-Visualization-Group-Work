@@ -42,7 +42,7 @@ export default function IntroOverlay({ onComplete }) {
       ctx.clearRect(0, 0, w, h);
 
       // dark background
-      ctx.fillStyle = '#050518';
+      ctx.fillStyle = '#f0e8ee';
       ctx.fillRect(0, 0, w, h);
 
       ctx.save();

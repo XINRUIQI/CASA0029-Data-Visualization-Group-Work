@@ -4,7 +4,6 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import { point as turfPoint } from '@turf/helpers';
 import Page3Map from './Page3Map';
-import ParticleBackground from './ParticleBackground';
 import { publicDataUrl, POI_COLORS } from '../../config';
 import { PoiPinIcon } from './poiIcons';
 import { COMPOUND_COLORS } from '../Page1 overview/Page1Landing';
@@ -313,7 +312,15 @@ export default function Page3Friction() {
 
   return (
     <section id="page-3" className="page page-3" style={{ position: 'relative' }}>
-      <ParticleBackground />
+      <div className="p3-hero-text">
+        <h2 className="p3-hero-title">What Drone Delivery Infrastructure Already Exists?</h2>
+        <p className="p3-hero-desc">
+          Shenzhen has developed an initial drone delivery infrastructure network, including
+          commercial-area hubs and last-mile delivery points. Existing and planned sites are
+          distributed across different districts, providing a baseline for understanding current
+          service capacity and identifying where additional hubs may be needed.
+        </p>
+      </div>
       <div className="p3-layout" style={{ position: 'relative', zIndex: 1 }}>
 
         {/* ── LEFT: map (50%) ── */}
@@ -363,7 +370,7 @@ export default function Page3Friction() {
                   <path d="M20 0C8.954 0 0 8.954 0 20c0 13.333 20 32 20 32S40 33.333 40 20C40 8.954 31.046 0 20 0z" fill="#ffa028" />
                   <circle cx="20" cy="19" r="8" fill="white" opacity="0.9" />
                 </svg>
-                Commercial area pick-up/drop-off points <span className="p3-il-count">45</span>
+                Departure Hubs <span className="p3-il-count">45</span>
               </button>
               <button className={`p3-il-btn ${showLastMile ? 'active' : ''}`} style={{ '--ilc': '#c864ff' }}
                 onClick={() => setShowLastMile(v => !v)}>
@@ -371,7 +378,7 @@ export default function Page3Friction() {
                   <path d="M20 0C8.954 0 0 8.954 0 20c0 13.333 20 32 20 32S40 33.333 40 20C40 8.954 31.046 0 20 0z" fill="#c864ff" />
                   <circle cx="20" cy="19" r="8" fill="white" opacity="0.9" />
                 </svg>
-                Last-mile pick-up/drop-off points <span className="p3-il-count">161</span>
+                Landing Hubs <span className="p3-il-count">161</span>
               </button>
             </>}
             {activeTab === 4 && [
@@ -417,24 +424,6 @@ export default function Page3Friction() {
 
           {loadError && <div className="p3p-loading" style={{ color: '#ff6b6b' }}>加载失败：{loadError}</div>}
 
-          {siteStats ? (
-            <div className="p3p-kpis">
-              <div className="p3p-kpi">
-                <div className="kpi-val">{siteStats.total}</div>
-                <div className="kpi-lab">Total Sites</div>
-              </div>
-              <div className="p3p-kpi">
-                <div className="kpi-val" style={{ color: '#00e896' }}>{siteStats.byStatus.existing ?? 0}</div>
-                <div className="kpi-lab">Existing</div>
-              </div>
-              <div className="p3p-kpi">
-                <div className="kpi-val" style={{ color: '#64c8ff' }}>{siteStats.byStatus.planned ?? 0}</div>
-                <div className="kpi-lab">Planned</div>
-              </div>
-            </div>
-          ) : (
-            <div className="p3p-loading">Loading sites…</div>
-          )}
 
           {/* ── Sites by District (moved from bottom-left) ── */}
           <div className="p3p-section p3p-district-section">
@@ -447,9 +436,9 @@ export default function Page3Friction() {
                   <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
                   <YAxis type="number" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
                     label={{ value: 'Sites (n)', angle: 0, position: 'top', fill: '#555', fontSize: 10, dy: -8, dx: 20, textAnchor: 'middle' }} />
-                  <Tooltip contentStyle={{ background: '#0f0f24', border: '1px solid #2a2a4a', borderRadius: 8, fontSize: 12 }}
+                  <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid rgba(90, 50, 110, 0.15)', borderRadius: 8, fontSize: 12 }}
                     labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                    formatter={(value, name) => [value, name === 'commercial' ? 'Commercial area pick-up/drop-off points' : 'Last-mile pick-up/drop-off points']} />
+                    formatter={(value, name) => [value, name === 'commercial' ? 'Departure Hubs' : 'Landing Hubs']} />
                   <Bar dataKey="commercial" fill="#ffa028" fillOpacity={showCommercial ? 0.85 : 0.15} maxBarSize={18} cursor="pointer"
                     onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
                     <LabelList dataKey="commercial" position="top" style={{ fill: showCommercial ? '#ccc' : 'transparent', fontSize: 9 }} formatter={v => v > 0 ? v : ''} />
@@ -469,7 +458,7 @@ export default function Page3Friction() {
                   <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
                   <YAxis type="number" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
                     label={{ value: 'per 万人', angle: 0, position: 'top', fill: '#555', fontSize: 10, dy: -8, dx: 24, textAnchor: 'middle' }} />
-                  <Tooltip contentStyle={{ background: '#0f0f24', border: '1px solid #2a2a4a', borderRadius: 8, fontSize: 12 }}
+                  <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid rgba(90, 50, 110, 0.15)', borderRadius: 8, fontSize: 12 }}
                     labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                     formatter={(value, name) => [name === 'ratio' ? `${value} sites/万人` : value, name === 'ratio' ? 'Coverage Rate' : 'Total']} />
                   <Bar dataKey="ratio" fill="#e03030" fillOpacity={0.85} maxBarSize={22} cursor="pointer"
@@ -487,7 +476,7 @@ export default function Page3Friction() {
                   <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
                   <YAxis type="number" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
                     label={{ value: 'Sites (n)', angle: 0, position: 'top', fill: '#555', fontSize: 10, dy: -8, dx: 20, textAnchor: 'middle' }} />
-                  <Tooltip contentStyle={{ background: '#0f0f24', border: '1px solid #2a2a4a', borderRadius: 8, fontSize: 12 }}
+                  <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid rgba(90, 50, 110, 0.15)', borderRadius: 8, fontSize: 12 }}
                     labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                     formatter={v => [v, POI_COLORS[contextChartType]?.label]} />
                   <Bar dataKey={contextChartType} fill={POI_COLORS[contextChartType]?.hex} fillOpacity={0.85} maxBarSize={22} cursor="pointer"

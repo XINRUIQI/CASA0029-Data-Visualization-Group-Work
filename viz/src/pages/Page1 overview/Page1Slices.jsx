@@ -262,46 +262,46 @@ const PALETTE = ['#D73027', '#FC8D59', '#FEE090', '#E0F3F8', '#91BFDB', '#4575B4
 const SLICES = [
   {
     year: '',
-    title: 'Need for UAM',
-    subtitle: 'Analysis of the Need for UAM as a Mitigation Measure',
+    title: 'Why Move Delivery into the Air?',
+    subtitle: 'Ground-level congestion makes faster urban logistics increasingly necessary.',
     detail:
-      'Major roads in Shenzhen average 5.7 hours of daily congestion. The most severely affected corridors are Shangbu Road (21 h), Yantian Road (19 h), and Binhai Avenue (15.75 h). By flying above ground-level traffic, UAM can effectively bypass these bottlenecks and significantly reduce journey times across the city.',
+      <>Major roads in Shenzhen experience an average of <strong>5.7</strong> hours of daily congestion. The most affected corridors include Shangbu Road (21 h), Yantian Road (19 h), and Binhai Avenue (15.75 h). For time-sensitive delivery, flying above ground-level traffic can help bypass these bottlenecks and reduce travel time across the city.</>,
     color: PALETTE[0],   // #D73027 red — problem / urgency
     num: '01',
   },
   {
     year: '2023',
-    title: 'From Ground Mobility to Aerial Possibility',
-    subtitle: 'eVTOL developers establish a foothold in Shenzhen',
+    title: 'Why Shenzhen?',
+    subtitle: 'The city has become a major testbed for low-altitude mobility innovation.',
     detail:
-      'Lilium, a German eVTOL manufacturer, announced its China headquarters in Shenzhen. Domestic firms — EHang (Guangzhou), Fengfei (Shanghai), and Shiji Technology — also entered Shenzhen to develop flight routes, marking the city\'s emergence as China\'s primary eVTOL hub.',
+      'Lilium, a German eVTOL manufacturer, announced its China headquarters in Shenzhen. Domestic firms including EHang, Fengfei, and Shij Technology have also entered Shenzhen to develop flight routes, signalling the city’s emergence as a major hub for aerial mobility innovation.',
     color: PALETTE[1],
     num: '02',
   },
   {
     year: '2023',
-    title: 'From Experiment to Real-world Testing',
-    subtitle: 'Meituan pilots drone food delivery at city scale',
+    title: 'Is Drone Delivery Already Happening?',
+    subtitle: 'Shenzhen is moving from pilot routes to real-world drone delivery networks.',
     detail:
-      'Internet platform Meituan established 23 drone food delivery routes in Shenzhen. According to the Shenzhen Municipal Transport Bureau, 77 new drone routes were launched in 2023, bringing the total to 156 operational routes, with cargo drones completing over 600,000 flights.',
+      'Meituan has established 23 drone food delivery routes in Shenzhen. According to the Shenzhen Municipal Transport Bureau, 77 new drone routes were launched in 2023, bringing the total to 156 operational routes, with cargo drones completing over 600,000 flights.',
     color: PALETTE[2],
     num: '03',
   },
   {
     year: '2024',
-    title: 'Scaling Drone Delivery in Shenzhen',
-    subtitle: '776K flights · 101 new routes · +27% year-on-year',
+    title: 'Is Drone Delivery Scaling Up?',
+    subtitle: 'Low-altitude delivery is expanding rapidly across the city.',
     detail:
-      'Low-altitude activity surged across Shenzhen in 2024. Helicopter operations reached 28,000 flights carrying 136,800 passengers, expanding into medical rescue, business travel, and cross-border transport. Unmanned cargo flights hit 776,000 — up 27% year-on-year — spanning express delivery, on-demand consumer logistics, and medical services.',
+      'Low-altitude activity surged across Shenzhen in 2024. Helicopter operations reached 28,000 flights, carrying 136,800 passengers and expanding into medical rescue, business travel, and cross-border transport. Unmanned cargo flights reached 776,000 — up 27% year-on-year — spanning express delivery, on-demand consumer logistics, and medical services.',
     color: PALETTE[3],
     num: '04',
   },
   {
     year: '2025+',
-    title: 'Institutionalisation & the Low-altitude Economy',
-    subtitle: 'Shenzhen — world\'s leading city for the low-altitude economy',
+    title: 'What Does Scaling Drone Delivery Require Next?',
+    subtitle: 'Policy support creates the opportunity, but spatial planning determines whether the network can work.',
     detail:
-      'The Shenzhen Municipal Government is committed to building the "world\'s leading city for the low-altitude economy", leveraging urban planning to deliver the Four Centres: Global Headquarters & R&D, High-End Intelligent Manufacturing, All-Scenario Demonstration, and One-Stop Solution Provision.',
+      'Shenzhen is positioning itself as a leading city for the low-altitude economy, supported by urban planning, industrial coordination, and the development of four key centres: Global Headquarters & R&D, High-End Intelligent Manufacturing, All-Scenario Demonstration, and One-Stop Solution Provision. However, turning this policy vision into an operational drone delivery system requires more than technological capacity. It depends on where take-off and landing sites are located, how well they cover delivery demand, and whether they can operate within urban spatial constraints.',
     color: PALETTE[5],
     num: '05',
   },
@@ -349,11 +349,13 @@ export default function Page1Slices() {
           {/* header row */}
           <div className="p1s-hdr">
             <span className="p1s-lbl">TIMELINE</span>
-            <span className="p1s-lbl-next"
-              onClick={() => document.getElementById('page-2')?.scrollIntoView({ behavior: 'smooth' })}>
-              NEXT
-            </span>
           </div>
+
+          {/* next page button — bottom left */}
+          <span className="p1s-lbl-next"
+            onClick={() => document.getElementById('page-2')?.scrollIntoView({ behavior: 'smooth' })}>
+            NEXT PAGE
+          </span>
 
           {/* current card info */}
           <div className="p1s-info">
@@ -372,6 +374,7 @@ export default function Page1Slices() {
                 onClick={() => scrollToCard(i)}
                 title={s.title}
               >
+                {s.year && <span className="p1s-dot-year">{s.year}</span>}
                 <span className="p1s-dot-pip" />
                 <span className="p1s-dot-yr">{s.num}</span>
               </button>

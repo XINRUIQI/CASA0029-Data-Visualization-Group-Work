@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import Map, { Marker, Source, Layer } from 'react-map-gl/mapbox';
 import { WebMercatorViewport } from '@deck.gl/core';
 import { MAPBOX_TOKEN, SHENZHEN_CENTER, SHENZHEN_ZOOM, SHENZHEN_MAX_BOUNDS } from '../../config';
+import MapControls from '../../components/MapControls';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 const INITIAL_VIEW = {
@@ -11,6 +12,9 @@ const INITIAL_VIEW = {
   pitch: 0,
   bearing: 0,
 };
+
+const EXISTING_COLOR = '#8a8d99';
+const CANDIDATE_COLOR = '#ff7a5c';
 
 function PinIcon({ color, size = 14 }) {
   return (
@@ -22,11 +26,21 @@ function PinIcon({ color, size = 14 }) {
   );
 }
 
-export default function Page4Map({ sites, boundary, hexGrid }) {
+function DiamondIcon({ color, size = 10 }) {
+  const h = size * 1.3;
+  return (
+    <svg viewBox="0 0 20 26" width={size} height={h}
+      style={{ display: 'block', filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.45))' }}>
+      <path d="M10 0L20 13L10 26L0 13Z" fill={color} />
+      <circle cx="10" cy="12" r="4" fill="white" opacity="0.85" />
+    </svg>
+  );
+}
+
+export default function Page4Map({ sites, candidateSites, boundary, hexGrid }) {
   const [viewState, setViewState] = useState(INITIAL_VIEW);
   const containerRef = useRef(null);
 
-  // Fit to the hex grid extent on load (same behaviour as Page3 Coverage tab)
   useEffect(() => {
     if (!hexGrid || !containerRef.current) return;
     let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
@@ -53,7 +67,7 @@ export default function Page4Map({ sites, boundary, hexGrid }) {
         {...viewState}
         onMove={e => setViewState(e.viewState)}
         mapboxAccessToken={MAPBOX_TOKEN}
-        mapStyle="mapbox://styles/mapbox/dark-v11"
+        mapStyle="mapbox://styles/mapbox/light-v11"
         projection="mercator"
         reuseMaps
         maxBounds={SHENZHEN_MAX_BOUNDS}
@@ -79,25 +93,57 @@ export default function Page4Map({ sites, boundary, hexGrid }) {
         {hexGrid && (
           <Source id="p4-hex-grid" type="geojson" data={hexGrid}>
             <Layer id="p4-hex-grid-fill" type="fill"
-              paint={{
-                'fill-color': '#ffffff',
-                'fill-opacity': 0.02,
-              }}
-            />
+              paint={{ 'fill-color': '#ffffff', 'fill-opacity': 0.02 }} />
             <Layer id="p4-hex-grid-line" type="line"
               paint={{ 'line-color': '#ffffff', 'line-width': 0.4, 'line-opacity': 0.12 }} />
           </Source>
         )}
 
+        {/* Optimised candidate sites (render first so existing pins sit on top) */}
+        {candidateSites?.map((d, i) => (
+          <Marker key={`c${i}`} longitude={d.lon} latitude={d.lat} anchor="center"
+            style={{ zIndex: 5 }}>
+            <div style={{ pointerEvents: 'none' }}>
+              <DiamondIcon color={CANDIDATE_COLOR} size={9} />
+            </div>
+          </Marker>
+        ))}
+
+        {/* Existing vertiport sites (grey) */}
         {sites?.map((d, i) => (
           <Marker key={`v${i}`} longitude={d.lon} latitude={d.lat} anchor="bottom"
             style={{ zIndex: 10 }}>
             <div style={{ pointerEvents: 'none' }}>
-              <PinIcon color="#8a8d99" size={14} />
+              <PinIcon color={EXISTING_COLOR} size={14} />
             </div>
           </Marker>
         ))}
       </Map>
+
+      {/* Legend */}
+      <div style={{
+        position: 'absolute', bottom: 14, left: 14,
+        background: 'rgba(255,255,255,0.92)', borderRadius: 8,
+        padding: '8px 14px', fontSize: 11, color: '#4a3858',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        display: 'flex', flexDirection: 'column', gap: 6,
+        zIndex: 20, border: '1px solid rgba(90,50,110,0.1)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <PinIcon color={EXISTING_COLOR} size={12} />
+          <span>Existing sites ({sites?.length || 0})</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <DiamondIcon color={CANDIDATE_COLOR} size={9} />
+          <span>Optimised candidates ({candidateSites?.length || 0})</span>
+        </div>
+      </div>
+
+      <MapControls
+        viewState={viewState}
+        onResetView={() => setViewState(vs => ({ ...vs, ...INITIAL_VIEW, transitionDuration: 800 }))}
+        onResetBearing={() => setViewState(vs => ({ ...vs, bearing: 0, pitch: 0, transitionDuration: 400 }))}
+      />
     </div>
   );
 }

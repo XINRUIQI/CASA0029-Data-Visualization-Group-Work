@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import Map from 'react-map-gl/mapbox';
 import DeckGL from '@deck.gl/react';
 import { ScatterplotLayer } from '@deck.gl/layers';
 import { H3HexagonLayer } from '@deck.gl/geo-layers';
 import { MAPBOX_TOKEN, SHENZHEN_CENTER, SHENZHEN_ZOOM, SHENZHEN_MAX_BOUNDS } from '../../config';
+import MapControls from '../../components/MapControls';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 const CLASS_COLORS = {
@@ -20,39 +21,8 @@ const VIEW = {
   bearing: 0,
 };
 
-// Nice round distances we will snap the scale bar to (in metres).
-const SCALE_STEPS = [
-  1, 2, 5, 10, 20, 50, 100, 200, 500,
-  1000, 2000, 5000, 10000, 20000, 50000, 100000,
-];
-const SCALE_TARGET_PX = 120;
-
-/**
- * Compute a dynamic scale bar length + label from the current Web Mercator
- * view state. Formula: at zoom z on Web Mercator, 1 screen pixel ≈
- *   156543.03392 * cos(latitude) / 2^z  metres.
- */
-function computeScale(viewState) {
-  const lat = viewState.latitude;
-  const metersPerPixel = (156543.03392 * Math.cos((lat * Math.PI) / 180)) / Math.pow(2, viewState.zoom);
-  const targetMeters = metersPerPixel * SCALE_TARGET_PX;
-  let snapped = SCALE_STEPS[0];
-  for (const step of SCALE_STEPS) {
-    if (step <= targetMeters) snapped = step;
-  }
-  const px = snapped / metersPerPixel;
-  const label = snapped >= 1000 ? `${snapped / 1000} km` : `${snapped} m`;
-  return { px, label };
-}
-
 export default function Page6Map({ sites, allSites, h3Demand, showCoverage, showCoveredOnly, showBeforeAfter, onHoverSite, onClickSite }) {
   const [viewState, setViewState] = useState(VIEW);
-
-  const scale = useMemo(() => computeScale(viewState), [viewState]);
-
-  const resetView = () => setViewState(VIEW);
-  const resetBearing = () =>
-    setViewState(vs => ({ ...vs, bearing: 0, pitch: 0, transitionDuration: 400 }));
 
   const layers = [];
 
@@ -188,53 +158,18 @@ export default function Page6Map({ sites, allSites, h3Demand, showCoverage, show
       >
         <Map
           mapboxAccessToken={MAPBOX_TOKEN}
-          mapStyle="mapbox://styles/mapbox/dark-v11"
+          mapStyle="mapbox://styles/mapbox/light-v11"
           reuseMaps
           maxBounds={SHENZHEN_MAX_BOUNDS}
           minZoom={9}
           maxZoom={14}
         />
       </DeckGL>
-
-      {/* ── navigation controls: home / compass ── */}
-      <div className="p6-nav-controls">
-        <button
-          className="p6-nav-btn"
-          onClick={resetView}
-          title="Reset to initial view"
-          aria-label="Home"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 10.5 12 3l9 7.5" />
-            <path d="M5 9.5V21h14V9.5" />
-            <path d="M10 21v-6h4v6" />
-          </svg>
-        </button>
-        <button
-          className="p6-nav-btn p6-nav-compass"
-          onClick={resetBearing}
-          title="Reset rotation to north"
-          aria-label="Reset bearing"
-        >
-          <span
-            className="p6-compass-inner"
-            style={{ transform: `rotate(${-viewState.bearing}deg)` }}
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
-              <circle cx="12" cy="12" r="9" />
-              <polygon points="12,4 14.2,12 12,10.6 9.8,12" fill="#ff5a5a" stroke="#ff5a5a" />
-              <polygon points="12,20 9.8,12 12,13.4 14.2,12" fill="currentColor" />
-            </svg>
-          </span>
-          <span className="p6-compass-label">N</span>
-        </button>
-      </div>
-
-      {/* ── scale bar ── */}
-      <div className="p6-scale-bar" aria-label={`Scale: ${scale.label}`}>
-        <div className="p6-scale-line" style={{ width: `${scale.px}px` }} />
-        <div className="p6-scale-label">{scale.label}</div>
-      </div>
+      <MapControls
+        viewState={viewState}
+        onResetView={() => setViewState(VIEW)}
+        onResetBearing={() => setViewState(vs => ({ ...vs, bearing: 0, pitch: 0, transitionDuration: 400 }))}
+      />
     </div>
   );
 }

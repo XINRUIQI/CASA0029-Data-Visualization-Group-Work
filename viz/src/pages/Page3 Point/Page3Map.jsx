@@ -5,6 +5,7 @@ import { ArcLayer } from '@deck.gl/layers';
 import { WebMercatorViewport } from '@deck.gl/core';
 import { MAPBOX_TOKEN, POI_COLORS } from '../../config';
 import { PoiPinIcon } from './poiIcons';
+import MapControls from '../../components/MapControls';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 const INITIAL_VIEW = {
@@ -361,7 +362,7 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
         <Map
           ref={mapRef}
           mapboxAccessToken={MAPBOX_TOKEN}
-          mapStyle="mapbox://styles/mapbox/dark-v11"
+          mapStyle="mapbox://styles/mapbox/light-v11"
           projection="mercator"
           style={{ width: '100%', height: '100%' }}
           onLoad={e => {
@@ -394,7 +395,7 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
 
           <Source id="sz-highlight" type="geojson" data={highlightFeatures}>
             <Layer id="sz-district-highlight" type="fill" beforeId="sz-boundary-line"
-              paint={{ 'fill-color': '#000000', 'fill-opacity': 0.45 }} />
+              paint={{ 'fill-color': '#e0d0e0', 'fill-opacity': 0.3 }} />
             <Layer id="sz-district-highlight-border" type="line"
               paint={{ 'line-color': 'rgba(220,220,230,0.9)', 'line-width': 1.5 }} />
           </Source>
@@ -569,6 +570,12 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
           </div>
         </div>
       )}
+
+      <MapControls
+        viewState={viewState}
+        onResetView={() => setViewState(vs => ({ ...vs, ...INITIAL_VIEW, transitionDuration: 800 }))}
+        onResetBearing={() => setViewState(vs => ({ ...vs, bearing: 0, pitch: 0, transitionDuration: 400 }))}
+      />
     </div>
   );
 }

@@ -1,10 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { MAPBOX_TOKEN } from '../../config';
 
 const DRONE_SPEED = 15;  // m/s
 const HUB_DIST_M  = 500;
 const DRONE_MAX_M = 3000; // max straight-line range
 const BUILDING_CLEARANCE_M = 80; // buffer around tall buildings
+
+/** Preset Luohu OD (~3.1 km, valid hub segment + cycling routes) — edit text or use Pick anytime */
+const PRESET_ROUTE = {
+  origin: { name: 'Huaqiangbei Commercial District, Luohu', coords: [114.0875, 22.5462] },
+  dest:   { name: 'Dongmen Pedestrian Street, Luohu', coords: [114.1178, 22.5475] },
+};
 
 async function geocode(query) {
   const url =
@@ -96,13 +102,14 @@ function fmtMin(sec) {
 function fmtKm(m) { return (m / 1000).toFixed(1) + ' km'; }
 
 export default function Page5Panel({ onResult, onClear, pickMode, setPickMode, injectedPoint, tallBuildings }) {
-  const [originQ,      setOriginQ]      = useState('');
-  const [destQ,        setDestQ]        = useState('');
-  const [originCoords, setOriginCoords] = useState(null);
-  const [destCoords,   setDestCoords]   = useState(null);
+  const [originQ,      setOriginQ]      = useState(PRESET_ROUTE.origin.name);
+  const [destQ,        setDestQ]        = useState(PRESET_ROUTE.dest.name);
+  const [originCoords, setOriginCoords] = useState(PRESET_ROUTE.origin.coords);
+  const [destCoords,   setDestCoords]   = useState(PRESET_ROUTE.dest.coords);
   const [loading,      setLoading]      = useState(false);
   const [error,        setError]        = useState('');
   const [result,       setResult]       = useState(null);
+  const didAutoCompareRef = useRef(false);
 
   useEffect(() => {
     if (!injectedPoint) return;
@@ -115,7 +122,7 @@ export default function Page5Panel({ onResult, onClear, pickMode, setPickMode, i
     }
   }, [injectedPoint]);
 
-  const handleSearch = async () => {
+  const handleSearch = useCallback(async () => {
     if (!originQ.trim() || !destQ.trim()) return;
     setLoading(true); setError(''); setResult(null); onClear();
     try {
@@ -201,58 +208,54 @@ export default function Page5Panel({ onResult, onClear, pickMode, setPickMode, i
     } finally {
       setLoading(false);
     }
-  };
+  }, [originQ, destQ, originCoords, destCoords, tallBuildings, onClear, onResult]);
+
+  useEffect(() => {
+    if (didAutoCompareRef.current) return;
+    const tallReady = Array.isArray(tallBuildings) && tallBuildings.length > 0;
+    const run = () => {
+      if (didAutoCompareRef.current) return;
+      didAutoCompareRef.current = true;
+      void handleSearch();
+    };
+    if (tallReady) {
+      run();
+      return;
+    }
+    const t = setTimeout(run, 1500);
+    return () => clearTimeout(t);
+  }, [handleSearch, tallBuildings]);
 
   const handleClear = () => {
-    setResult(null); setOriginQ(''); setDestQ('');
-    setOriginCoords(null); setDestCoords(null);
-    setError(''); onClear();
+    setResult(null);
+    setOriginQ(PRESET_ROUTE.origin.name);
+    setDestQ(PRESET_ROUTE.dest.name);
+    setOriginCoords(PRESET_ROUTE.origin.coords);
+    setDestCoords(PRESET_ROUTE.dest.coords);
+    setError('');
+    onClear();
   };
 
   const togglePick = (mode) => setPickMode(pickMode === mode ? null : mode);
 
   return (
     <div className="p5-panel">
-      <div className="p5-panel-title">Route Comparison</div>
-
-      <div className="p5-flight-info">
-        <div className="p5-flight-info-title">✈ Flight Constraints</div>
-        <div className="p5-flight-info-row">
-          <span className="p5-fi-label">Max altitude</span>
-          <span className="p5-fi-val">120 m</span>
-        </div>
-        <div className="p5-flight-info-row">
-          <span className="p5-fi-label">General flight ceiling</span>
-          <span className="p5-fi-val">110 m</span>
-        </div>
-        <div className="p5-flight-info-row p5-fi-note">
-          Commercial operators with full airspace authorisation are exempt from altitude restrictions.
-        </div>
+      <div className="p5-panel-heading">
+        <div className="p5-panel-title">Route Comparison</div>
+        <p className="p5-panel-lead">
+          Compare estimated time for drone hub-to-hub legs plus courier first/last mile versus an all-ground rider on the same map.
+          {' '}
+          <span className="p5-panel-preset-teaser">An example Shenzhen route loads automatically; you can still edit addresses or Pick on the map.</span>
+        </p>
       </div>
 
-      <div className="p5-legend">
-        <div className="p5-legend-title">Map Legend</div>
-        <div className="p5-legend-row">
-          <span className="p5-legend-swatch tall-building" />
-          Buildings &gt; 110 m — drone avoidance zone
-        </div>
-        <div className="p5-legend-row">
-          <span className="p5-legend-swatch hub-takeoff" />
-          Drone takeoff point (Hub 1)
-        </div>
-        <div className="p5-legend-row">
-          <span className="p5-legend-swatch hub-landing" />
-          Drone landing point (Hub 2)
-        </div>
-        <div className="p5-legend-row">
-          <span className="p5-legend-icon rider-drone">🚴</span>
-          Drone-side courier (first / last mile)
-        </div>
-        <div className="p5-legend-row">
-          <span className="p5-legend-icon rider-ground">🚴</span>
-          Ground rider (full route)
-        </div>
-      </div>
+      {!result && (
+        <ol className="p5-steps" aria-label="Steps">
+          <li>An example <strong>Luohu</strong> origin/destination pair is filled in — edit the text or use <em>Pick</em> on the map</li>
+          <li>This page compares automatically on load; after changes, tap <strong>Compare routes</strong> again</li>
+          <li><strong>Watch</strong> glowing routes and the 3D comparison on the map</li>
+        </ol>
+      )}
 
       <div className="p5-panel-inputs">
         <div className="p5-input-row">
@@ -278,18 +281,59 @@ export default function Page5Panel({ onResult, onClear, pickMode, setPickMode, i
           onKeyDown={e => e.key === 'Enter' && handleSearch()} />
 
         <button className="p5-search-btn" onClick={handleSearch}
-          disabled={loading || !originQ.trim() || !destQ.trim()}>
-          {loading ? 'Searching…' : 'Search'}
+          disabled={loading || !originQ.trim() || !destQ.trim()}
+          title="Compute and compare drone vs rider routes">
+          {loading ? 'Computing…' : 'Compare routes'}
         </button>
         {error && <div className="p5-panel-error">{error}</div>}
       </div>
 
       {pickMode && (
         <div className="p5-pick-hint">
-          Click anywhere on the map to set the{' '}
-          <strong>{pickMode === 'origin' ? 'starting point' : 'destination'}</strong>
+          Click the map to set your <strong>{pickMode === 'origin' ? 'origin' : 'destination'}</strong>
         </div>
       )}
+
+      <details className="p5-panel-details">
+        <summary className="p5-panel-details-summary">Flight constraints &amp; legend</summary>
+        <div className="p5-flight-info">
+          <div className="p5-flight-info-title">✈ Flight Constraints</div>
+          <div className="p5-flight-info-row">
+            <span className="p5-fi-label">Max altitude</span>
+            <span className="p5-fi-val">120 m</span>
+          </div>
+          <div className="p5-flight-info-row">
+            <span className="p5-fi-label">General flight ceiling</span>
+            <span className="p5-fi-val">110 m</span>
+          </div>
+          <div className="p5-flight-info-row p5-fi-note">
+            Commercial operators with full airspace authorisation are exempt from altitude restrictions.
+          </div>
+        </div>
+        <div className="p5-legend">
+          <div className="p5-legend-title">Map Legend</div>
+          <div className="p5-legend-row">
+            <span className="p5-legend-swatch tall-building" />
+            Buildings &gt; 110 m — drone avoidance zone
+          </div>
+          <div className="p5-legend-row">
+            <span className="p5-legend-swatch hub-takeoff" />
+            Drone takeoff point (Hub 1)
+          </div>
+          <div className="p5-legend-row">
+            <span className="p5-legend-swatch hub-landing" />
+            Drone landing point (Hub 2)
+          </div>
+          <div className="p5-legend-row">
+            <span className="p5-legend-icon rider-drone">🚴</span>
+            Drone-side courier (first / last mile)
+          </div>
+          <div className="p5-legend-row">
+            <span className="p5-legend-icon rider-ground">🚴</span>
+            Ground rider (full route)
+          </div>
+        </div>
+      </details>
 
       {result && (() => {
         const droneFaster = result.drone.totalDuration < result.ground.duration;

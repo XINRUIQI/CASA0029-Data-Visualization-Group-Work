@@ -4,6 +4,7 @@ import DeckGL from '@deck.gl/react';
 import { ScatterplotLayer } from '@deck.gl/layers';
 import { MAPBOX_TOKEN, SHENZHEN_CENTER, SHENZHEN_ZOOM } from '../../config';
 import { COMPOUND_COLORS } from './Page1Landing';
+import MapControls from '../../components/MapControls';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 const INITIAL_VIEW = {
@@ -115,35 +116,42 @@ export default function Page1Map({ data, showPlanned, showExisting, flyTo }) {
   const tooltip = hoverInfo?.object;
 
   return (
-    <DeckGL
-      viewState={viewState}
-      onViewStateChange={({ viewState: vs }) => setViewState(vs)}
-      controller={true}
-      layers={layers}
-      style={{ width: '100%', height: '100%' }}
-    >
-      <Map
-        mapboxAccessToken={MAPBOX_TOKEN}
-        mapStyle="mapbox://styles/mapbox/dark-v11"
-        reuseMaps
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <DeckGL
+        viewState={viewState}
+        onViewStateChange={({ viewState: vs }) => setViewState(vs)}
+        controller={true}
+        layers={layers}
+        style={{ width: '100%', height: '100%' }}
+      >
+        <Map
+          mapboxAccessToken={MAPBOX_TOKEN}
+          mapStyle="mapbox://styles/mapbox/light-v11"
+          reuseMaps
+        />
+        {tooltip && (
+          <div
+            className="p1-map-tooltip"
+            style={{ left: hoverInfo.x + 12, top: hoverInfo.y - 12 }}
+          >
+            <div className="tooltip-type" style={{ color: COMPOUND_COLORS[tooltip.compound_type]?.hex }}>
+              {COMPOUND_COLORS[tooltip.compound_type]?.label || tooltip.compound_type}
+            </div>
+            {tooltip.nearest_compound && (
+              <div className="tooltip-name">{tooltip.nearest_compound}</div>
+            )}
+            <div className="tooltip-meta">
+              {tooltip.zone_type === 'commercial' ? 'Commercial zone' : 'Last mile'} · {tooltip.status}
+            </div>
+            <div className="tooltip-dist">{tooltip.distance_m}m to nearest compound</div>
+          </div>
+        )}
+      </DeckGL>
+      <MapControls
+        viewState={viewState}
+        onResetView={() => setViewState(vs => ({ ...vs, ...INITIAL_VIEW, transitionDuration: 800 }))}
+        onResetBearing={() => setViewState(vs => ({ ...vs, bearing: 0, pitch: 0, transitionDuration: 400 }))}
       />
-      {tooltip && (
-        <div
-          className="p1-map-tooltip"
-          style={{ left: hoverInfo.x + 12, top: hoverInfo.y - 12 }}
-        >
-          <div className="tooltip-type" style={{ color: COMPOUND_COLORS[tooltip.compound_type]?.hex }}>
-            {COMPOUND_COLORS[tooltip.compound_type]?.label || tooltip.compound_type}
-          </div>
-          {tooltip.nearest_compound && (
-            <div className="tooltip-name">{tooltip.nearest_compound}</div>
-          )}
-          <div className="tooltip-meta">
-            {tooltip.zone_type === 'commercial' ? 'Commercial zone' : 'Last mile'} · {tooltip.status}
-          </div>
-          <div className="tooltip-dist">{tooltip.distance_m}m to nearest compound</div>
-        </div>
-      )}
-    </DeckGL>
+    </div>
   );
 }

@@ -3,6 +3,7 @@ import Map from 'react-map-gl/mapbox';
 import DeckGL from '@deck.gl/react';
 import { ArcLayer, ScatterplotLayer, PathLayer, GeoJsonLayer } from '@deck.gl/layers';
 import { MAPBOX_TOKEN } from '../../config';
+import MapControls from '../../components/MapControls';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 const BARRIER_COLORS = {
@@ -155,20 +156,33 @@ export default function Page2Map({ activeCase, showGround, showAir, showBarriers
     }));
   }
 
+  const defaultView = activeCase ? {
+    longitude: (activeCase.origin[0] + activeCase.destination[0]) / 2,
+    latitude: (activeCase.origin[1] + activeCase.destination[1]) / 2,
+    zoom: 13.5, pitch: 50, bearing: -20,
+  } : viewState;
+
   return (
-    <DeckGL
-      viewState={viewState}
-      onViewStateChange={({ viewState: vs }) => setViewState(vs)}
-      controller={true}
-      layers={layers}
-      style={{ width: '100%', height: '100%' }}
-    >
-      <Map
-        mapboxAccessToken={MAPBOX_TOKEN}
-        mapStyle="mapbox://styles/mapbox/dark-v11"
-        reuseMaps
-        onLoad={onMapLoad}
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <DeckGL
+        viewState={viewState}
+        onViewStateChange={({ viewState: vs }) => setViewState(vs)}
+        controller={true}
+        layers={layers}
+        style={{ width: '100%', height: '100%' }}
+      >
+        <Map
+          mapboxAccessToken={MAPBOX_TOKEN}
+          mapStyle="mapbox://styles/mapbox/light-v11"
+          reuseMaps
+          onLoad={onMapLoad}
+        />
+      </DeckGL>
+      <MapControls
+        viewState={viewState}
+        onResetView={() => setViewState(vs => ({ ...vs, ...defaultView, transitionDuration: 800 }))}
+        onResetBearing={() => setViewState(vs => ({ ...vs, bearing: 0, pitch: 0, transitionDuration: 400 }))}
       />
-    </DeckGL>
+    </div>
   );
 }

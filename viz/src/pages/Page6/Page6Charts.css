@@ -8,7 +8,7 @@
 
 .p6c-section h4 {
   font-size: 0.75rem;
-  color: #888;
+  color: #8a78a0;
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-bottom: 4px;
@@ -16,18 +16,46 @@
 
 .p6c-note {
   font-size: 0.7rem;
-  color: #555;
+  color: #b0a0b8;
   margin-bottom: 8px;
 }
 
 .p6c-insight {
   font-size: 0.72rem;
-  color: #c864ff;
+  color: #9b59b6;
   font-style: italic;
   margin-top: 6px;
   padding: 6px 10px;
-  background: rgba(200, 100, 255, 0.06);
-  border-left: 3px solid #c864ff;
+  background: rgba(200, 100, 255, 0.1);
+  border-left: 3px solid #9b59b6;
   border-radius: 0 6px 6px 0;
   line-height: 1.4;
+}
+
+/* Side-by-side container for donut + radar */
+.p6c-duo {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.p6c-half {
+  flex: 1 1 0;
+  min-width: 0;
+  margin-bottom: 0;
+  padding: 10px 8px;
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(90, 50, 110, 0.08);
+  border-radius: 10px;
+}
+
+/* Recharts legend / label color overrides */
+.p6c .recharts-legend-item-text {
+  color: #8a78a0 !important;
+  font-size: 0.68rem;
+}
+
+.p6c .recharts-pie-label-text {
+  fill: #6a5878;
+  font-size: 0.62rem;
 }

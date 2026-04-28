@@ -27,9 +27,7 @@ function scoreFor(site, strategy) {
   const f = site.friction_norm ?? 0;
   const i = site.intensity_norm ?? 0;
   if (strategy === 'demand') {
-    // GAP = demand − supply, supply proxy = 1 − friction_norm
-    // => score ∈ [−1, 1], high = "high demand AND hard to reach"
-    return d - (1 - f);
+    return d;
   }
   if (strategy === 'friction') {
     return f;
@@ -259,7 +257,7 @@ export default function Page6Demand() {
                 </div>
               )}
 
-              <Page6Charts strategy={strategy} budget={budget} sites={rankedSites} />
+              <Page6Charts strategy={strategy} budget={budget} sites={rankedSites} coverageTable={coverageTable} />
             </>
           )}
           {dataStatus === 'ready' && !metrics && (

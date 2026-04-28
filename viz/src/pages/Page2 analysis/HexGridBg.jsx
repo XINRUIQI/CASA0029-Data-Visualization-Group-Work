@@ -5,10 +5,10 @@ const SQRT3 = Math.sqrt(3);
 const MOUSE_RADIUS = 180;
 
 const PALETTE = [
-  [255, 140, 0],   // demand orange
-  [255, 50, 100],  // friction red
-  [200, 100, 255], // overlap purple
-  [255, 180, 40],  // warm amber
+  [210, 170, 200], // soft lavender
+  [230, 160, 150], // warm coral
+  [190, 160, 210], // lilac
+  [220, 190, 180], // dusty rose
 ];
 
 function lerpColor(a, b, t) {

@@ -37,14 +37,12 @@ export default function Page2Entry() {
 
       <div className={`p2e-content ${showContent ? 'p2e-visible' : ''}`}>
         <p className="p2e-kicker">Chapter 2</p>
-        <h1 className="p2e-title">Ground Delivery Analysis</h1>
+        <h1 className="p2e-title">Where Is Ground Delivery Most Constrained?</h1>
         <p className="p2e-subtitle">
-          Demand Heatmap · Ground Friction · Supply-Demand Overlap
+        Mapping demand hotspots, urban barriers, and delivery inefficiency
         </p>
         <p className="p2e-desc">
-          Ground delivery in Shenzhen faces multiple barriers — rivers, railways, and expressways —
-          causing detours and inefficiency. Explore the interactive map to uncover
-          the spatial challenges of last-mile delivery.
+        Before optimising drone delivery hubs, we first examine where delivery demand is concentrated and where ground transport faces spatial barriers. Rivers, railways, and expressways can create detours and reduce last-mile efficiency. By mapping demand, barriers, and supply–demand mismatch, this section identifies areas where drone delivery may provide the greatest benefit.
         </p>
 
         <div className="p2e-stats">

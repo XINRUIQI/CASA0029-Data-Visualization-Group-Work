@@ -3,10 +3,10 @@
   z-index: 10;
   max-width: 380px;
   padding: 28px 32px;
-  background: rgba(15, 15, 25, 0.88);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(12px);
   border-radius: 16px;
-  color: #f0f0f5;
+  color: #4a3858;
   pointer-events: auto;
 }
 
@@ -31,13 +31,13 @@
 
 .narrative-subtitle {
   font-size: 0.95rem;
-  color: #a0a0b0;
+  color: #8a78a0;
   margin: 0 0 16px;
   line-height: 1.5;
 }
 
 .narrative-body {
   font-size: 0.88rem;
-  color: #c8c8d8;
+  color: #6a5878;
   line-height: 1.6;
 }

@@ -1,0 +1,597 @@
+/* ═══════════════════════════════════════════
+   Page 7 — Post-Drone Ground Analysis
+   Before / After comparison dashboard
+   ═══════════════════════════════════════════ */
+
+.page-7-post {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #f0e8ee;
+}
+
+/* ─── TOP BAR ─── */
+.p7-topbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 0.6rem 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(90, 50, 110, 0.1);
+  z-index: 20;
+}
+
+.p7-tab-group {
+  display: flex;
+  gap: 4px;
+}
+
+.p7-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.4rem 1rem;
+  border: 1px solid rgba(90, 50, 110, 0.1);
+  border-radius: 6px;
+  background: transparent;
+  color: #a898b0;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.p7-tab:hover {
+  background: rgba(90, 50, 110, 0.06);
+  color: #7a6890;
+}
+
+.p7-tab.active {
+  background: rgba(90, 50, 110, 0.1);
+  color: var(--tab-color, #fff);
+  border-color: var(--tab-color, #fff);
+}
+
+.p7-tab-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tab-color, #888);
+  opacity: 0.6;
+}
+
+.p7-tab.active .p7-tab-dot {
+  opacity: 1;
+  box-shadow: 0 0 6px var(--tab-color);
+}
+
+/* ─── Before / After toggle ─── */
+.p7-view-toggle {
+  display: flex;
+  gap: 2px;
+  background: rgba(90, 50, 110, 0.06);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.p7-vt-btn {
+  padding: 0.35rem 0.8rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #b0a0b8;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.p7-vt-btn:hover {
+  color: #8a78a0;
+}
+
+.p7-vt-btn.active {
+  background: rgba(0, 232, 150, 0.15);
+  color: #00e896;
+  font-weight: 600;
+}
+
+/* ─── Budget selector ─── */
+.p7-budget-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.p7-budget-label {
+  font-size: 0.72rem;
+  color: #b0a0b8;
+  margin-right: 4px;
+}
+
+.p7-budget-btn {
+  padding: 0.25rem 0.6rem;
+  border: 1px solid rgba(90, 50, 110, 0.12);
+  border-radius: 4px;
+  background: transparent;
+  color: #b0a0b8;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.p7-budget-btn:hover {
+  color: #8a78a0;
+}
+
+.p7-budget-btn.active {
+  background: rgba(100, 200, 255, 0.15);
+  color: #64c8ff;
+  border-color: rgba(100, 200, 255, 0.4);
+}
+
+/* ─── MAIN LAYOUT ─── */
+.p7-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.p7-map-area {
+  flex: 1;
+  position: relative;
+}
+
+/* ─── Hex tooltip ─── */
+.p7-hex-tooltip {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.6rem 1rem;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(90, 50, 110, 0.12);
+  border-radius: 10px;
+  z-index: 5;
+  min-width: 200px;
+}
+
+.p7-hv-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.p7-hv {
+  font-size: 0.78rem;
+  color: #5a4868;
+}
+
+.p7-hv span {
+  color: #b0a0b8;
+  margin-right: 0.3rem;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+}
+
+.p7-hv-strike {
+  text-decoration: line-through;
+  opacity: 0.55;
+}
+
+.p7-hv-badge {
+  font-size: 0.6rem;
+  padding: 2px 8px;
+  background: rgba(0, 232, 150, 0.15);
+  color: #00e896;
+  border-radius: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ─── Barrier float panel ─── */
+.p7-barrier-float {
+  position: absolute;
+  bottom: 60px;
+  left: 16px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(90, 50, 110, 0.1);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  z-index: 5;
+}
+
+.p7-bf-title {
+  font-size: 0.75rem;
+  color: #a898b0;
+  margin-bottom: 0.4rem;
+}
+
+.p7-bf-title label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.p7-bf-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 0.3rem 0.5rem;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #b0a0b8;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.p7-bf-chip:hover {
+  color: #8a78a0;
+}
+
+.p7-bf-chip.on {
+  color: var(--chip-color, #888);
+}
+
+.p7-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--chip-color, #888);
+  opacity: 0.3;
+}
+
+.p7-bf-chip.on .p7-chip-dot {
+  opacity: 1;
+}
+
+/* ─── Summary bar ─── */
+.p7-summary-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.6rem 1.5rem;
+  background: rgba(255, 255, 255, 0.88);
+  border-top: 1px solid rgba(90, 50, 110, 0.1);
+  color: #9888a8;
+  font-size: 0.8rem;
+  text-align: center;
+  z-index: 5;
+}
+
+/* ─── RIGHT PANEL ─── */
+.p7-panel {
+  flex-shrink: 0;
+  width: 340px;
+  overflow-y: auto;
+  border-left: 1px solid rgba(90, 50, 110, 0.1);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 1.2rem 1rem;
+}
+
+.p7-panel::-webkit-scrollbar {
+  width: 4px;
+}
+
+.p7-panel::-webkit-scrollbar-thumb {
+  background: rgba(90, 50, 110, 0.15);
+  border-radius: 2px;
+}
+
+.p7-panel-title {
+  font-size: 1.1rem;
+  color: #2d1e3a;
+  margin-bottom: 1rem;
+}
+
+/* ─── Metrics grid ─── */
+.p7-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 1.2rem;
+}
+
+.p7-metric-card {
+  background: rgba(90, 50, 110, 0.04);
+  border: 1px solid rgba(90, 50, 110, 0.08);
+  border-radius: 10px;
+  padding: 12px 10px;
+  text-align: center;
+}
+
+.p7m-val {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.p7m-lab {
+  font-size: 0.65rem;
+  color: #b0a0b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+/* ─── Comparison bars ─── */
+.p7-comparison {
+  margin-bottom: 1.2rem;
+}
+
+.p7-comparison h4 {
+  font-size: 0.82rem;
+  color: #8a78a0;
+  margin-bottom: 8px;
+}
+
+.p7-comp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.p7-comp-label {
+  width: 50px;
+  font-size: 0.7rem;
+  color: #a898b0;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.p7-comp-track {
+  flex: 1;
+  height: 8px;
+  background: rgba(90, 50, 110, 0.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.p7-comp-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.p7-comp-before {
+  background: linear-gradient(90deg, #ff3264, #ff6090);
+}
+
+.p7-comp-after {
+  background: linear-gradient(90deg, #00e896, #64ffb4);
+}
+
+.p7-comp-coverage {
+  background: linear-gradient(90deg, #64c8ff, #a0e0ff);
+}
+
+.p7-comp-val {
+  width: 70px;
+  font-size: 0.7rem;
+  color: #8a78a0;
+  font-family: monospace;
+  flex-shrink: 0;
+}
+
+/* ─── Budget info ─── */
+.p7-budget-info {
+  margin-bottom: 1.2rem;
+}
+
+.p7-budget-info h4 {
+  font-size: 0.82rem;
+  color: #8a78a0;
+  margin-bottom: 6px;
+}
+
+.p7-budget-desc {
+  font-size: 0.78rem;
+  color: #a898b0;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.p7-budget-visual {
+  display: flex;
+  gap: 6px;
+}
+
+.p7-bv-btn {
+  flex: 1;
+  padding: 10px 8px;
+  border: 1px solid rgba(90, 50, 110, 0.1);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.p7-bv-btn:hover {
+  border-color: rgba(90, 50, 110, 0.2);
+}
+
+.p7-bv-btn.active {
+  border-color: rgba(100, 200, 255, 0.5);
+  background: rgba(100, 200, 255, 0.08);
+}
+
+.p7-bv-num {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #8a78a0;
+}
+
+.p7-bv-btn.active .p7-bv-num {
+  color: #64c8ff;
+}
+
+.p7-bv-label {
+  font-size: 0.65rem;
+  color: #b0a0b8;
+  margin-top: 2px;
+}
+
+/* ─── Chart sections ─── */
+.p7-chart-section {
+  margin-bottom: 1.2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(90, 50, 110, 0.06);
+}
+
+.p7-chart-section h4 {
+  font-size: 0.82rem;
+  color: #8a78a0;
+  margin-bottom: 8px;
+}
+
+.p7-chart-note {
+  font-size: 0.68rem;
+  color: #b0a0b8;
+  line-height: 1.4;
+  margin: 6px 0 0;
+}
+
+/* ─── Improved hexagons ─── */
+.p7-improved-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.p7-imp-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.p7-imp-rank {
+  width: 24px;
+  font-size: 0.65rem;
+  color: #b0a0b8;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.p7-imp-bars {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.p7-imp-before {
+  height: 5px;
+  background: linear-gradient(90deg, #ff3264, #ff6090);
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.p7-imp-after {
+  height: 5px;
+  background: linear-gradient(90deg, #00e896, #64ffb4);
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.p7-imp-delta {
+  width: 36px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #00e896;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+/* ─── Donut chart ─── */
+.p7-donut-wrap {
+  position: relative;
+}
+
+.p7-donut-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #00e896;
+  pointer-events: none;
+}
+
+/* ─── Gini bars ─── */
+.p7-gini {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.p7-gini-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.p7-gini-label {
+  width: 42px;
+  font-size: 0.7rem;
+  color: #a898b0;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.p7-gini-track {
+  flex: 1;
+  height: 10px;
+  background: rgba(90, 50, 110, 0.06);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.p7-gini-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.5s ease;
+}
+
+.p7-gini-before {
+  background: linear-gradient(90deg, #ff3264, #ff6090);
+}
+
+.p7-gini-after {
+  background: linear-gradient(90deg, #00e896, #64ffb4);
+}
+
+.p7-gini-val {
+  width: 50px;
+  font-size: 0.72rem;
+  color: #8a78a0;
+  font-family: monospace;
+  flex-shrink: 0;
+}
+
+/* ─── Insight text ─── */
+.p7-insight {
+  padding: 12px 14px;
+  background: rgba(90, 50, 110, 0.04);
+  border-radius: 10px;
+  border: 1px solid rgba(90, 50, 110, 0.08);
+}
+
+.p7-insight p {
+  font-size: 0.82rem;
+  color: #8a78a0;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.p7-insight strong {
+  color: #5a4868;
+}

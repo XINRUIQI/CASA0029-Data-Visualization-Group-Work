@@ -8,7 +8,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #06061a;
+  background: #f0e8ee;
   overflow: hidden;
 }
 
@@ -21,9 +21,9 @@
   width: 320px;
   z-index: 15;
   padding: 32px 24px;
-  background: rgba(8, 8, 24, 0.92);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-right: 1px solid rgba(90, 50, 110, 0.1);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -32,7 +32,7 @@
 .p2-sidebar h2 {
   font-size: 1.4rem;
   margin-bottom: 6px;
-  background: linear-gradient(135deg, #00ccff, #00e896);
+  background: linear-gradient(135deg, #c87868, #5aada0);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -40,7 +40,7 @@
 
 .p2-intro {
   font-size: 0.82rem;
-  color: #777;
+  color: #9888a8;
   line-height: 1.5;
   margin-bottom: 20px;
 }
@@ -59,9 +59,9 @@
   gap: 10px;
   padding: 10px 14px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.02);
-  color: #999;
+  border: 1px solid rgba(90, 50, 110, 0.12);
+  background: rgba(255, 255, 255, 0.55);
+  color: #9888a8;
   font-size: 0.82rem;
   cursor: pointer;
   transition: all 0.25s;
@@ -69,15 +69,15 @@
 }
 
 .p2-case-btn:hover {
-  border-color: rgba(255, 255, 255, 0.15);
-  color: #ccc;
+  border-color: rgba(90, 50, 110, 0.2);
+  color: #6a5878;
 }
 
 .p2-case-btn.active {
-  border-color: #00ccff;
-  color: #fff;
-  background: rgba(0, 200, 255, 0.06);
-  box-shadow: 0 0 16px rgba(0, 200, 255, 0.1);
+  border-color: #c87868;
+  color: #2d1e3a;
+  background: rgba(200, 120, 104, 0.1);
+  box-shadow: 0 0 16px rgba(200, 120, 104, 0.1);
 }
 
 .p2-case-dot {
@@ -104,7 +104,7 @@
 
 .p2-case-desc {
   font-size: 0.78rem;
-  color: #888;
+  color: #a898b0;
   line-height: 1.6;
   margin-bottom: 12px;
 }
@@ -123,7 +123,7 @@
 .p2-toggles {
   margin-top: auto;
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(90, 50, 110, 0.1);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -134,12 +134,12 @@
   align-items: center;
   gap: 8px;
   font-size: 0.78rem;
-  color: #888;
+  color: #a898b0;
   cursor: pointer;
 }
 
 .p2-toggle input[type="checkbox"] {
-  accent-color: #64c8ff;
+  accent-color: #c87868;
 }
 
 .p2-tg-line {
@@ -155,7 +155,7 @@
   gap: 6px;
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(90, 50, 110, 0.1);
 }
 
 .p2-action-btn {
@@ -164,18 +164,18 @@
   gap: 8px;
   padding: 8px 14px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.03);
-  color: #aaa;
+  border: 1px solid rgba(90, 50, 110, 0.12);
+  background: rgba(255, 255, 255, 0.55);
+  color: #8a78a0;
   font-size: 0.78rem;
   cursor: pointer;
   transition: all 0.25s;
 }
 
 .p2-action-btn:hover {
-  border-color: rgba(100, 200, 255, 0.3);
-  color: #ddd;
-  background: rgba(100, 200, 255, 0.06);
+  border-color: rgba(200, 120, 104, 0.3);
+  color: #2c4a6a;
+  background: rgba(200, 120, 104, 0.08);
 }
 
 .p2-action-btn.playing {
@@ -195,7 +195,7 @@
   position: absolute;
   inset: 0;
   z-index: 25;
-  background: rgba(6, 6, 26, 0.92);
+  background: rgba(240, 232, 238, 0.92);
   backdrop-filter: blur(16px);
   display: flex;
   align-items: center;
@@ -224,15 +224,15 @@
   justify-content: center;
   gap: 4px;
   padding: 0 24px;
-  background: rgba(8, 8, 24, 0.95);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(90, 50, 110, 0.1);
 }
 
 .p2-metric {
   padding: 8px 20px;
   text-align: center;
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  border-right: 1px solid rgba(90, 50, 110, 0.08);
 }
 
 .p2-metric:last-child {
@@ -248,7 +248,7 @@
 
 .pm-label {
   font-size: 0.62rem;
-  color: #555;
+  color: #a898b0;
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-bottom: 2px;
@@ -257,5 +257,5 @@
 .pm-value {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #ddd;
+  color: #4a3858;
 }

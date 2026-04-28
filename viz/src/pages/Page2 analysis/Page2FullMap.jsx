@@ -21,9 +21,9 @@ const BARRIER_TYPES = [
 ];
 
 const MODE_DESC = {
-  supply: '490K+ POIs reveal service supply — darker = richer POI supply',
-  demand: 'Real orders (50%) + population (30%) + residential (20%) — where takeout orders originate',
-  friction: 'Detour, barriers, congestion compound into ground friction',
+  supply: null,
+  demand: null,
+  friction: null,
   priority: 'Demand × friction — composite score: where drones create the most value',
 };
 
@@ -43,12 +43,11 @@ export default function Page2FullMap() {
   const [h3Gap, setH3Gap] = useState(null);
   const [h3Takeout, setH3Takeout] = useState(null);
   const [odAnalysis, setOdAnalysis] = useState(null);
-  const [routes, setRoutes] = useState(null);
   const [activeMode, setActiveMode] = useState('demand');
   const [activeBarriers, setActiveBarriers] = useState(new Set(['water', 'railway', 'highway_major']));
   const [hoveredHex, setHoveredHex] = useState(null);
   const [showBarriers, setShowBarriers] = useState(true);
-  const [showRoutes, setShowRoutes] = useState(false);
+  const [showOdArcs, setShowOdArcs] = useState(false);
   const [highlightFilter, setHighlightFilter] = useState(null);
   const [hourlyDemand, setHourlyDemand] = useState(null);
   const [selectedHour, setSelectedHour] = useState(11);
@@ -78,10 +77,6 @@ export default function Page2FullMap() {
       .then(r => r.json())
       .then(data => setOdAnalysis(data?.features?.map(f => f.properties) || []))
       .catch(() => {});
-    fetch(publicDataUrl('data/page2_routes.json'))
-      .then(r => r.json())
-      .then(setRoutes)
-      .catch(() => {});
     fetch(publicDataUrl('data/page2_hourly_demand.json'))
       .then(r => r.json())
       .then(data => {
@@ -96,7 +91,7 @@ export default function Page2FullMap() {
   }, []);
 
   const timeWeight = useMemo(() => {
-    if (!hourlyDemand || (activeMode !== 'demand' && activeMode !== 'priority')) return 1;
+    if (!hourlyDemand || activeMode !== 'demand') return 1;
     const maxOrders = Math.max(...hourlyDemand.map(d => d.orders));
     if (maxOrders === 0) return 1;
     const entry = hourlyDemand.find(d => d.hour === selectedHour);
@@ -110,6 +105,14 @@ export default function Page2FullMap() {
     }, 600);
     return () => clearInterval(playRef.current);
   }, [playing]);
+
+  useEffect(() => {
+    if (activeMode !== 'demand') setPlaying(false);
+  }, [activeMode]);
+
+  useEffect(() => {
+    if (activeMode !== 'friction') setShowOdArcs(false);
+  }, [activeMode]);
 
   const liveMetrics = useMemo(() => {
     if (!odAnalysis?.length) return null;
@@ -141,12 +144,20 @@ export default function Page2FullMap() {
 
   return (
     <div className="p2f">
-      <button
-        className="p2f-back"
-        onClick={() => navigate('/', { state: { scrollTo: 'page-2' } })}
-      >
-        ← Back to Main
-      </button>
+      <div className="p2f-hero-bar">
+        <button
+          className="p2f-back"
+          onClick={() => navigate('/', { state: { scrollTo: 'page-2' } })}
+        >
+          ← Back
+        </button>
+        <div className="p2f-hero-text">
+          <h2 className="p2f-hero-title">Where is delivery demand concentrated?</h2>
+          <p className="p2f-hero-desc">
+            This map identifies potential drone delivery demand hotspots by combining real orders, population, food POIs, residential areas, and land use.
+          </p>
+        </div>
+      </div>
 
       <div className="p2f-topbar">
         <div className="p2f-tab-group">
@@ -170,24 +181,36 @@ export default function Page2FullMap() {
       </div>
 
       <div className="p2f-main">
-        <div className="p2f-map-area">
+        <div
+          className={
+            'p2f-map-area' +
+            (activeMode === 'friction' ? ' p2f-map-area--friction' : '') +
+            (activeMode === 'demand' && hourlyDemand
+              ? ' p2f-map-area--timeline' +
+                ' p2f-map-area--timeline-demand'
+              : '')
+          }
+        >
           <Page2FrictionMap
             barriers={barriers}
             activeBarriers={activeBarriers}
-            showBarriers={showBarriers}
+            showBarriers={
+              showBarriers && activeMode !== 'demand' && activeMode !== 'supply'
+            }
             activeMode={activeMode}
             h3Demand={demandGrid}
             h3Gap={h3Gap}
             h3Takeout={h3Takeout}
-            routes={routes}
-            showRoutes={showRoutes}
             onHoverHex={setHoveredHex}
             highlightFilter={highlightFilter}
             timeWeight={timeWeight}
+            odAnalysis={odAnalysis}
+            showOdArcs={showOdArcs}
+            hoveredHexData={hoveredHex}
           />
 
-          {/* Hover tooltip — contents depend on active mode; priority has no tooltip */}
-          {hoveredHex && activeMode !== 'priority' && (
+          {/* Hover tooltip — per–active-mode metrics on the hex grid */}
+          {hoveredHex && (
             <div className="p2f-hex-tooltip">
               {activeMode === 'demand' && (
                 <div className="p2f-hv-row">
@@ -229,37 +252,57 @@ export default function Page2FullMap() {
                   <div className="p2f-hv"><span>Friction</span> {hoveredHex.avg_friction?.toFixed(3) ?? '—'}</div>
                 </div>
               )}
+              {activeMode === 'priority' && (
+                <div className="p2f-hv-row">
+                  <div className="p2f-hv">
+                    <span>D×F</span>
+                    {(() => {
+                      const tdi = hoveredHex.takeout_demand_index ?? 0;
+                      const fr = hoveredHex.avg_friction ?? 0;
+                      const dv = Math.min(tdi, 1) * timeWeight;
+                      const fv = Math.min(fr, 1);
+                      return (dv * fv).toFixed(4);
+                    })()}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          <div className="p2f-barrier-float">
-            <div className="p2f-bf-title">
-              <label>
-                <input type="checkbox" checked={showBarriers} onChange={e => setShowBarriers(e.target.checked)} />
-                Barrier Layers
-              </label>
+          {(activeMode === 'friction' || activeMode === 'priority') && (
+            <div className="p2f-barrier-float">
+              <>
+                <div className="p2f-bf-title">
+                  <label>
+                    <input type="checkbox" checked={showBarriers} onChange={e => setShowBarriers(e.target.checked)} />
+                    Barrier Layers
+                  </label>
+                </div>
+                {BARRIER_TYPES.map(b => (
+                  <button
+                    key={b.id}
+                    className={`p2f-bf-chip ${activeBarriers.has(b.id) ? 'on' : ''}`}
+                    onClick={() => toggleBarrier(b.id)}
+                    style={{ '--chip-color': b.color }}
+                  >
+                    <span className="p2f-chip-dot" />
+                    {b.label}
+                  </button>
+                ))}
+              </>
+              {activeMode === 'friction' && (
+                <div className="p2f-bf-title" style={{ marginTop: 8 }}>
+                  <label>
+                    <input type="checkbox" checked={showOdArcs} onChange={e => setShowOdArcs(e.target.checked)} />
+                    OD Flow Arcs ({odAnalysis?.length ?? 0})
+                  </label>
+                </div>
+              )}
             </div>
-            {BARRIER_TYPES.map(b => (
-              <button
-                key={b.id}
-                className={`p2f-bf-chip ${activeBarriers.has(b.id) ? 'on' : ''}`}
-                onClick={() => toggleBarrier(b.id)}
-                style={{ '--chip-color': b.color }}
-              >
-                <span className="p2f-chip-dot" />
-                {b.label}
-              </button>
-            ))}
-            <div className="p2f-bf-title" style={{ marginTop: 8 }}>
-              <label>
-                <input type="checkbox" checked={showRoutes} onChange={e => setShowRoutes(e.target.checked)} />
-                OD Routes ({routes?.features?.length ?? 0})
-              </label>
-            </div>
-          </div>
+          )}
 
-          {/* Demand / Priority mode: 24h timeline with slider */}
-          {(activeMode === 'demand' || activeMode === 'priority') && hourlyDemand && (
+          {/* Demand mode: 24h timeline with slider */}
+          {activeMode === 'demand' && hourlyDemand && (
             <div className="p2f-timeline">
               <div className="p2f-tl-header">
                 <button
@@ -312,20 +355,24 @@ export default function Page2FullMap() {
             </div>
           )}
 
-          <div className="p2f-summary-bar">
-            {MODE_DESC[activeMode]}
-          </div>
+          {MODE_DESC[activeMode] && (
+            <div className="p2f-summary-bar">
+              {MODE_DESC[activeMode]}
+            </div>
+          )}
         </div>
 
         <div className="p2f-panel">
           <Page2FrictionCharts
             activeMode={activeMode}
             hoveredHex={hoveredHex}
+            h3Demand={demandGrid}
             h3Gap={h3Gap}
             h3Takeout={h3Takeout}
             odAnalysis={odAnalysis}
             liveMetrics={liveMetrics}
             onHighlight={handleChartHighlight}
+            timeWeight={timeWeight}
           />
         </div>
       </div>

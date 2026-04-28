@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Page5Map from './Page5Map';
 import Page5Panel from './Page5Panel';
 import { publicDataUrl } from '../../config';
+import { latLngToCell, gridDisk } from 'h3-js';
 import './Page5.css';
 
 const N = 80;
@@ -58,6 +59,20 @@ export default function Page5Strategy() {
     [rawRoutes]
   );
 
+  /** Shenzhen downtown H3 backdrop (synthetic weights; replace with population JSON when available) */
+  const h3Cells = useMemo(() => {
+    try {
+      const center = latLngToCell(22.53, 114.058, 9);
+      return gridDisk(center, 6).map((h3, i) => ({
+        h3,
+        v: Math.sin(i * 0.31) * 0.5 + Math.cos(i * 0.17) * 0.35 + 0.5,
+      }));
+    }
+    catch {
+      return [];
+    }
+  }, []);
+
   // Pre-process buildings taller than 110 m into centroid + radius form
   const tallBuildings = useMemo(() => {
     if (!buildingData) return [];
@@ -80,6 +95,10 @@ export default function Page5Strategy() {
       });
   }, [buildingData]);
 
+  const clearComparisonRoute = useCallback(() => {
+    setComparisonRoute(null);
+  }, []);
+
   const handleMapClick = async (coords) => {
     if (!pickMode) return;
     const name = await reverseGeocode(coords);
@@ -89,17 +108,26 @@ export default function Page5Strategy() {
 
   return (
     <section id="page-5" className="page page-5">
+      {!comparisonRoute && (
+        <div className="p5-enter-hint" role="status">
+          <span className="p5-enter-hint-kicker">Getting started</span>
+          <span className="p5-enter-hint-text">
+            A sample route <strong>compares automatically</strong> when the page loads. Use the <strong>left panel</strong> to change addresses or <em>Pick</em> on the map, then tap <strong>Compare routes</strong> to refresh.
+          </span>
+          <span className="p5-enter-hint-sub">Background arcs show sample OD flows — your comparison overlays on top when ready.</span>
+        </div>
+      )}
       <Page5Map
         buildingData={buildingData}
         routes={routes}
         comparisonRoute={comparisonRoute}
         pickMode={pickMode}
         onMapClick={handleMapClick}
-        tallBuildings={tallBuildings}
+        h3Cells={h3Cells}
       />
       <Page5Panel
         onResult={setComparisonRoute}
-        onClear={() => setComparisonRoute(null)}
+        onClear={clearComparisonRoute}
         pickMode={pickMode}
         setPickMode={setPickMode}
         injectedPoint={injectedPoint}

@@ -16,7 +16,7 @@
 
 .p2e-header h3 {
   font-size: 1.6rem;
-  background: linear-gradient(135deg, #00ccff, #c864ff);
+  background: linear-gradient(135deg, #c87868, #9b59b6);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -24,7 +24,7 @@
 
 .p2e-header p {
   font-size: 0.9rem;
-  color: #888;
+  color: #9888a8;
   margin-top: 6px;
 }
 
@@ -35,17 +35,17 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 1px solid #444;
-  background: rgba(255, 255, 255, 0.05);
-  color: #aaa;
+  border: 1px solid #b0c8dd;
+  background: rgba(255, 255, 255, 0.55);
+  color: #8a78a0;
   font-size: 1.2rem;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .p2e-close:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.8);
+  color: #2d1e3a;
 }
 
 /* Stacked layers */
@@ -63,15 +63,15 @@
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(90, 50, 110, 0.12);
   border-radius: 10px;
   animation: layerSlideIn 0.5s both;
   transition: all 0.3s;
 }
 
 .p2e-layer:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(200, 120, 104, 0.08);
   border-color: var(--layer-color);
   transform: translateX(6px);
 }
@@ -105,13 +105,13 @@
 .p2e-layer-name {
   font-size: 0.88rem;
   font-weight: 600;
-  color: #e0e0f0;
+  color: #4a3858;
   margin-bottom: 2px;
 }
 
 .p2e-layer-desc {
   font-size: 0.72rem;
-  color: #777;
+  color: #9888a8;
   line-height: 1.4;
 }
 
@@ -121,8 +121,8 @@
   align-items: center;
   gap: 20px;
   padding: 20px 28px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(90, 50, 110, 0.12);
   border-radius: 14px;
   max-width: 560px;
   width: 100%;
@@ -134,14 +134,14 @@
   flex-direction: column;
   gap: 4px;
   font-size: 0.78rem;
-  color: #888;
+  color: #a898b0;
 }
 
 .p2e-v-label {
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #555;
+  color: #b8a8c0;
 }
 
 .p2e-v-time {
@@ -152,6 +152,6 @@
 .p2e-verdict-vs {
   font-size: 1rem;
   font-weight: 700;
-  color: #444;
+  color: #c0b0c8;
   padding: 0 8px;
 }

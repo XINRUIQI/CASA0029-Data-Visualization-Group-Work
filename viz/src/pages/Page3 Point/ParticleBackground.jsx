@@ -117,7 +117,7 @@ export default function ParticleBackground() {
       ctx.fill();
 
       // camera lens
-      ctx.fillStyle = '#0a1a28';
+      ctx.fillStyle = '#f0e8ee';
       ctx.beginPath();
       ctx.arc(x, y + s * 0.24, s * 0.09, 0, Math.PI * 2);
       ctx.fill();
@@ -242,7 +242,7 @@ export default function ParticleBackground() {
       }
 
       for (const b of buildings) {
-        ctx.fillStyle = '#0d1128';
+        ctx.fillStyle = '#f0e8ee';
         ctx.fillRect(b.x, b.top, b.w, b.h);
 
         ctx.fillStyle = 'rgba(80, 120, 255, 0.25)';
@@ -287,7 +287,7 @@ export default function ParticleBackground() {
         }
       }
 
-      ctx.fillStyle = '#080b1c';
+      ctx.fillStyle = '#f0e8ee';
       ctx.fillRect(0, H - 2, W, 2);
 
       raf = requestAnimationFrame(draw);
