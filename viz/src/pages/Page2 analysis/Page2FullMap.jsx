@@ -222,7 +222,7 @@ export default function Page2FullMap() {
                   : undefined
               }
             >
-              <div className="p2f-tt-mode">{activeMode}</div>
+              <div className="p2f-tt-mode">{activeMode === 'supply' ? 'Supply_Index' : activeMode}</div>
               {activeMode === 'demand' && (
                 <div className="p2f-tt-grid">
                   <div className="p2f-tt-item">
@@ -247,7 +247,6 @@ export default function Page2FullMap() {
                 <div className="p2f-tt-grid p2f-tt-grid--single">
                   <div className="p2f-tt-item">
                     <span className="p2f-tt-val">{hoveredHex.dp?.toFixed(1) ?? '—'}</span>
-                    <span className="p2f-tt-label">Supply</span>
                   </div>
                 </div>
               )}

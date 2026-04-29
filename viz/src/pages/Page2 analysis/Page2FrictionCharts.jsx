@@ -605,6 +605,26 @@ export default function Page2FrictionCharts({
         </div>
       )}
 
+      {isSupply && (
+        <div className="p2c-section">
+          <div className="p2c-note p2c-note--formula">
+            <p><strong>Supply Index</strong> is a weighted composite indicator measuring POI supply density per hexagon:</p>
+            <p className="p2c-formula">Supply Index = Σ (Category_weight × POI_count)</p>
+            <ul className="p2c-formula-list">
+              <li><strong>Food</strong> = food & restaurant POI count</li>
+              <li><strong>Office</strong> = office & workplace POI count</li>
+              <li><strong>Retail</strong> = retail & shopping POI count</li>
+              <li><strong>Service</strong> = life-service POI count</li>
+              <li><strong>Education</strong> = education POI count</li>
+              <li><strong>Medical</strong> = medical & healthcare POI count</li>
+              <li><strong>Leisure</strong> = leisure & entertainment POI count</li>
+              <li><strong>Scenic</strong> = scenic spot POI count</li>
+            </ul>
+            <p>Higher index → greater supply concentration, more delivery destinations.</p>
+          </div>
+        </div>
+      )}
+
       {/* Priority: supply vs friction scatter */}
       {isPriority && scatterData.length > 0 && (
         <div className="p2c-section">
@@ -802,8 +822,24 @@ export default function Page2FrictionCharts({
         <>
           {orderVsProxy.length > 0 && (
             <div className="p2c-section">
-              <div>
-                <h4>Where Do Real Orders Cluster?</h4>
+              <div ref={ordersScatterInfoRef}>
+                <h4 className="p2c-title-with-info">
+                  Where Do Real Orders Cluster?
+                  <button
+                    type="button"
+                    className="p2c-info-icon"
+                    aria-label="About this chart"
+                    aria-expanded={ordersScatterInfoOpen}
+                    onClick={(e) => { e.stopPropagation(); setOrdersScatterInfoOpen(o => !o); }}
+                  >
+                    i
+                  </button>
+                  {ordersScatterInfoOpen && (
+                    <div className="p2c-info-popover" role="tooltip">
+                      Hexagons with zero real orders are excluded from this plot.
+                    </div>
+                  )}
+                </h4>
                 <p className="p2c-subtitle">Does demand follow population, or do some areas overperform?</p>
               </div>
               <ResponsiveContainer width="100%" height={180}>
@@ -828,8 +864,27 @@ export default function Page2FrictionCharts({
 
           {demandCoverage && (
             <div className="p2c-section">
-              <div>
-                <h4>How Concentrated Is Delivery Demand?</h4>
+              <div ref={demandDistInfoRef}>
+                <h4 className="p2c-title-with-info">
+                  How Concentrated Is Delivery Demand?
+                  <button
+                    type="button"
+                    className="p2c-info-icon"
+                    aria-label="About this chart"
+                    aria-expanded={demandDistInfoOpen}
+                    onClick={(e) => { e.stopPropagation(); setDemandDistInfoOpen(o => !o); }}
+                  >
+                    i
+                  </button>
+                  {demandDistInfoOpen && (
+                    <div className="p2c-info-popover" role="tooltip">
+                      Hexagons are ranked from highest to lowest Demand Index.<br />
+                      The X-axis shows the cumulative share of valid hexagons included in this ranked order.<br />
+                      The Y-axis shows the cumulative share of total Demand Index contributed by those hexagons.<br />
+                      Hexagons with zero real orders are excluded from this plot.
+                    </div>
+                  )}
+                </h4>
                 <p className="p2c-subtitle">The top 20% of hexagons capture about {demandCoverage.pctDemandTop20.toFixed(0)}% of total demand.</p>
               </div>
               <div className="p2c-demand-ccurve-wrap">

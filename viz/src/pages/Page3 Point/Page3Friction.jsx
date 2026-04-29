@@ -188,8 +188,8 @@ export default function Page3Friction() {
     switch (activeTab) {
       case 1:
         return {
-          title: 'Take-off & Landing Network',
-          subtitle: `Spatial Distribution of current ${takeoff} Take-off and ${landing} Landing Sites`,
+          title: 'What Drone Delivery Infrastructure Already Exists?',
+          subtitle: `Shenzhen has developed an initial drone delivery infrastructure network, including commercial-area hubs and last-mile delivery points. Existing and planned sites are distributed across different districts, providing a baseline for understanding current service capacity and identifying where additional hubs may be needed.`,
         };
       case 2:
         return {
@@ -314,12 +314,6 @@ export default function Page3Friction() {
     <section id="page-3" className="page page-3" style={{ position: 'relative' }}>
       <div className="p3-hero-text">
         <h2 className="p3-hero-title">What Drone Delivery Infrastructure Already Exists?</h2>
-        <p className="p3-hero-desc">
-          Shenzhen has developed an initial drone delivery infrastructure network, including
-          commercial-area hubs and last-mile delivery points. Existing and planned sites are
-          distributed across different districts, providing a baseline for understanding current
-          service capacity and identifying where additional hubs may be needed.
-        </p>
       </div>
       <div className="p3-layout" style={{ position: 'relative', zIndex: 1 }}>
 
@@ -358,58 +352,67 @@ export default function Page3Friction() {
                 onDistrictFocus={handleDistrictFocus}
               />
 
+              {/* Sites tab legend inside map */}
+              {activeTab === 1 && (
+                <div className="p3-map-inner-legend">
+                  <span className="p3-mil-item" role="button" tabIndex={0}
+                    style={{ opacity: showCommercial ? 1 : 0.4 }}
+                    onClick={() => setShowCommercial(v => !v)}>
+                    <svg viewBox="0 0 40 52" width={11} height={14} style={{ display: 'block', flexShrink: 0 }}>
+                      <path d="M20 0C8.954 0 0 8.954 0 20c0 13.333 20 32 20 32S40 33.333 40 20C40 8.954 31.046 0 20 0z" fill="#ffa028" />
+                      <circle cx="20" cy="19" r="8" fill="white" opacity="0.9" />
+                    </svg>
+                    <span className="p3-mil-label">Departure Hubs</span>
+                    <span className="p3-mil-count">45</span>
+                  </span>
+                  <span className="p3-mil-item" role="button" tabIndex={0}
+                    style={{ opacity: showLastMile ? 1 : 0.4 }}
+                    onClick={() => setShowLastMile(v => !v)}>
+                    <svg viewBox="0 0 40 52" width={11} height={14} style={{ display: 'block', flexShrink: 0 }}>
+                      <path d="M20 0C8.954 0 0 8.954 0 20c0 13.333 20 32 20 32S40 33.333 40 20C40 8.954 31.046 0 20 0z" fill="#c864ff" />
+                      <circle cx="20" cy="19" r="8" fill="white" opacity="0.9" />
+                    </svg>
+                    <span className="p3-mil-label">Landing Hubs</span>
+                    <span className="p3-mil-count">161</span>
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* ── 地图与图表之间的图例条（可点击） ── */}
-          <div className="p3-inline-legend">
-            {activeTab === 1 && <>
-              <button className={`p3-il-btn ${showCommercial ? 'active' : ''}`} style={{ '--ilc': '#ffa028' }}
-                onClick={() => setShowCommercial(v => !v)}>
-                <svg viewBox="0 0 40 52" width={11} height={14} style={{ display: 'block', flexShrink: 0 }}>
-                  <path d="M20 0C8.954 0 0 8.954 0 20c0 13.333 20 32 20 32S40 33.333 40 20C40 8.954 31.046 0 20 0z" fill="#ffa028" />
-                  <circle cx="20" cy="19" r="8" fill="white" opacity="0.9" />
-                </svg>
-                Departure Hubs <span className="p3-il-count">45</span>
-              </button>
-              <button className={`p3-il-btn ${showLastMile ? 'active' : ''}`} style={{ '--ilc': '#c864ff' }}
-                onClick={() => setShowLastMile(v => !v)}>
-                <svg viewBox="0 0 40 52" width={11} height={14} style={{ display: 'block', flexShrink: 0 }}>
-                  <path d="M20 0C8.954 0 0 8.954 0 20c0 13.333 20 32 20 32S40 33.333 40 20C40 8.954 31.046 0 20 0z" fill="#c864ff" />
-                  <circle cx="20" cy="19" r="8" fill="white" opacity="0.9" />
-                </svg>
-                Landing Hubs <span className="p3-il-count">161</span>
-              </button>
-            </>}
-            {activeTab === 4 && [
-              { color: '#111118', label: '0' },
-              { color: '#0d3060', label: '< 50' },
-              { color: '#0a5a8a', label: '50–100' },
-              { color: '#0b7a6a', label: '100–200' },
-              { color: '#1a9640', label: '200–400' },
-              { color: '#c8a200', label: '400–800' },
-              { color: '#d04800', label: '800–1500' },
-              { color: '#b50000', label: '> 1500' },
-            ].map(({ color, label }) => (
-              <div key={label} className="p3-il-btn" style={{ cursor: 'default', gap: 6 }}>
-                <span style={{ width: 14, height: 14, borderRadius: 3, background: color, display: 'inline-block', flexShrink: 0, border: '1px solid rgba(255,255,255,0.2)' }} />
-                <span style={{ fontSize: 11, color: '#ccc', whiteSpace: 'nowrap' }}>{label}</span>
-              </div>
-            ))}
-            {activeTab === 2 && Object.entries(POI_COLORS).map(([k, v]) => (
-              <button key={k}
-                className={`p3-il-btn ${compoundFilter === k ? 'active' : compoundFilter === 'all' ? '' : 'dim'}`}
-                style={{ '--ilc': v.hex, color: '#fff' }}
-                onClick={() => {
-                  const next = compoundFilter === k ? 'all' : k;
-                  setCompoundFilter(next);
-                  setContextChartType(next === 'all' ? 'retail' : next);
-                }}>
-                <PoiPinIcon type={k} size={16} />
-                {v.label}
-              </button>
-            ))}
-          </div>
+          {/* ── 地图与图表之间的图例条（仅 Tab 2/4 时显示） ── */}
+          {(activeTab === 2 || activeTab === 4) && (
+            <div className="p3-inline-legend">
+              {activeTab === 4 && [
+                { color: '#111118', label: '0' },
+                { color: '#0d3060', label: '< 50' },
+                { color: '#0a5a8a', label: '50–100' },
+                { color: '#0b7a6a', label: '100–200' },
+                { color: '#1a9640', label: '200–400' },
+                { color: '#c8a200', label: '400–800' },
+                { color: '#d04800', label: '800–1500' },
+                { color: '#b50000', label: '> 1500' },
+              ].map(({ color, label }) => (
+                <div key={label} className="p3-il-btn" style={{ cursor: 'default', gap: 6 }}>
+                  <span style={{ width: 14, height: 14, borderRadius: 3, background: color, display: 'inline-block', flexShrink: 0, border: '1px solid rgba(255,255,255,0.2)' }} />
+                  <span style={{ fontSize: 11, color: '#ccc', whiteSpace: 'nowrap' }}>{label}</span>
+                </div>
+              ))}
+              {activeTab === 2 && Object.entries(POI_COLORS).map(([k, v]) => (
+                <button key={k}
+                  className={`p3-il-btn ${compoundFilter === k ? 'active' : compoundFilter === 'all' ? '' : 'dim'}`}
+                  style={{ '--ilc': v.hex, color: '#fff' }}
+                  onClick={() => {
+                    const next = compoundFilter === k ? 'all' : k;
+                    setCompoundFilter(next);
+                    setContextChartType(next === 'all' ? 'retail' : next);
+                  }}>
+                  <PoiPinIcon type={k} size={16} />
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          )}
 
         </div>
 
@@ -417,7 +420,7 @@ export default function Page3Friction() {
         <div className="p3-panel-half">
         <div className="p3-panel-card">
           <div className="p3p-header">
-            <div className="p3p-tag">Infrastructure · Shenzhen 2024</div>
+    
             <h2 className="p3p-title">{panelMeta.title}</h2>
             <p className="p3p-desc">{panelMeta.subtitle}</p>
           </div>

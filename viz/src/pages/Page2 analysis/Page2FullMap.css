@@ -53,8 +53,11 @@
 }
 
 .p2f-hero-desc {
-  font-size: 0.72rem;
-  color: #A09888;
+  font-size: 0.78rem;
+  color: #888078;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
   margin: 0.15rem 0 0;
   line-height: 1.45;
 }
@@ -572,7 +575,7 @@
 }
 
 .p2f--light .p2f-hero-desc {
-  color: #5f6368;
+  color: #80868b;
 }
 
 .p2f--light .p2f-topbar {
