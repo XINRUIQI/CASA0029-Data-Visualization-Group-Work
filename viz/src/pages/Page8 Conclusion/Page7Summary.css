@@ -4,7 +4,7 @@
    ═══════════════════════════════════════════ */
 
 .page-summary {
-  background: linear-gradient(160deg, #f4ecf2 0%, #e8dde8 50%, #5A89A6 100%);
+  background: transparent;
   color: #F2EBD9;
   min-height: 100vh;
   padding: 80px 40px 60px;

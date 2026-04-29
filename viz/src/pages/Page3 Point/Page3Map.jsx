@@ -362,7 +362,7 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
         <Map
           ref={mapRef}
           mapboxAccessToken={MAPBOX_TOKEN}
-          mapStyle="mapbox://styles/mapbox/dark-v11"
+          mapStyle="mapbox://styles/mapbox/light-v11"
           projection="mercator"
           style={{ width: '100%', height: '100%' }}
           onLoad={e => {

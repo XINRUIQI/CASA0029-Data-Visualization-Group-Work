@@ -56,7 +56,10 @@ function hubPulseScatter({ idPrefix, lng, lat, color, animT }) {
   return layers;
 }
 
-export default function Page5Map({ buildingData, routes, comparisonRoute, pickMode, onMapClick, h3Cells = [] }) {
+export default function Page5Map({
+  buildingData, routes, comparisonRoute, pickMode, onMapClick, h3Cells = [],
+  optSites, optAllSites, optH3Demand, optShowCoverage, optShowBeforeAfter, onOptHoverSite,
+}) {
   const [viewState, setViewState] = useState(INIT_VIEW);
   const [cameraFollow, setCameraFollow] = useState(false);
   const [animT, setAnimT] = useState(0);
@@ -548,6 +551,101 @@ export default function Page5Map({ buildingData, routes, comparisonRoute, pickMo
 
     layers.push(...hubPulseScatter({ idPrefix: 'h1', lng: hub1[0], lat: hub1[1], color: [60, 210, 255], animT }));
     layers.push(...hubPulseScatter({ idPrefix: 'h2', lng: hub2[0], lat: hub2[1], color: [190, 90, 255], animT }));
+  }
+
+  /* ── Optimization layers (from Page6) ── */
+  const OPT_CLASS_COLORS = {
+    hub: [255, 50, 50, 220],
+    station: [255, 180, 0, 200],
+    endpoint: [100, 200, 255, 180],
+  };
+
+  if (optH3Demand && optShowBeforeAfter === 'before') {
+    layers.push(new H3HexagonLayer({
+      id: 'opt-demand-before',
+      data: optH3Demand,
+      getHexagon: d => d.h3,
+      getFillColor: d => {
+        const dp = d.dp || 0;
+        const v = Math.min(dp / 200, 1);
+        return [255, 160 * (1 - v), 0, 25 + 120 * v];
+      },
+      extruded: false, stroked: true,
+      getLineColor: [255, 255, 255, 8], getLineWidth: 1, lineWidthMinPixels: 0,
+    }));
+  }
+
+  if (optH3Demand && optShowBeforeAfter === 'after') {
+    layers.push(new H3HexagonLayer({
+      id: 'opt-demand-after',
+      data: optH3Demand,
+      getHexagon: d => d.h3,
+      getFillColor: d => {
+        const dp = d.dp || 0;
+        const v = Math.min(dp / 200, 1);
+        return [255, 140 * (1 - v), 30, 10 + 45 * v];
+      },
+      extruded: false, stroked: true,
+      getLineColor: [255, 255, 255, 5], getLineWidth: 1, lineWidthMinPixels: 0,
+    }));
+  }
+
+  if (optShowCoverage && optShowBeforeAfter === 'after' && optSites?.length) {
+    layers.push(new ScatterplotLayer({
+      id: 'opt-coverage-fill',
+      data: optSites,
+      getPosition: d => [d.lon, d.lat],
+      getRadius: 3000,
+      getFillColor: [100, 200, 255, 20],
+      getLineColor: [100, 200, 255, 50],
+      lineWidthMinPixels: 1, stroked: true, filled: true,
+    }));
+    if (optH3Demand) {
+      layers.push(new H3HexagonLayer({
+        id: 'opt-newly-covered',
+        data: optH3Demand,
+        getHexagon: d => d.h3,
+        getFillColor: d => {
+          const dp = d.dp || 0;
+          return [0, 232, 150, 40 + Math.min(dp / 100, 1) * 100];
+        },
+        extruded: false, stroked: false,
+        updateTriggers: { getFillColor: [optSites] },
+      }));
+    }
+  }
+
+  if (optAllSites?.length) {
+    const unselected = optAllSites.filter(s => !optSites?.some(sel => sel.lon === s.lon && sel.lat === s.lat));
+    layers.push(new ScatterplotLayer({
+      id: 'opt-ghost-sites',
+      data: unselected,
+      getPosition: d => [d.lon, d.lat],
+      getRadius: 100,
+      getFillColor: [80, 80, 100, 60],
+      radiusMinPixels: 2, radiusMaxPixels: 6,
+    }));
+  }
+
+  if (optSites?.length) {
+    layers.push(new ScatterplotLayer({
+      id: 'opt-site-glow',
+      data: optSites,
+      getPosition: d => [d.lon, d.lat],
+      getRadius: 600,
+      getFillColor: d => [...(OPT_CLASS_COLORS[d.site_class] || [200, 200, 200]).slice(0, 3), 40],
+      radiusMinPixels: 10, radiusMaxPixels: 35,
+    }));
+    layers.push(new ScatterplotLayer({
+      id: 'opt-selected-sites',
+      data: optSites,
+      getPosition: d => [d.lon, d.lat],
+      getRadius: 200,
+      getFillColor: d => OPT_CLASS_COLORS[d.site_class] || [200, 200, 200, 200],
+      radiusMinPixels: 5, radiusMaxPixels: 16,
+      pickable: true,
+      onHover: info => onOptHoverSite?.(info.object || null),
+    }));
   }
 
   if (buildingData) {

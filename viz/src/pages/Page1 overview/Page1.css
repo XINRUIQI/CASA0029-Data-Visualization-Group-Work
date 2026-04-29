@@ -7,7 +7,7 @@
 /* ─── LEARNING CITY ─── */
 .p1-learning {
   padding: 80px 40px;
-  background: linear-gradient(180deg, #5A89A6 0%, #2E5E7E 100%);
+  background: transparent;
   display: flex;
   justify-content: center;
 }
@@ -81,7 +81,7 @@
 /* ─── TIMELINE ─── */
 .p1-timeline-section {
   padding: 80px 40px;
-  background: #5A89A6;
+  background: transparent;
 }
 
 .p1-section-title {
@@ -172,7 +172,9 @@
   gap: 28px;
   flex-wrap: wrap;
   padding: 60px 40px;
-  background: #2E5E7E;
+  background: rgba(46, 94, 126, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .p1-stat-card {
@@ -207,7 +209,7 @@
 .p1-map-section {
   min-height: 100vh;
   display: flex;
-  background: #5A89A6;
+  background: transparent;
 }
 
 /* Left: cases */

@@ -139,7 +139,12 @@ export default function Page2FullMap() {
       <div className="p2f-hero-bar">
         <button
           className="p2f-back"
-          onClick={() => navigate('/', { state: { scrollTo: 'page-2' } })}
+          onClick={() => {
+            try {
+              sessionStorage.setItem('page2SkipIntro', '1');
+            } catch { /* ignore */ }
+            navigate('/', { state: { scrollTo: 'page-2', page2SkipIntro: true } });
+          }}
         >
           ← Back
         </button>

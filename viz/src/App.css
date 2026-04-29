@@ -6,6 +6,20 @@
 
 html {
   scroll-behavior: smooth;
+  background: transparent;
+}
+
+/* Full-viewport art layer: stays fixed while scrolling and across route changes */
+.global-fixed-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: #5a89a6;
+  background-image: url('/images/Page3background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 /* Placeholder for pages that have not yet been lazy-mounted.
@@ -16,7 +30,7 @@ html {
   display: block;
   min-height: 100vh;
   width: 100%;
-  background: #5A89A6;
+  background: transparent;
 }
 
 /* ── Hide native cursor everywhere (custom white cursor takes over) ── */
@@ -105,20 +119,13 @@ body,
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: linear-gradient(
-    180deg,
-    #2E5E7E 0%,
-    #5A89A6 25%,
-    #A8C4D4 50%,
-    #F2EBD9 70%,
-    #E8A88B 100%
-  );
-  background-attachment: fixed;
+  background: transparent;
   color: #F2EBD9;
 }
 
 .app {
   position: relative;
+  z-index: 1;
 }
 
 /* ── Cinematic teal film aesthetic ── */

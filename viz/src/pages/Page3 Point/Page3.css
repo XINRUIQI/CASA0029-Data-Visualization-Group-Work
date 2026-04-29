@@ -4,49 +4,90 @@
    ═══════════════════════════════════════════ */
 
 .page-3 {
-  height: 100vh;
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
   overflow: hidden;
-  background: url('/images/Page3background.png') center/cover no-repeat;
+  background: transparent;
+  --p3-surface: #5a89a6;
+  --p3-sunset: #e8a88b;
 }
 
-/* ─── HERO TEXT (top-left overlay) ─── */
-.p3-hero-text {
-  position: absolute;
-  top: 48px;
-  left: 60px;
-  z-index: 10;
-  max-width: 1000px;
+/* 与 Page 2 降半屏后露出的区域一致：上半屏日落色 + 文案 */
+.p3-top-band {
+  flex-shrink: 0;
+  height: 50vh;
+  max-height: 50vh;
+  box-sizing: border-box;
+  background: transparent;
+  display: flex;
+  align-items: flex-start;
+  padding: clamp(1.1rem, 2.5vw, 1.75rem) clamp(1.25rem, 4vw, 3rem) clamp(0.75rem, 2vw, 1.25rem);
+  padding-left: clamp(3.25rem, 8vw, 4.5rem);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  z-index: 2;
 }
 
-.p3-hero-title {
-  font-size: 1.65rem;
+.p3-top-band-inner {
+  max-width: 1500px;
+  width: 100%;
+  text-align: left;
+}
+
+.p3-top-kicker {
+  font-size: 0.75rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(43, 31, 26, 0.65);
+  margin: 0 0 0.5rem;
+}
+
+.p3-top-title {
+  font-size: clamp(1.25rem, 3.5vw, 2rem);
   font-weight: 700;
-  color: #F0EBE0;
-  line-height: 1.3;
-  margin: 0 0 12px;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #2b1f1a;
+  margin: 0 0 0.65rem;
 }
 
-.p3-hero-desc {
-  font-size: 0.88rem;
-  color: rgba(46, 94, 126, 0.88);
-  line-height: 1.7;
+.p3-top-desc {
+  font-size: clamp(0.78rem, 1.65vw, 0.9rem);
+  line-height: 1.55;
+  color: rgba(45, 34, 28, 0.88);
   margin: 0;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
+  max-width: 920px;
+}
+
+/* 与 Page 2 表层同一套背景图；面板叠在图上 */
+.p3-dashboard {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
 }
 
 /* ─── TWO-COLUMN LAYOUT ─── */
 .p3-layout {
   display: flex;
   height: 100%;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  position: relative;
+  z-index: 1;
 }
 
 /* Left half — map */
 .p3-map-half {
   width: 66.67%;
   flex-shrink: 0;
-  padding: 100px 8px 40px 60px;
+  padding: 14px 8px 30px 60px;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -459,7 +500,7 @@
 .p3-panel-half {
   width: 33.33%;
   flex-shrink: 0;
-  padding: 100px 60px 40px 8px;
+  padding: 14px 60px 30px 8px;
   display: flex;
   flex-direction: column;
 }

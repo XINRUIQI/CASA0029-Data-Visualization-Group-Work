@@ -67,7 +67,7 @@ export default function Page4Map({ sites, candidateSites, boundary, hexGrid }) {
         {...viewState}
         onMove={e => setViewState(e.viewState)}
         mapboxAccessToken={MAPBOX_TOKEN}
-        mapStyle="mapbox://styles/mapbox/dark-v11"
+        mapStyle="mapbox://styles/mapbox/light-v11"
         projection="mercator"
         reuseMaps
         maxBounds={SHENZHEN_MAX_BOUNDS}
@@ -99,22 +99,22 @@ export default function Page4Map({ sites, candidateSites, boundary, hexGrid }) {
           </Source>
         )}
 
-        {/* Optimised candidate sites (render first so existing pins sit on top) */}
+        {/* Optimised candidate sites */}
         {candidateSites?.map((d, i) => (
-          <Marker key={`c${i}`} longitude={d.lon} latitude={d.lat} anchor="center"
+          <Marker key={`c${i}`} longitude={d.lon} latitude={d.lat} anchor="bottom"
             style={{ zIndex: 5 }}>
             <div style={{ pointerEvents: 'none' }}>
-              <DiamondIcon color={CANDIDATE_COLOR} size={9} />
+              <PinIcon color={CANDIDATE_COLOR} size={14} />
             </div>
           </Marker>
         ))}
 
         {/* Existing vertiport sites (grey) */}
         {sites?.map((d, i) => (
-          <Marker key={`v${i}`} longitude={d.lon} latitude={d.lat} anchor="bottom"
+          <Marker key={`v${i}`} longitude={d.lon} latitude={d.lat} anchor="center"
             style={{ zIndex: 10 }}>
             <div style={{ pointerEvents: 'none' }}>
-              <PinIcon color={EXISTING_COLOR} size={14} />
+              <DiamondIcon color={EXISTING_COLOR} size={9} />
             </div>
           </Marker>
         ))}
@@ -122,20 +122,20 @@ export default function Page4Map({ sites, candidateSites, boundary, hexGrid }) {
 
       {/* Legend */}
       <div style={{
-        position: 'absolute', bottom: 14, left: 14,
+        position: 'absolute', bottom: 14, right: 14,
         background: 'rgba(255,255,255,0.92)', borderRadius: 8,
-        padding: '8px 14px', fontSize: 11, color: '#F2EBD9',
+        padding: '8px 14px', fontSize: 11, color: '#2E5E7E',
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         display: 'flex', flexDirection: 'column', gap: 6,
         zIndex: 20, border: '1px solid rgba(168,196,212,0.1)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <PinIcon color={EXISTING_COLOR} size={12} />
-          <span>Existing sites ({sites?.length || 0})</span>
+          <DiamondIcon color={EXISTING_COLOR} size={9} />
+          <span style={{ fontWeight: 700 }}>Existing sites ({sites?.length || 0})</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <DiamondIcon color={CANDIDATE_COLOR} size={9} />
-          <span>Optimised candidates ({candidateSites?.length || 0})</span>
+          <PinIcon color={CANDIDATE_COLOR} size={12} />
+          <span style={{ fontWeight: 700 }}>Optimised candidates ({candidateSites?.length || 0})</span>
         </div>
       </div>
 

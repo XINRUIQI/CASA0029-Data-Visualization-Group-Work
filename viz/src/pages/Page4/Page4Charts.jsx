@@ -212,91 +212,138 @@ export function ZoneTypeMismatchChart({ zoneSummary, demandData }) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   4 · DistanceDistributionChart — gap zone distance histogram
+   4 · DistanceDistributionChart — violin plot with threshold
    ═══════════════════════════════════════════════════════════ */
+
+function gaussianKDE(data, bandwidth, nPoints = 80) {
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const step = (max - min) / (nPoints - 1);
+  const points = [];
+  for (let i = 0; i < nPoints; i++) {
+    const x = min + i * step;
+    let density = 0;
+    for (const d of data) {
+      const z = (x - d) / bandwidth;
+      density += Math.exp(-0.5 * z * z);
+    }
+    density /= data.length * bandwidth * Math.sqrt(2 * Math.PI);
+    points.push({ x, density });
+  }
+  return points;
+}
+
 export function DistanceDistributionChart({ gapZones }) {
-  const { bins, cumLine, stats } = useMemo(() => {
-    if (!gapZones?.length) return {};
+  const chartData = useMemo(() => {
+    if (!gapZones?.length) return null;
     const distances = gapZones.map(z => z.dist / 1000);
-    const maxD = Math.ceil(Math.max(...distances));
-    const binSize = 1;
-    const numBins = Math.min(maxD, 16);
-    const binsArr = Array.from({ length: numBins }, (_, i) => ({
-      range: `${i}–${i + binSize}`,
-      km: i + binSize * 0.5,
-      count: 0,
-    }));
-    distances.forEach(d => {
-      const idx = Math.min(Math.floor(d / binSize), numBins - 1);
-      binsArr[idx].count++;
-    });
+    const sorted = [...distances].sort((a, b) => a - b);
+    const n = sorted.length;
 
-    const total = distances.length;
-    let cum = 0;
-    const cumArr = binsArr.map(b => {
-      cum += b.count;
-      return { km: b.km, cumPct: +((cum / total) * 100).toFixed(1) };
-    });
+    const avg = distances.reduce((a, b) => a + b, 0) / n;
+    const beyond3 = distances.filter(d => d > 3).length;
+    const beyond3Pct = ((beyond3 / n) * 100).toFixed(1);
 
-    const avg = distances.reduce((a, b) => a + b, 0) / total;
-    const median = [...distances].sort((a, b) => a - b)[Math.floor(total / 2)];
-    const beyond5 = distances.filter(d => d > 5).length;
+    const iqr = sorted[Math.floor(n * 0.75)] - sorted[Math.floor(n * 0.25)];
+    const bandwidth = 0.9 * Math.min(
+      Math.sqrt(distances.reduce((s, d) => s + (d - avg) ** 2, 0) / n),
+      iqr / 1.34
+    ) * Math.pow(n, -0.2);
 
-    return {
-      bins: binsArr,
-      cumLine: cumArr,
-      stats: {
-        total,
-        avg: avg.toFixed(1),
-        median: median.toFixed(1),
-        beyond5,
-        beyond5Pct: ((beyond5 / total) * 100).toFixed(1),
-      },
-    };
+    const kde = gaussianKDE(distances, bandwidth || 1);
+    const maxDensity = Math.max(...kde.map(p => p.density));
+    const maxX = Math.ceil(sorted[n - 1] / 2) * 2;
+
+    return { kde, maxDensity, maxX, avg, n, beyond3, beyond3Pct };
   }, [gapZones]);
 
-  if (!bins) return null;
+  if (!chartData) return null;
+
+  const { kde, maxDensity, maxX, avg, n, beyond3Pct } = chartData;
+
+  const W = 600, H = 300;
+  const padTop = 20, padBot = 50, padLeft = 60, padRight = 20;
+  const plotW = W - padLeft - padRight;
+  const plotH = H - padTop - padBot;
+
+  const xScale = (val) => padLeft + (val / maxX) * plotW;
+  const yScale = (density) => padTop + plotH - (density / maxDensity) * plotH;
+
+  const areaPath = kde.map((p, i) => {
+    const x = xScale(p.x);
+    const y = yScale(p.density);
+    return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+  }).join(' ') + ` L ${xScale(kde[kde.length - 1].x)} ${padTop + plotH} L ${xScale(kde[0].x)} ${padTop + plotH} Z`;
+
+  const x3km = xScale(3);
+
+  const xTicks = [];
+  for (let v = 0; v <= maxX; v += 2) xTicks.push(v);
+
+  const yTicks = [0, 0.25, 0.5, 0.75, 1];
 
   return (
     <div className="p4-chart">
-      <div className="p4-chart-kpis">
-        <div className="p4-kpi">
-          <div className="p4-kpi-val">{stats.total}</div>
-          <div className="p4-kpi-lab">Underserved hexagons</div>
-        </div>
-        <div className="p4-kpi">
-          <div className="p4-kpi-val">{stats.avg} km</div>
-          <div className="p4-kpi-lab">Avg. distance to nearest site</div>
-        </div>
-        <div className="p4-kpi">
-          <div className="p4-kpi-val" style={{ color: '#ff7a5c' }}>{stats.beyond5Pct}%</div>
-          <div className="p4-kpi-lab">Beyond 5 km range</div>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'center', margin: '12px 0' }}>
+        <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: 600, height: 'auto' }}>
+          {/* Y-axis grid + labels */}
+          {yTicks.map(frac => {
+            const y = padTop + plotH - frac * plotH;
+            return (
+              <g key={frac}>
+                <line x1={padLeft} x2={padLeft + plotW} y1={y} y2={y}
+                  stroke="rgba(46,94,126,0.08)" strokeWidth="1" />
+              </g>
+            );
+          })}
+
+          {/* X-axis ticks */}
+          {xTicks.map(v => (
+            <g key={v}>
+              <line x1={xScale(v)} x2={xScale(v)} y1={padTop + plotH} y2={padTop + plotH + 4}
+                stroke="#999" strokeWidth="1" />
+              <text x={xScale(v)} y={padTop + plotH + 18}
+                textAnchor="middle" fill="#6B6050" fontSize="10">
+                {v}
+              </text>
+            </g>
+          ))}
+
+          {/* Axis labels */}
+          <text x={padLeft + plotW / 2} y={H - 6}
+            textAnchor="middle" fill="#6B6050" fontSize="11">
+            Distance to nearest vertiport (km)
+          </text>
+          <text x={16} y={padTop + plotH / 2}
+            textAnchor="middle" fill="#6B6050" fontSize="11"
+            transform={`rotate(-90, 16, ${padTop + plotH / 2})`}>
+            Underserved hexagons / Gap zones
+          </text>
+
+          {/* KDE area */}
+          <path d={areaPath}
+            fill="rgba(46,94,126,0.2)" stroke="#2E5E7E" strokeWidth="1.8" />
+
+          {/* 3 km vertical threshold */}
+          <line x1={x3km} x2={x3km} y1={padTop} y2={padTop + plotH}
+            stroke="#2E5E7E" strokeWidth="1.5" strokeDasharray="6 4" />
+          <text x={x3km + 6} y={padTop + 14}
+            fill="#2E5E7E" fontSize="10" fontWeight="600">
+            3 km drone range
+          </text>
+
+          {/* Axis lines */}
+          <line x1={padLeft} x2={padLeft + plotW} y1={padTop + plotH} y2={padTop + plotH}
+            stroke="#ccc" strokeWidth="1" />
+          <line x1={padLeft} x2={padLeft} y1={padTop} y2={padTop + plotH}
+            stroke="#ccc" strokeWidth="1" />
+        </svg>
       </div>
 
-      <ResponsiveContainer width="100%" height={240}>
-        <BarChart data={bins} margin={{ top: 10, right: 30, bottom: 28, left: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.08)" vertical={false} />
-          <XAxis dataKey="range" tick={{ fill: '#888', fontSize: 10 }}
-            axisLine={{ stroke: 'rgba(168, 196, 212, 0.15)' }} tickLine={false}
-            label={{ value: 'Distance to nearest vertiport (km)', position: 'bottom', fill: '#666', fontSize: 11, offset: 6 }} />
-          <YAxis tick={{ fill: '#888', fontSize: 11 }}
-            axisLine={{ stroke: 'rgba(168, 196, 212, 0.15)' }} tickLine={false} width={36} />
-          <Tooltip contentStyle={TT_STYLE}
-            formatter={(v, name) => [v, name === 'count' ? 'Hex count' : name]}
-            labelFormatter={l => `${l} km`} />
-          <Bar dataKey="count" name="Hex count" radius={[3, 3, 0, 0]}>
-            {bins.map((b, i) => (
-              <Cell key={i} fill={b.km > 5 ? '#ff7a5c' : 'rgba(168, 196, 212, 0.25)'} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-
       <p className="p4-chart-note">
-        Distribution of underserved hexagons by distance to the nearest vertiport.
-        Bars in <em>red</em> mark zones beyond the effective 5 km drone flight radius —
-        accounting for <em>{stats.beyond5Pct}%</em> of all gap zones.
+        Each area is measured by its distance to the nearest drone site. The dashed line shows the
+        3 km drone range. All <em>{beyond3Pct}%</em> of areas are beyond this range, with an
+        average distance of <em>{avg.toFixed(1)} km</em>.
       </p>
     </div>
   );

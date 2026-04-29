@@ -3,7 +3,7 @@
    ═══════════════════════════════════════════ */
 
 .p1s-wrap {
-  background: #5A89A6;
+  background: transparent;
 }
 
 /* ── Two-column layout ── */
@@ -26,7 +26,9 @@
   flex-direction: column;
   padding: 44px 44px 44px 100px;
   border-right: 1px solid rgba(168, 196, 212, 0.1);
-  background: #2E5E7E;
+  background: rgba(46, 94, 126, 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 /* accent radial glow behind content */
@@ -250,7 +252,7 @@
 .p1s-right {
   flex: 1;
   min-width: 0;
-  background: #5A89A6;
+  background: transparent;
 }
 
 .p1s-card {

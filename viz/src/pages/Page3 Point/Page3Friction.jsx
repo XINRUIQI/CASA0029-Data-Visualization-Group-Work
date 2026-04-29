@@ -188,8 +188,8 @@ export default function Page3Friction() {
     switch (activeTab) {
       case 1:
         return {
-          title: 'What Drone Delivery Infrastructure Already Exists?',
-          subtitle: `Shenzhen has developed an initial drone delivery infrastructure network, including commercial-area hubs and last-mile delivery points. Existing and planned sites are distributed across different districts, providing a baseline for understanding current service capacity and identifying where additional hubs may be needed.`,
+          title: 'Take-off & Landing Network',
+          subtitle: 'highlight',
         };
       case 2:
         return {
@@ -314,6 +314,12 @@ export default function Page3Friction() {
     <section id="page-3" className="page page-3" style={{ position: 'relative' }}>
       <div className="p3-hero-text">
         <h2 className="p3-hero-title">What Drone Delivery Infrastructure Already Exists?</h2>
+        <p className="p3-hero-desc">
+          Shenzhen has developed an initial drone delivery infrastructure network, including
+          commercial-area hubs and last-mile delivery points. Existing and planned sites are
+          distributed across different districts, providing a baseline for understanding current
+          service capacity and identifying where additional hubs may be needed.
+        </p>
       </div>
       <div className="p3-layout" style={{ position: 'relative', zIndex: 1 }}>
 
@@ -420,9 +426,17 @@ export default function Page3Friction() {
         <div className="p3-panel-half">
         <div className="p3-panel-card">
           <div className="p3p-header">
-    
             <h2 className="p3p-title">{panelMeta.title}</h2>
-            <p className="p3p-desc">{panelMeta.subtitle}</p>
+            {panelMeta.subtitle === 'highlight' ? (
+              <p className="p3p-desc">
+                Shenzhen's drone delivery network spans{' '}
+                <span style={{ color: '#E8A88B', fontWeight: 700 }}>45 departure</span> and{' '}
+                <span style={{ color: '#E8A88B', fontWeight: 700 }}>161 landing hubs</span>{' '}
+                across 9 districts — revealing where UAV logistics capacity is concentrated and where gaps remain.
+              </p>
+            ) : (
+              <p className="p3p-desc">{panelMeta.subtitle}</p>
+            )}
           </div>
 
           {loadError && <div className="p3p-loading" style={{ color: '#ff6b6b' }}>加载失败：{loadError}</div>}

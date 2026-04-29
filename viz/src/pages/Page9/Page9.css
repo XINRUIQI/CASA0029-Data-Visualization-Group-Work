@@ -8,12 +8,7 @@
   position: relative;
   height: 100vh;
   overflow: hidden;
-  background: radial-gradient(
-    circle at 70% 30%,
-    #1f6f8b 0%,
-    #07111f 45%,
-    #030712 100%
-  );
+  background: transparent;
   color: white;
 }
 
