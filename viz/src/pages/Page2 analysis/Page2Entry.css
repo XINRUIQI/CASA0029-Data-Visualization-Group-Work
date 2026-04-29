@@ -1,12 +1,245 @@
-/* ── Page 3 Entry — Cloud Dive Scene ── */
+/* ── Page 2 Entry — Horizontal open (Metalab-like) + slide to content ── */
 .page-2-entry {
   position: relative;
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  background: #000;
+  --p2e-slide-ease: cubic-bezier(0.33, 1, 0.32, 1);
+  --p2e-h-open-duration: 1.2s;
+}
+
+.page-2-entry--unlocked {
+  height: auto;
+  min-height: 200vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: #2E5E7E;
+}
+
+/* Two stacked 100vh panels; whole block translates up to reveal the main content screen */
+.p2e-scroll-stack {
+  position: relative;
+  z-index: 2;
+  will-change: transform;
+  transition: transform 1.35s var(--p2e-slide-ease);
+}
+
+.p2e-scroll-stack--up {
+  transform: translateY(-100vh);
+}
+
+.p2e-panel {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-  background: #e6dce6;
+  box-sizing: border-box;
+}
+
+.p2e-panel--hero {
+  background: #000;
+  padding: clamp(1.25rem, 4vw, 3rem);
+  clip-path: inset(0 50% 0 50%);
+  transition: clip-path var(--p2e-h-open-duration) var(--p2e-slide-ease);
+  will-change: clip-path;
+}
+
+.p2e-panel--hero--open {
+  clip-path: inset(0 0 0 0);
+}
+
+.p2e-panel--main {
+  background: transparent;
+  clip-path: inset(0 50% 0 50%);
+  transition: clip-path 1.35s var(--p2e-slide-ease);
+  will-change: clip-path;
+}
+
+.p2e-panel--main--open {
+  clip-path: inset(0 0 0 0);
+}
+
+/* ── Metalab-inspired hero (typography-first, dark) ── */
+.p2e-metalab-hero {
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.p2e-metalab-kicker {
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(46, 94, 126, 0.48);
+  margin: 0 0 1.1rem;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.85s ease, transform 0.85s ease;
+}
+
+.p2e-metalab-title {
+  font-family: Georgia, 'Times New Roman', Times, serif;
+  font-size: clamp(2rem, 6.2vw, 3.85rem);
+  font-weight: 400;
+  line-height: 1.06;
+  letter-spacing: -0.028em;
+  color: #fafafa;
+  margin: 0 0 2.4rem;
+  opacity: 0;
+  transform: translateY(32px);
+  transition:
+    opacity 1.05s ease 0.1s,
+    transform 1.05s var(--p2e-slide-ease) 0.1s;
+}
+
+.p2e-metalab-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem 1.75rem;
+  margin-bottom: 2.25rem;
+}
+
+.p2e-metalab-meta-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.75s ease,
+    transform 0.75s var(--p2e-slide-ease);
+}
+
+.p2e-metalab-meta-label {
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(46, 94, 126, 0.38);
+}
+
+.p2e-metalab-meta-value {
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: rgba(46, 94, 126, 0.88);
+}
+
+.p2e-metalab-hero--open .p2e-metalab-kicker {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.42s;
+}
+
+.p2e-metalab-hero--open .p2e-metalab-title {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.52s;
+}
+
+.p2e-metalab-hero--open .p2e-metalab-meta-col:nth-child(1) {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.6s;
+}
+
+.p2e-metalab-hero--open .p2e-metalab-meta-col:nth-child(2) {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.72s;
+}
+
+.p2e-metalab-hero--open .p2e-metalab-meta-col:nth-child(3) {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.84s;
+}
+
+.p2e-metalab-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.25rem;
+  padding: 0.65rem 1.35rem;
+  border: 1px solid rgba(46, 94, 126, 0.42);
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.8s ease,
+    transform 0.8s var(--p2e-slide-ease),
+    background 0.25s,
+    border-color 0.25s;
+}
+
+.p2e-metalab-hero--open .p2e-metalab-cta {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.92s;
+}
+
+.p2e-metalab-cta:hover {
+  background: rgba(46, 94, 126, 0.08);
+  border-color: rgba(46, 94, 126, 0.65);
+}
+
+.p2e-metalab-cta-arrow {
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0.85;
+  transition: transform 0.3s var(--p2e-slide-ease);
+}
+
+.p2e-metalab-cta:hover .p2e-metalab-cta-arrow {
+  transform: translateY(-3px);
+}
+
+.p2e-metalab-hint {
+  margin: 1.1rem 0 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(46, 94, 126, 0.32);
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+
+.p2e-metalab-hero--open .p2e-metalab-hint {
+  opacity: 1;
+  transition-delay: 1.05s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .p2e-scroll-stack {
+    transition: none;
+  }
+
+  .p2e-scroll-stack--up {
+    transform: none;
+  }
+
+  .p2e-panel--hero,
+  .p2e-panel--main {
+    clip-path: inset(0 0 0 0) !important;
+    transition: none !important;
+  }
+
+  .p2e-metalab-kicker,
+  .p2e-metalab-title,
+  .p2e-metalab-meta-col,
+  .p2e-metalab-cta,
+  .p2e-metalab-hint {
+    transition: none;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
 
 /* ── Foreground content — hidden until intro completes ── */
@@ -68,8 +301,8 @@
 }
 
 .p2e-stat-card {
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(90, 50, 110, 0.15);
+  background: rgba(46, 94, 126, 0.6);
+  border: 1px solid rgba(168, 196, 212, 0.15);
   border-radius: 12px;
   padding: 1.2rem 1.6rem;
   min-width: 130px;
@@ -79,7 +312,7 @@
 
 .p2e-stat-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(90, 50, 110, 0.3);
+  border-color: rgba(168, 196, 212, 0.3);
 }
 
 .p2e-stat-value {
@@ -102,11 +335,11 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.9rem 2.2rem;
-  border: 1px solid rgba(200, 120, 104, 0.3);
+  border: 1px solid rgba(168, 196, 212, 0.3);
   border-radius: 50px;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(46, 94, 126, 0.6);
   backdrop-filter: blur(10px);
-  color: #2d1e3a;
+  color: #F2EBD9;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -116,9 +349,9 @@
 
 .p2e-enter-btn:hover {
   transform: translateY(-2px) scale(1.03);
-  box-shadow: 0 8px 36px rgba(200, 120, 104, 0.2);
-  background: rgba(255, 255, 255, 0.8);
-  border-color: rgba(200, 120, 104, 0.5);
+  box-shadow: 0 8px 36px rgba(168, 196, 212, 0.2);
+  background: rgba(46, 94, 126, 0.8);
+  border-color: rgba(168, 196, 212, 0.5);
 }
 
 .p2e-enter-btn:active {
@@ -130,11 +363,18 @@
   transition: transform 0.25s;
 }
 
-  .p2e-enter-btn:hover .p2e-btn-arrow {
+.p2e-enter-btn:hover .p2e-btn-arrow {
   transform: translateX(4px);
 }
 
 /* ── Responsive ── */
+@media (max-width: 780px) {
+  .p2e-metalab-meta {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
 @media (max-width: 640px) {
   .p2e-stats {
     flex-direction: column;

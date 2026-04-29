@@ -61,16 +61,11 @@ export default function Page0Cover() {
     v.muted = true;
     v.play().catch(() => {});
   }, []);
+
   const [activeInfo, setActiveInfo] = useState(null);
   const [transitioning, setTransitioning] = useState(false);
   const [spawnPoints, setSpawnPoints] = useState(null);
-  // Only play the full intro overlay the first time the user lands on the
-  // cover during this tab's lifetime. When they come back from a sub-route
-  // (e.g. the /analysis full map's "Back to Main" button), Page0Cover
-  // remounts, and replaying the fixed-position intro would visually block
-  // the scroll restoration target (page-2) for several seconds — making it
-  // feel like back-to-main dumped them on page 0. A full page reload clears
-  // the module flag, so a genuine first visit always gets the intro.
+  const isFirstVisit = useRef(!introPlayedInSession);
   const [introDone, setIntroDone] = useState(() => introPlayedInSession);
 
   const handleIntroDone = useCallback(() => {
@@ -104,50 +99,44 @@ export default function Page0Cover() {
     document.getElementById('page-1')?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
-  /* ── GSAP entrance animations (wait for intro) ── */
+  /* ── GSAP entrance animations (only on first visit) ── */
   useEffect(() => {
     if (!introDone) return;
 
     const ctx = gsap.context(() => {
-      // Entrance choreography, all kicked off the moment the intro overlay
-      // finishes. Pace is deliberately quick so the hero reads as a single
-      // beat: Delivery → elevated! → subtitle (as one line) → Enter.
-      const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+      if (isFirstVisit.current) {
+        const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
 
-      tl.from('.p0-word-light', {
-          x: -40,
-          opacity: 0,
-          duration: 0.45,
-        }, 0)
-        .from('.p0-word-bold', {
-          x: 40,
-          opacity: 0,
-          duration: 0.45,
-        }, 0.18)
-        // Bring the whole subtitle in as one unit (main caption + "in ShenZhen")
-        .from('.p0-subtitle', {
-          y: 24,
-          opacity: 0,
-          duration: 0.5,
-        }, 0.5)
-        // Enter button finally pops in
-        .from('.p0-enter-btn', {
-          y: 20,
-          opacity: 0,
-          scale: 0.9,
-          duration: 0.5,
-          ease: 'back.out(1.5)',
-        }, 0.95)
-        // Peripheral chrome — sidebar + scroll hint — fade in alongside
-        // the button so nothing ever feels like it's still animating after
-        // the user already sees the CTA.
-        .from('.p0-sidebar-btn', {
-          x: -20,
-          opacity: 0,
-          duration: 0.4,
-          stagger: 0.08,
-        }, 0.6)
-        .from('.p0-scroll-hint', { opacity: 0, duration: 0.4 }, 1.1);
+        tl.from('.p0-word-light', {
+            x: -40,
+            opacity: 0,
+            duration: 0.45,
+          }, 0)
+          .from('.p0-word-bold', {
+            x: 40,
+            opacity: 0,
+            duration: 0.45,
+          }, 0.18)
+          .from('.p0-subtitle', {
+            y: 24,
+            opacity: 0,
+            duration: 0.5,
+          }, 0.5)
+          .from('.p0-enter-btn', {
+            y: 20,
+            opacity: 0,
+            scale: 0.9,
+            duration: 0.5,
+            ease: 'back.out(1.5)',
+          }, 0.95)
+          .from('.p0-sidebar-btn', {
+            x: -20,
+            opacity: 0,
+            duration: 0.4,
+            stagger: 0.08,
+          }, 0.6)
+          .from('.p0-scroll-hint', { opacity: 0, duration: 0.4 }, 1.1);
+      }
 
       gsap.to('.p0-hero-content', {
         y: -80,
@@ -167,7 +156,7 @@ export default function Page0Cover() {
 
   return (
     <section id="page-0" className="page page-0" ref={sectionRef}>
-      {/* ── background layers: video only ── */}
+      {/* ── background layers: video ── */}
       <div className="p0-bg-wrap">
         <video
           ref={videoRef}
@@ -177,7 +166,7 @@ export default function Page0Cover() {
           loop
           playsInline
           preload="metadata"
-          src={`${import.meta.env.BASE_URL}Cover-ai.mp4`}
+          src="https://res.cloudinary.com/flyzipline/video/upload/q_auto:best,f_auto/v1776784625/homepage_hero_desktop_21042026_rw2jvh.mp4"
           poster={`${import.meta.env.BASE_URL}shenzhen-poster.jpg`}
         />
         <div className="p0-bg-overlay" />
@@ -226,28 +215,32 @@ export default function Page0Cover() {
 
       {/* ── hero content ── */}
       <div className={`p0-hero-content ${introDone ? '' : 'p0-hidden'}`} ref={heroContentRef}>
-        <h1 className="p0-title">
-          <span className="p0-title-big">
-            <span className="p0-word-light">Delivery,</span>
-            {' '}
-            <span className="p0-word-bold p0-glitch" data-text="elevated!">elevated!</span>
-          </span>
-        </h1>
+        <div className="p0-hero-title-group">
+          <h1 className="p0-title">
+            <span className="p0-title-big">
+              <span className="p0-word-light">Delivery,</span>
+              {' '}
+              <span className="p0-word-bold p0-glitch" data-text="elevated!">elevated!</span>
+            </span>
+          </h1>
+        </div>
 
-        <p className="p0-subtitle">
-          <span className="p0-sub-light">Drone Delivery and the Rise of a New Urban Mobility System</span>
-          {' '}
-          <span className="p0-sub-shenzhen-wrap">
-            <span className="p0-sub-in">in</span>
+        <div className="p0-hero-bottom-group">
+          <p className="p0-subtitle">
+            <span className="p0-sub-light">Drone Delivery and the Rise of a New Urban Mobility System</span>
             {' '}
-            <span className="p0-sub-boxed">ShenZhen</span>
-          </span>
-        </p>
+            <span className="p0-sub-shenzhen-wrap">
+              <span className="p0-sub-in">in</span>
+              {' '}
+              <span className="p0-sub-boxed">ShenZhen</span>
+            </span>
+          </p>
 
-        <button className={`p0-enter-btn ${transitioning ? 'p0-enter-hide' : ''}`} onClick={handleEnter}>
-          <span className="p0-enter-text">Enter</span>
-          <span className="p0-enter-ring" />
-        </button>
+          <button className={`p0-enter-btn ${transitioning ? 'p0-enter-hide' : ''}`} onClick={handleEnter}>
+            <span className="p0-enter-text">Enter</span>
+            <span className="p0-enter-ring" />
+          </button>
+        </div>
       </div>
 
       <EnterTransition active={transitioning} spawnPoints={spawnPoints} onComplete={handleTransitionComplete} />

@@ -69,7 +69,7 @@ export default function Page3Charts({ activeMode, hoveredHex }) {
         <h4>Friction Composition</h4>
         <ResponsiveContainer width="100%" height={180}>
           <RadarChart data={FRICTION_COMPONENTS} cx="50%" cy="50%" outerRadius="70%">
-            <PolarGrid stroke="rgba(90, 50, 110, 0.15)" />
+            <PolarGrid stroke="rgba(168, 196, 212, 0.15)" />
             <PolarAngleAxis dataKey="axis" tick={{ fill: '#888', fontSize: 10 }} />
             <PolarRadiusAxis tick={false} axisLine={false} domain={[0, 1]} />
             <Radar dataKey="value" stroke="#c864ff" fill="#c864ff" fillOpacity={0.25} strokeWidth={2} />

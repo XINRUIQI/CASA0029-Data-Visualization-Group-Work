@@ -14,10 +14,10 @@
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  border: 1px solid rgba(90, 50, 110, 0.12);
-  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(168, 196, 212, 0.12);
+  background: rgba(46, 94, 126, 0.88);
   backdrop-filter: blur(8px);
-  color: #7a6890;
+  color: #D0C8B0;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -28,8 +28,8 @@
 }
 
 .mc-btn:hover {
-  background: rgba(245, 238, 242, 0.95);
-  color: #2d1e3a;
+  background: rgba(15, 27, 31, 0.95);
+  color: #F2EBD9;
 }
 
 .mc-btn:active {
@@ -37,14 +37,14 @@
 }
 
 .mc-btn-follow-on {
-  color: #c87868;
-  box-shadow: inset 0 0 0 1px rgba(200, 120, 104, 0.45);
-  background: rgba(238, 230, 240, 0.95);
+  color: #E8A88B;
+  box-shadow: inset 0 0 0 1px rgba(168, 196, 212, 0.45);
+  background: rgba(46, 94, 126, 0.95);
 }
 
 .mc-compass {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
 }
 
 .mc-compass-inner {
@@ -78,11 +78,11 @@
   align-items: flex-start;
   gap: 2px;
   padding: 6px 10px;
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(46, 94, 126, 0.75);
   backdrop-filter: blur(6px);
-  border: 1px solid rgba(90, 50, 110, 0.12);
+  border: 1px solid rgba(168, 196, 212, 0.12);
   border-radius: 6px;
-  color: #7a6890;
+  color: #D0C8B0;
   font-size: 0.68rem;
   font-variant-numeric: tabular-nums;
   pointer-events: none;
@@ -100,13 +100,13 @@
   position: relative;
   height: 8px;
   min-width: 24px;
-  border-bottom: 2px solid #7a6890;
-  border-left: 2px solid #7a6890;
-  border-right: 2px solid #7a6890;
+  border-bottom: 2px solid #D0C8B0;
+  border-left: 2px solid #D0C8B0;
+  border-right: 2px solid #D0C8B0;
   box-sizing: border-box;
   transition: width 0.15s ease-out;
 }
 
 .mc-scale-label {
-  color: #5a4868;
+  color: #F2EBD9;
 }

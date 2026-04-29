@@ -18,7 +18,7 @@
 .gsb-tile {
   aspect-ratio: 4 / 3;
   border-radius: 4px;
-  border: 1px solid rgba(90, 50, 110, 0.06);
+  border: 1px solid rgba(168, 196, 212, 0.06);
   animation: tileBreath ease-in-out infinite alternate;
   transition: background-color 0.6s;
 }

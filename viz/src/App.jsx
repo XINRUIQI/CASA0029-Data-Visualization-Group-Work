@@ -15,6 +15,7 @@ const Page5Strategy    = lazy(() => import('./pages/Page5/Page5Strategy'));
 const Page6Demand      = lazy(() => import('./pages/Page6/Page6Demand'));
 const Page7PostAnalysis = lazy(() => import('./pages/Page7 PostAnalysis/Page7PostAnalysis'));
 const Page8Summary     = lazy(() => import('./pages/Page8 Conclusion/Page7Summary'));
+const Page9DroneHero   = lazy(() => import('./pages/Page9/Page9DroneHero'));
 
 /**
  * LazyPage: renders a full-viewport placeholder <section id="page-N" /> so
@@ -68,6 +69,7 @@ const NAV_PAGES = [
   { id: 6, label: 'Demand' },
   { id: 7, label: 'Post-Analysis' },
   { id: 8, label: 'Summary' },
+  { id: 9, label: 'Drone Hero' },
 ];
 
 const NAV_LINKS = [
@@ -79,6 +81,7 @@ const NAV_LINKS = [
   { target: 'page-6', label: 'Optimization' },
   { target: 'page-7', label: 'Post-Analysis' },
   { target: 'page-8', label: 'Summary' },
+  { target: 'page-9', label: 'Drone Hero' },
 ];
 
 function GlobalTopbar() {
@@ -293,6 +296,7 @@ function MainNarrative() {
       <LazyPage pageId="page-6" component={Page6Demand} />
       <LazyPage pageId="page-7" component={Page7PostAnalysis} />
       <LazyPage pageId="page-8" component={Page8Summary} />
+      <LazyPage pageId="page-9" component={Page9DroneHero} />
     </div>
   );
 }

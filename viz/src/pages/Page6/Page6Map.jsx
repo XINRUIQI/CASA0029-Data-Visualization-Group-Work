@@ -158,7 +158,7 @@ export default function Page6Map({ sites, allSites, h3Demand, showCoverage, show
       >
         <Map
           mapboxAccessToken={MAPBOX_TOKEN}
-          mapStyle="mapbox://styles/mapbox/light-v11"
+          mapStyle="mapbox://styles/mapbox/dark-v11"
           reuseMaps
           maxBounds={SHENZHEN_MAX_BOUNDS}
           minZoom={9}

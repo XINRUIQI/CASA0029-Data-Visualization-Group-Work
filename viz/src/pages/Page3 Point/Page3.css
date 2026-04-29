@@ -30,7 +30,7 @@
 
 .p3-hero-desc {
   font-size: 0.88rem;
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(46, 94, 126, 0.88);
   line-height: 1.7;
   margin: 0;
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
@@ -65,7 +65,7 @@
   align-items: center;
   gap: 7px;
   font-size: 0.82rem;
-  color: #5a4868;
+  color: #F2EBD9;
   cursor: pointer;
   user-select: none;
 }
@@ -88,21 +88,21 @@
 }
 
 .p3-legend-item:has(input:not(:checked)) {
-  color: #b8a8c0;
+  color: #5A89A6;
   text-decoration: line-through;
-  text-decoration-color: #c0b0c8;
+  text-decoration-color: #5A89A6;
 }
 
 .p3-legend-sub {
   font-size: 0.68rem;
-  color: #b0a0b8;
+  color: #706860;
   margin-left: 2px;
 }
 
 .p3-legend-divider {
   width: 1px;
   height: 8px;
-  background: rgba(90, 50, 110, 0.12);
+  background: rgba(168, 196, 212, 0.12);
   margin: 0 4px;
   flex-shrink: 0;
 }
@@ -135,21 +135,21 @@
   border-radius: 14px;
   border: 1px solid transparent;
   background: transparent;
-  color: #b0a0b8;
+  color: #706860;
   cursor: pointer;
   transition: all 0.22s;
   width: 100%;
 }
 
 .p3-tab-btn:hover {
-  color: #7a6890;
-  background: rgba(200, 120, 104, 0.06);
+  color: #D0C8B0;
+  background: rgba(168, 196, 212, 0.06);
 }
 
 .p3-tab-btn.active {
-  color: #2d1e3a;
-  background: rgba(200, 120, 104, 0.1);
-  border-color: rgba(200, 120, 104, 0.2);
+  color: #F2EBD9;
+  background: rgba(168, 196, 212, 0.1);
+  border-color: rgba(168, 196, 212, 0.2);
 }
 
 .p3-tab-icon {
@@ -191,9 +191,9 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(46, 94, 126, 0.88);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(90, 50, 110, 0.12);
+  border: 1px solid rgba(168, 196, 212, 0.12);
   border-radius: 14px;
   padding: 10px 8px;
 }
@@ -206,19 +206,19 @@
   border-radius: 10px;
   border: 1px solid transparent;
   background: transparent;
-  color: #a898b0;
+  color: #888078;
   font-size: 0.72rem;
   cursor: pointer;
   transition: all 0.18s;
   text-align: left;
 }
 
-.p3-cf-btn:hover { color: #7a6890; background: rgba(200,120,104,0.06); }
+.p3-cf-btn:hover { color: #D0C8B0; background: rgba(168,196,212,0.06); }
 
 .p3-cf-btn.active {
   border-color: var(--c);
-  color: #4a3858;
-  background: rgba(200,120,104,0.08);
+  color: #F2EBD9;
+  background: rgba(168,196,212,0.08);
 }
 
 .p3-cf-dot {
@@ -252,7 +252,7 @@
 
 .p3-cf-count {
   font-size: 0.65rem;
-  color: #b0a0b8;
+  color: #706860;
 }
 
 /* ─── Tab 4 覆盖圆圈 ─── */
@@ -278,20 +278,20 @@
   gap: 5px;
   padding: 4px 10px;
   border-radius: 20px;
-  border: 1px solid rgba(90,50,110,0.12);
+  border: 1px solid rgba(168,196,212,0.12);
   background: transparent;
-  color: #a898b0;
+  color: #888078;
   font-size: 0.7rem;
   cursor: pointer;
   transition: all 0.18s;
 }
 
-.p3-ct-btn:hover { color: #7a6890; border-color: rgba(90,50,110,0.2); }
+.p3-ct-btn:hover { color: #D0C8B0; border-color: rgba(168,196,212,0.2); }
 
 .p3-ct-btn.active {
   border-color: var(--ct);
-  color: #4a3858;
-  background: rgba(200,120,104,0.08);
+  color: #F2EBD9;
+  background: rgba(168,196,212,0.08);
 }
 
 .p3-ct-dot {
@@ -317,8 +317,8 @@
   flex-shrink: 0;
   flex-wrap: wrap;
   padding: 8px 8px;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(90, 50, 110, 0.12);
+  background: rgba(46, 94, 126, 0.85);
+  border: 1px solid rgba(168, 196, 212, 0.12);
   border-radius: 8px;
   backdrop-filter: blur(8px);
 }
@@ -329,25 +329,25 @@
   gap: 6px;
   padding: 6px 14px;
   border-radius: 10px;
-  border: 1px solid rgba(90, 50, 110, 0.15);
+  border: 1px solid rgba(168, 196, 212, 0.15);
   background: transparent;
-  color: #a898b0;
+  color: #888078;
   font-size: 0.75rem;
   cursor: pointer;
   transition: all 0.18s;
 }
 
-.p3-il-btn:hover { color: #4a3858; border-color: rgba(90,50,110,0.3); }
+.p3-il-btn:hover { color: #F2EBD9; border-color: rgba(168,196,212,0.3); }
 
 .p3-il-btn.active {
   border-color: var(--ilc);
-  color: #4a3858;
-  background: rgba(200,120,104,0.08);
+  color: #F2EBD9;
+  background: rgba(168,196,212,0.08);
 }
 
 .p3-il-btn.dim {
   opacity: 0.55;
-  border-color: rgba(90, 50, 110, 0.1);
+  border-color: rgba(168, 196, 212, 0.1);
 }
 
 .p3-il-dot {
@@ -363,9 +363,9 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  border: 1.5px solid rgba(90,50,110,0.5);
-  background: rgba(255, 255, 255, 0.85);
-  color: #2d1e3a;
+  border: 1.5px solid rgba(168,196,212,0.5);
+  background: rgba(46, 94, 126, 0.85);
+  color: #F2EBD9;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -381,7 +381,7 @@
 
 .p3-il-count {
   font-size: 0.65rem;
-  color: #b0a0b8;
+  color: #706860;
   margin-left: 2px;
 }
 
@@ -389,8 +389,8 @@
 .p3-district-card {
   flex: 1;
   min-height: 0;
-  background: #e6dce6;
-  border: 1px solid rgba(90, 50, 110, 0.12);
+  background: #2E5E7E;
+  border: 1px solid rgba(168, 196, 212, 0.12);
   border-radius: 8px;
   padding: 8px 20px 8px;
   display: flex;
@@ -403,8 +403,8 @@
   flex: 1;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid rgba(90, 50, 110, 0.12);
-  background: #f0e8ee;
+  border: 1px solid rgba(168, 196, 212, 0.12);
+  background: #5A89A6;
   position: relative;
   min-height: 0;
   min-width: 0;
@@ -424,8 +424,8 @@
 .p3-panel-card {
   flex: 1;
   min-height: 0;
-  background: #e6dce6;
-  border: 1px solid rgba(90, 50, 110, 0.12);
+  background: #2E5E7E;
+  border: 1px solid rgba(168, 196, 212, 0.12);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -442,7 +442,7 @@
 .p3p-tag {
   font-size: 0.7rem;
   font-weight: 600;
-  color: #c87868;
+  color: #E8A88B;
   text-transform: uppercase;
   letter-spacing: 2px;
   margin-bottom: 10px;
@@ -451,14 +451,14 @@
 .p3p-title {
   font-size: 1.55rem;
   font-weight: 700;
-  color: #2d1e3a;
+  color: #F2EBD9;
   margin: 0 0 8px;
   line-height: 1.25;
 }
 
 .p3p-desc {
   font-size: 0.85rem;
-  color: #8a78a0;
+  color: #B8B0A0;
   line-height: 1.65;
   margin: 0;
 }
@@ -472,8 +472,8 @@
 
 .p3p-kpi {
   flex: 1;
-  background: rgba(255, 255, 255, 0.55);
-  border: 1px solid rgba(90, 50, 110, 0.12);
+  background: rgba(46, 94, 126, 0.55);
+  border: 1px solid rgba(168, 196, 212, 0.12);
   border-radius: 14px;
   padding: 18px 14px;
   text-align: center;
@@ -482,20 +482,20 @@
 .kpi-val {
   font-size: 1.8rem;
   font-weight: 700;
-  color: #2d1e3a;
+  color: #F2EBD9;
   line-height: 1;
 }
 
 .kpi-lab {
   font-size: 0.68rem;
-  color: #a898b0;
+  color: #888078;
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-top: 6px;
 }
 
 .p3p-loading {
-  color: #b0a0b8;
+  color: #706860;
   font-size: 0.8rem;
   padding: 20px 0;
 }
@@ -508,7 +508,7 @@
 .p3p-section-label {
   font-size: 0.68rem;
   font-weight: 600;
-  color: #a898b0;
+  color: #888078;
   text-transform: uppercase;
   letter-spacing: 1.5px;
   margin-bottom: 10px;
@@ -526,9 +526,9 @@
   gap: 8px;
   padding: 8px 8px;
   border-radius: 20px;
-  border: 1px solid rgba(90, 50, 110, 0.12);
-  background: rgba(255, 255, 255, 0.55);
-  color: #a898b0;
+  border: 1px solid rgba(168, 196, 212, 0.12);
+  background: rgba(46, 94, 126, 0.55);
+  color: #888078;
   font-size: 0.78rem;
   cursor: pointer;
   transition: all 0.2s;
@@ -541,8 +541,8 @@
 
 .p3p-toggle-chip:has(input:checked) {
   border-color: var(--chip);
-  color: #4a3858;
-  background: rgba(200, 120, 104, 0.08);
+  color: #F2EBD9;
+  background: rgba(168, 196, 212, 0.08);
 }
 
 .toggle-dot {
@@ -574,21 +574,21 @@
   border-radius: 20px;
   border: 1px solid #c0d8ea;
   background: transparent;
-  color: #a898b0;
+  color: #888078;
   font-size: 0.74rem;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .p3p-chip:hover {
-  border-color: #b0a0b8;
-  color: #4a3858;
+  border-color: #706860;
+  color: #F2EBD9;
 }
 
 .p3p-chip.active {
   border-color: var(--chip-color);
-  color: #4a3858;
-  background: rgba(200, 120, 104, 0.08);
+  color: #F2EBD9;
+  background: rgba(168, 196, 212, 0.08);
 }
 
 .chip-swatch {
@@ -605,7 +605,7 @@
 
 .p3p-district-section {
   flex-shrink: 0;
-  border-top: 1px solid rgba(90, 50, 110, 0.08);
+  border-top: 1px solid rgba(168, 196, 212, 0.08);
   padding-top: 14px;
 }
 
@@ -613,9 +613,9 @@
 .p3p-footer {
   flex-shrink: 0;
   font-size: 0.68rem;
-  color: #b8a8c0;
+  color: #5A89A6;
   padding-top: 8px;
-  border-top: 1px solid rgba(90, 50, 110, 0.08);
+  border-top: 1px solid rgba(168, 196, 212, 0.08);
 }
 
 /* ─── DISTRICT INFO PANEL ─── */
@@ -624,9 +624,9 @@
   top: 8px;
   right: 8px;
   z-index: 20;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(46, 94, 126, 0.92);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(90, 50, 110, 0.12);
+  border: 1px solid rgba(168, 196, 212, 0.12);
   border-radius: 14px;
   padding: 14px 8px;
   min-width: 170px;
@@ -646,17 +646,17 @@
 .p3-dp-zh {
   font-size: 1rem;
   font-weight: 700;
-  color: #2d1e3a;
+  color: #F2EBD9;
 }
 
 .p3-dp-en {
   font-size: 0.7rem;
-  color: #a898b0;
+  color: #888078;
 }
 
 .p3-dp-divider {
   height: 1px;
-  background: rgba(90, 50, 110, 0.1);
+  background: rgba(168, 196, 212, 0.1);
   margin: 2px 0;
 }
 
@@ -669,7 +669,7 @@
 
 .p3-dp-label {
   font-size: 0.68rem;
-  color: #a898b0;
+  color: #888078;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -677,7 +677,7 @@
 .p3-dp-val {
   font-size: 0.82rem;
   font-weight: 600;
-  color: #4a3858;
+  color: #F2EBD9;
 }
 
 /* ─── MAP TOOLTIP ─── */
@@ -685,9 +685,9 @@
   position: absolute;
   z-index: 20;
   pointer-events: none;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(46, 94, 126, 0.92);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(90, 50, 110, 0.12);
+  border: 1px solid rgba(168, 196, 212, 0.12);
   border-radius: 10px;
   padding: 10px 14px;
   min-width: 160px;
@@ -703,11 +703,11 @@
 
 .p3-tip-name {
   font-size: 0.85rem;
-  color: #4a3858;
+  color: #F2EBD9;
   margin-bottom: 4px;
 }
 
 .p3-tip-meta {
   font-size: 0.72rem;
-  color: #a898b0;
+  color: #888078;
 }

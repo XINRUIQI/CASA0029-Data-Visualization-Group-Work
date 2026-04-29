@@ -4,8 +4,8 @@
    ═══════════════════════════════════════════ */
 
 .page-summary {
-  background: linear-gradient(160deg, #f4ecf2 0%, #e8dde8 50%, #f0e8ee 100%);
-  color: #4a3858;
+  background: linear-gradient(160deg, #f4ecf2 0%, #e8dde8 50%, #5A89A6 100%);
+  color: #F2EBD9;
   min-height: 100vh;
   padding: 80px 40px 60px;
   overflow-y: auto;
@@ -29,14 +29,14 @@
 .s8-title {
   font-size: 2.8rem;
   font-weight: 700;
-  color: #2d1e3a;
+  color: #F2EBD9;
   margin: 0 0 12px;
   letter-spacing: -0.5px;
 }
 
 .s8-subtitle {
   font-size: 1rem;
-  color: #8a78a0;
+  color: #B8B0A0;
   max-width: 600px;
   margin: 0 auto 40px;
   line-height: 1.6;
@@ -52,9 +52,9 @@
 }
 
 .s8-stat-card {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(46, 94, 126, 0.7);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(90, 50, 110, 0.1);
+  border: 1px solid rgba(168, 196, 212, 0.1);
   border-radius: 16px;
   padding: 28px 20px;
   opacity: 0;
@@ -69,18 +69,18 @@
 
 .s8-stat-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(90, 50, 110, 0.1);
+  box-shadow: 0 8px 24px rgba(168, 196, 212, 0.1);
 }
 
 .s8-stat-number {
   font-size: 2.2rem;
   font-weight: 700;
-  color: #c87868;
+  color: #E8A88B;
 }
 
 .s8-stat-label {
   font-size: 0.82rem;
-  color: #8a78a0;
+  color: #B8B0A0;
   margin-top: 8px;
   line-height: 1.4;
 }
@@ -95,7 +95,7 @@
 .s8-summary-text p {
   font-size: 0.95rem;
   line-height: 1.75;
-  color: #6a5878;
+  color: #E0D8C4;
   margin: 0 0 16px;
 }
 
@@ -103,7 +103,7 @@
 .s8-section-title {
   font-size: 1.8rem;
   font-weight: 700;
-  color: #2d1e3a;
+  color: #F2EBD9;
   text-align: center;
   margin: 0 0 32px;
   letter-spacing: 0.3px;
@@ -127,9 +127,9 @@
 }
 
 .s8-comp-table {
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(46, 94, 126, 0.6);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(90, 50, 110, 0.1);
+  border: 1px solid rgba(168, 196, 212, 0.1);
   border-radius: 20px;
   padding: 32px;
   overflow: hidden;
@@ -142,7 +142,7 @@
   gap: 24px;
   margin-bottom: 28px;
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(90, 50, 110, 0.08);
+  border-bottom: 1px solid rgba(168, 196, 212, 0.08);
 }
 
 .s8-comp-h {
@@ -162,8 +162,8 @@
 .s8-comp-vs {
   font-size: 0.75rem;
   font-weight: 700;
-  color: #b0a0b8;
-  background: rgba(90, 50, 110, 0.06);
+  color: #706860;
+  background: rgba(168, 196, 212, 0.06);
   padding: 4px 10px;
   border-radius: 20px;
 }
@@ -202,7 +202,7 @@
 
 .s8-comp-divider {
   width: 2px;
-  background: linear-gradient(180deg, transparent, rgba(90, 50, 110, 0.12), transparent);
+  background: linear-gradient(180deg, transparent, rgba(168, 196, 212, 0.12), transparent);
   margin: 0 8px;
   flex-shrink: 0;
 }
@@ -214,13 +214,13 @@
 
 .s8-comp-text {
   font-size: 0.82rem;
-  color: #5a4868;
+  color: #F2EBD9;
   line-height: 1.4;
 }
 
 .s8-comp-bar {
   height: 6px;
-  background: rgba(90, 50, 110, 0.06);
+  background: rgba(168, 196, 212, 0.06);
   border-radius: 3px;
   overflow: hidden;
   margin-top: 4px;
@@ -269,9 +269,9 @@
 }
 
 .s8-lim-card {
-  background: rgba(255, 255, 255, 0.65);
+  background: rgba(46, 94, 126, 0.65);
   backdrop-filter: blur(6px);
-  border: 1px solid rgba(90, 50, 110, 0.1);
+  border: 1px solid rgba(168, 196, 212, 0.1);
   border-radius: 16px;
   padding: 24px 20px;
   text-align: center;
@@ -289,7 +289,7 @@
 
 .s8-lim-card:hover {
   transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 8px 20px rgba(90, 50, 110, 0.08);
+  box-shadow: 0 8px 20px rgba(168, 196, 212, 0.08);
 }
 
 .s8-lim-icon {
@@ -306,7 +306,7 @@
 
 .s8-lim-desc {
   font-size: 0.78rem;
-  color: #8a78a0;
+  color: #B8B0A0;
   line-height: 1.6;
   margin: 0;
 }
@@ -362,7 +362,7 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #c87868, #a050d0);
+  background: linear-gradient(135deg, #E8A88B, #a050d0);
   border: 3px solid #f4ecf2;
   box-shadow: 0 0 0 2px rgba(168, 80, 208, 0.3);
   flex-shrink: 0;
@@ -412,13 +412,13 @@
 .s8-tl-title {
   font-size: 1.05rem;
   font-weight: 600;
-  color: #2d1e3a;
+  color: #F2EBD9;
   margin: 6px 0 6px;
 }
 
 .s8-tl-desc {
   font-size: 0.82rem;
-  color: #8a78a0;
+  color: #B8B0A0;
   line-height: 1.6;
   margin: 0;
 }
@@ -428,12 +428,12 @@
   text-align: center;
   margin-top: 40px;
   padding-top: 30px;
-  border-top: 1px solid rgba(90, 50, 110, 0.08);
+  border-top: 1px solid rgba(168, 196, 212, 0.08);
 }
 
 .s8-footer p {
   font-size: 0.8rem;
-  color: #b0a0b8;
+  color: #706860;
   margin: 4px 0;
 }
 
@@ -465,7 +465,7 @@
     width: 100%;
     height: 1px;
     margin: 4px 0;
-    background: linear-gradient(90deg, transparent, rgba(90, 50, 110, 0.12), transparent);
+    background: linear-gradient(90deg, transparent, rgba(168, 196, 212, 0.12), transparent);
   }
 
   .s8-lim-grid {

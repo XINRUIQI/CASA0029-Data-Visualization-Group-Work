@@ -173,7 +173,7 @@ export default function Page2Map({ activeCase, showGround, showAir, showBarriers
       >
         <Map
           mapboxAccessToken={MAPBOX_TOKEN}
-          mapStyle="mapbox://styles/mapbox/light-v11"
+          mapStyle="mapbox://styles/mapbox/dark-v11"
           reuseMaps
           onLoad={onMapLoad}
         />

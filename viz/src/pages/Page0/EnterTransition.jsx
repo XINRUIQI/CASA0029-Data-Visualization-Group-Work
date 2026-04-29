@@ -149,23 +149,24 @@ export default function EnterTransition({ active, spawnPoints, onComplete }) {
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
 
-          const fontSize = Math.min(w * 0.12, 120);
-          ctx.font = `800 ${fontSize}px -apple-system, "Helvetica Neue", sans-serif`;
+          const fontSize = Math.min(w * 0.028, 26);
+          const lineGap = fontSize * 2.2;
+          ctx.font = `400 ${fontSize}px "Kalam", cursive`;
+          ctx.letterSpacing = '2px';
 
           ctx.shadowColor = 'rgba(100, 200, 255, 0.6)';
           ctx.shadowBlur = 50 * textEased;
           ctx.fillStyle = `rgba(255, 255, 255, ${textAlpha * 0.35})`;
-          ctx.fillText('Group 3', cx, cy - 10);
+          ctx.fillText('Presented by Group 3', cx, cy - lineGap);
 
           ctx.shadowBlur = 0;
           ctx.fillStyle = `rgba(255, 255, 255, ${textAlpha})`;
-          ctx.fillText('Group 3', cx, cy - 10);
+          ctx.fillText('Presented by Group 3', cx, cy - lineGap);
 
-          const subSize = Math.min(w * 0.02, 18);
-          ctx.font = `300 ${subSize}px -apple-system, "Helvetica Neue", sans-serif`;
-          ctx.letterSpacing = '4px';
-          ctx.fillStyle = `rgba(100, 200, 255, ${textAlpha * 0.7})`;
-          ctx.fillText('CASA0029  DATA  VISUALISATION', cx, cy + fontSize * 0.5 + 20);
+          ctx.fillStyle = `rgba(255, 255, 255, ${textAlpha})`;
+          ctx.fillText('The Bartlett Centre for Advanced Spatial Analysis (CASA)', cx, cy);
+
+          ctx.fillText('University College London (UCL)', cx, cy + lineGap);
 
           ctx.restore();
         }

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Map from 'react-map-gl/mapbox';
 import DeckGL from '@deck.gl/react';
 import { GeoJsonLayer, ScatterplotLayer, ArcLayer } from '@deck.gl/layers';
@@ -73,23 +73,60 @@ function hexColor(mode, d, highlight, tw) {
   return [80, 80, 80, 40];
 }
 
+function mmNorm(v, lo, hi) {
+  if (hi <= lo) return 0;
+  return Math.min(1, Math.max(0, (v - lo) / (hi - lo)));
+}
+
 export default function Page2FrictionMap({
   barriers, activeBarriers, showBarriers, activeMode,
   h3Demand, h3Gap, h3Takeout, onHoverHex, highlightFilter,
   timeWeight = 1, odAnalysis, showOdArcs, hoveredHexData,
+  selectedDemandH3 = null, onDemandHexClick,
 }) {
   const [viewState, setViewState] = useState(VIEW);
+  const [pulsePhase, setPulsePhase] = useState(0);
+  const pulseRef = useRef(null);
+
+  useEffect(() => {
+    if (selectedDemandH3) {
+      pulseRef.current = setInterval(() => setPulsePhase(p => (p + 1) % 2), 500);
+    } else {
+      clearInterval(pulseRef.current);
+      setPulsePhase(0);
+    }
+    return () => clearInterval(pulseRef.current);
+  }, [selectedDemandH3]);
+
+  const popResBounds = useMemo(() => {
+    const rows = h3Takeout || [];
+    if (!rows.length) return { minP: 0, maxP: 1, minR: 0, maxR: 1 };
+    const pops = rows.map(t => t.pop_count ?? 0);
+    const ress = rows.map(t => t.residential_count ?? 0);
+    return {
+      minP: Math.min(...pops),
+      maxP: Math.max(...pops),
+      minR: Math.min(...ress),
+      maxR: Math.max(...ress),
+    };
+  }, [h3Takeout]);
 
   const mergedHex = useMemo(() => {
     if (!h3Demand) return null;
     const gapMap = new window.Map((h3Gap || []).map(g => [g.h3, g]));
     const takeoutMap = new window.Map((h3Takeout || []).map(t => [t.h3, t]));
+    const { minP, maxP, minR, maxR } = popResBounds;
     return h3Demand.map(d => {
       const gap = gapMap.get(d.h3);
       const tk = takeoutMap.get(d.h3);
+      const pc = tk?.pop_count ?? gap?.pop_count ?? 0;
+      const rc = tk?.residential_count ?? 0;
       return {
         ...d,
         avg_friction: gap?.avg_friction || 0,
+        avg_detour: gap?.avg_detour || 0,
+        avg_congestion: gap?.avg_congestion || 0,
+        demand_pressure: gap?.demand_pressure || d.dp || 0,
         gap_index: gap?.gap_index || 0,
         food_count: d.food || gap?.food_count || 0,
         retail_count: d.retail || gap?.retail_count || 0,
@@ -97,7 +134,9 @@ export default function Page2FrictionMap({
         med_count: d.med || gap?.medical_count || 0,
         scenic_count: d.scenic || gap?.scenic_count || 0,
         leisure_count: d.leisure || gap?.leisure_count || 0,
-        pop_count: tk?.pop_count || gap?.pop_count || 0,
+        pop_count: pc,
+        pop_n: mmNorm(pc, minP, maxP),
+        res_n: mmNorm(rc, minR, maxR),
         real_order_count: tk?.real_order_count || 0,
         real_order_density: tk?.real_order_density || 0,
         takeout_demand_index: tk?.takeout_demand_index || 0,
@@ -110,7 +149,7 @@ export default function Page2FrictionMap({
         intensity_index: gap?.intensity_index || 0,
       };
     });
-  }, [h3Demand, h3Gap, h3Takeout]);
+  }, [h3Demand, h3Gap, h3Takeout, popResBounds]);
 
   const layers = useMemo(() => {
     const result = [];
@@ -144,14 +183,36 @@ export default function Page2FrictionMap({
           getElevation: 0,
           extruded: false,
           pickable: true,
-          stroked: false,
-          updateTriggers: { getFillColor: [activeMode, highlightFilter, timeWeight] },
+          stroked: true,
+          lineWidthUnits: 'pixels',
+          getLineWidth: d => {
+            if (selectedDemandH3 && d.h3 === selectedDemandH3) return pulsePhase ? 4 : 2;
+            if (hoveredHexData?.h3 && d.h3 === hoveredHexData.h3) return 2.5;
+            return 0;
+          },
+          getLineColor: d => {
+            if (selectedDemandH3 && d.h3 === selectedDemandH3) {
+              return pulsePhase ? [255, 220, 0, 255] : [255, 180, 0, 140];
+            }
+            if (hoveredHexData?.h3 && d.h3 === hoveredHexData.h3) return [255, 220, 0, 255];
+            return [0, 0, 0, 0];
+          },
+          updateTriggers: {
+            getFillColor: [activeMode, highlightFilter, timeWeight],
+            getLineWidth: [activeMode, selectedDemandH3, hoveredHexData?.h3, pulsePhase],
+            getLineColor: [activeMode, selectedDemandH3, hoveredHexData?.h3, pulsePhase],
+          },
           onHover: info => {
             if (info.object) {
-              onHoverHex?.(info.object);
+              onHoverHex?.({ ...info.object, _x: info.x, _y: info.y });
             } else {
               onHoverHex?.(null);
             }
+          },
+          onClick: info => {
+            if (activeMode !== 'demand' || !info.object?.h3) return;
+            const next = info.object.h3 === selectedDemandH3 ? null : info.object.h3;
+            onDemandHexClick?.(next);
           },
         })
       );
@@ -234,7 +295,11 @@ export default function Page2FrictionMap({
     }
 
     return result;
-  }, [barriers, activeBarriers, showBarriers, activeMode, mergedHex, onHoverHex, highlightFilter, timeWeight, odAnalysis, showOdArcs, hoveredHexData]);
+  }, [
+    barriers, activeBarriers, showBarriers, activeMode, mergedHex, onHoverHex,
+    highlightFilter, timeWeight, odAnalysis, showOdArcs, hoveredHexData,
+    selectedDemandH3, onDemandHexClick,
+  ]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>

@@ -6,8 +6,8 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #f0e8ee;
-  color: #4a3858;
+  background: #5A89A6;
+  color: #F2EBD9;
   box-sizing: border-box;
 }
 
@@ -42,7 +42,7 @@
   font-size: 2rem;
   font-weight: 800;
   line-height: 1.2;
-  color: #2d1e3a;
+  color: #F2EBD9;
   letter-spacing: -0.01em;
   margin: 0 0 16px 0;
   text-align: center;
@@ -50,7 +50,7 @@
 
 .p4-col-body {
   font-size: 0.98rem;
-  color: #7a6890;
+  color: #D0C8B0;
   line-height: 1.85;
   text-align: center;
 }
@@ -64,7 +64,7 @@
 }
 
 .p4-col-body strong {
-  color: #2d1e3a;
+  color: #F2EBD9;
   font-weight: 600;
 }
 
@@ -90,8 +90,8 @@
 
 .p4-kpi {
   padding: 14px 12px;
-  background: rgba(255, 255, 255, 0.55);
-  border: 1px solid rgba(90, 50, 110, 0.12);
+  background: rgba(46, 94, 126, 0.55);
+  border: 1px solid rgba(168, 196, 212, 0.12);
   border-radius: 10px;
   text-align: center;
 }
@@ -99,13 +99,13 @@
 .p4-kpi-val {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #2d1e3a;
+  color: #F2EBD9;
   line-height: 1.1;
 }
 
 .p4-kpi-lab {
   font-size: 0.7rem;
-  color: #9888a8;
+  color: #A09888;
   margin-top: 6px;
   letter-spacing: 0.04em;
 }
@@ -125,7 +125,7 @@
 
 .p4-bar-label {
   font-size: 0.78rem;
-  color: #7a6890;
+  color: #D0C8B0;
   text-align: right;
   letter-spacing: 0.02em;
 }
@@ -133,7 +133,7 @@
 .p4-bar-track {
   position: relative;
   height: 16px;
-  background: rgba(90, 50, 110, 0.08);
+  background: rgba(168, 196, 212, 0.08);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -160,7 +160,7 @@
 .p4-chart-note {
   margin: 14px 0 0 0;
   font-size: 0.8rem;
-  color: #9888a8;
+  color: #A09888;
   line-height: 1.55;
   text-align: center;
 }
@@ -190,7 +190,7 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #9888a8;
+  color: #A09888;
   margin-bottom: 4px;
 }
 
@@ -203,7 +203,7 @@
 
 .p4-hbar-name {
   font-size: 0.72rem;
-  color: #7a6890;
+  color: #D0C8B0;
   text-align: right;
   text-transform: capitalize;
 }
@@ -211,7 +211,7 @@
 .p4-hbar-track {
   position: relative;
   height: 14px;
-  background: rgba(90, 50, 110, 0.06);
+  background: rgba(168, 196, 212, 0.06);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -226,7 +226,7 @@
 .p4-hbar-pct {
   font-size: 0.7rem;
   font-weight: 600;
-  color: #7a6890;
+  color: #D0C8B0;
 }
 
 /* ─── Box plot rows ─── */
@@ -246,13 +246,13 @@
 .p4-box-label {
   font-size: 0.76rem;
   font-weight: 600;
-  color: #7a6890;
+  color: #D0C8B0;
 }
 
 .p4-box-track {
   position: relative;
   height: 18px;
-  background: rgba(90, 50, 110, 0.04);
+  background: rgba(168, 196, 212, 0.04);
   border-radius: 3px;
 }
 
@@ -289,7 +289,7 @@
   display: flex;
   gap: 16px;
   font-size: 0.68rem;
-  color: #9888a8;
+  color: #A09888;
 }
 
 /* ─── Enhanced KPI grid ─── */
@@ -325,7 +325,7 @@
   max-height: 480px;
   border-radius: 16px;
   overflow: hidden;
-  border: 1px solid rgba(90, 50, 110, 0.12);
+  border: 1px solid rgba(168, 196, 212, 0.12);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
 }
 

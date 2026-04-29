@@ -436,7 +436,7 @@ export default function Page3Friction() {
                   <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
                   <YAxis type="number" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
                     label={{ value: 'Sites (n)', angle: 0, position: 'top', fill: '#555', fontSize: 10, dy: -8, dx: 20, textAnchor: 'middle' }} />
-                  <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid rgba(90, 50, 110, 0.15)', borderRadius: 8, fontSize: 12 }}
+                  <Tooltip contentStyle={{ background: '#2E5E7E', border: '1px solid rgba(168, 196, 212, 0.2)', borderRadius: 8, fontSize: 12 }}
                     labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                     formatter={(value, name) => [value, name === 'commercial' ? 'Departure Hubs' : 'Landing Hubs']} />
                   <Bar dataKey="commercial" fill="#ffa028" fillOpacity={showCommercial ? 0.85 : 0.15} maxBarSize={18} cursor="pointer"
@@ -458,7 +458,7 @@ export default function Page3Friction() {
                   <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
                   <YAxis type="number" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
                     label={{ value: 'per 万人', angle: 0, position: 'top', fill: '#555', fontSize: 10, dy: -8, dx: 24, textAnchor: 'middle' }} />
-                  <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid rgba(90, 50, 110, 0.15)', borderRadius: 8, fontSize: 12 }}
+                  <Tooltip contentStyle={{ background: '#2E5E7E', border: '1px solid rgba(168, 196, 212, 0.2)', borderRadius: 8, fontSize: 12 }}
                     labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                     formatter={(value, name) => [name === 'ratio' ? `${value} sites/万人` : value, name === 'ratio' ? 'Coverage Rate' : 'Total']} />
                   <Bar dataKey="ratio" fill="#e03030" fillOpacity={0.85} maxBarSize={22} cursor="pointer"
@@ -476,7 +476,7 @@ export default function Page3Friction() {
                   <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
                   <YAxis type="number" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
                     label={{ value: 'Sites (n)', angle: 0, position: 'top', fill: '#555', fontSize: 10, dy: -8, dx: 20, textAnchor: 'middle' }} />
-                  <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid rgba(90, 50, 110, 0.15)', borderRadius: 8, fontSize: 12 }}
+                  <Tooltip contentStyle={{ background: '#2E5E7E', border: '1px solid rgba(168, 196, 212, 0.2)', borderRadius: 8, fontSize: 12 }}
                     labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                     formatter={v => [v, POI_COLORS[contextChartType]?.label]} />
                   <Bar dataKey={contextChartType} fill={POI_COLORS[contextChartType]?.hex} fillOpacity={0.85} maxBarSize={22} cursor="pointer"

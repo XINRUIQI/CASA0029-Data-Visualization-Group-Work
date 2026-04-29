@@ -1,91 +1,61 @@
 /* ═══════════════════════════════════════════
-   Page 0 — Cover / Hero  (full rewrite)
+   Page 0 — Cover / Hero  (dark cinematic 3D)
    ═══════════════════════════════════════════ */
 
 /* ─── Section ─── */
 .page-0 {
   position: relative;
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   overflow: hidden;
 }
 
-/* ─── Background Video ─── */
+/* ─── Background (3D Canvas) ─── */
 .p0-bg-wrap {
   position: absolute;
   inset: 0;
   z-index: 0;
   overflow: hidden;
-  background: #f0e8ee;
-}
-
-/* city aerial photo — bottom layer */
-.p0-bg-city {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 40%;
-  filter: brightness(0.55) saturate(0.7);
-  z-index: 0;
-}
-
-/* dark gradient overlay — between photo and particles */
-.p0-bg-overlay {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(180deg,
-      rgba(200, 225, 250, 0.4) 0%,
-      rgba(200, 225, 250, 0.15) 35%,
-      rgba(200, 225, 250, 0.2) 65%,
-      rgba(200, 225, 250, 0.7) 100%
-    );
-  z-index: 1;
-}
-
-/* particles float above the overlay */
-.p0-particles-canvas {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 2;
+  background: #080e1a;
 }
 
 .p0-bg-video {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  top: 50%;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  transform: translate(-50%, -50%);
   object-fit: cover;
-  object-position: center 40%;
-  filter: brightness(0.55) saturate(0.7);
-  z-index: 0;
+}
+
+/* dark vignette overlay — frames the 3D scene cinematically */
+.p0-bg-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center,
+      transparent 35%,
+      rgba(8, 14, 26, 0.45) 100%
+    );
+  z-index: 1;
+  pointer-events: none;
 }
 
 .p0-bg-grain {
   position: absolute;
   inset: 0;
   z-index: 2;
-  opacity: 0.04;
-  /* Smaller 128px tile (was 256px) + fewer turbulence octaves (was 4) to
-     keep the one-time SVG rasterisation cheap. Promoted to its own GPU
-     compositing layer so the underlying video + canvas don't have to be
-     re-blended on every repaint. */
+  opacity: 0.03;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 128 128' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 128px 128px;
   pointer-events: none;
   transform: translateZ(0);
   will-change: transform;
+  mix-blend-mode: overlay;
 }
-
-/* ─── Top Bar ─── */
-/* p0-topbar styles moved to global App.css as global-topbar */
 
 /* ─── Sidebar ─── */
 .p0-sidebar {
@@ -103,13 +73,9 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 1px solid rgba(200, 120, 104, 0.25);
-  /* Solid semi-transparent fill — the previous backdrop-filter: blur(12px)
-     forced the browser to re-blur the busy video/particles background
-     on every frame for each of the 3 buttons, which was a measurable
-     compositing cost. */
-  background: rgba(255, 255, 255, 0.75);
-  color: rgba(200, 120, 104, 0.7);
+  border: 1px solid rgba(100, 160, 220, 0.2);
+  background: rgba(8, 14, 26, 0.5);
+  color: rgba(140, 190, 240, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -119,11 +85,11 @@
 
 .p0-sidebar-btn:hover,
 .p0-sidebar-btn.active {
-  border-color: #c87868;
-  background: rgba(200, 120, 104, 0.12);
-  color: #c87868;
+  border-color: rgba(100, 180, 255, 0.5);
+  background: rgba(30, 60, 100, 0.3);
+  color: #88ccff;
   transform: scale(1.12);
-  box-shadow: 0 0 20px rgba(200, 120, 104, 0.15);
+  box-shadow: 0 0 20px rgba(60, 140, 220, 0.15);
 }
 
 /* ─── Sidebar Popup ─── */
@@ -135,10 +101,10 @@
   z-index: 25;
   width: 300px;
   padding: 28px 24px;
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(10, 20, 40, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(200, 120, 104, 0.2);
+  border: 1px solid rgba(80, 140, 200, 0.2);
   border-radius: 14px;
   animation: p0-popupIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -160,7 +126,7 @@
   right: 14px;
   background: none;
   border: none;
-  color: rgba(60, 30, 70, 0.4);
+  color: rgba(140, 180, 220, 0.4);
   font-size: 1.3rem;
   cursor: pointer;
   transition: color 0.2s;
@@ -168,70 +134,83 @@
 }
 
 .p0-popup-close:hover {
-  color: #2d1e3a;
+  color: #88ccff;
 }
 
 .p0-popup-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #c87868;
+  color: #6ab8ff;
   margin-bottom: 10px;
   letter-spacing: 0.5px;
 }
 
 .p0-popup-body {
   font-size: 0.82rem;
-  color: rgba(30, 60, 100, 0.75);
+  color: rgba(160, 200, 240, 0.7);
   line-height: 1.65;
 }
 
 /* ─── Hero Content ─── */
 .p0-hero-content {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 10;
-  text-align: center;
-  max-width: 900px;
-  padding: 0 24px;
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0 8vw;
+}
+
+.p0-hero-title-group {
+  flex: 1;
+  display: flex;
   align-items: center;
+  padding-top: 8vh;
+}
+
+.p0-hero-bottom-group {
+  padding-bottom: 10vh;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
 }
 
 .p0-title {
   margin: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
+  align-items: baseline;
+  gap: 20px;
   flex-wrap: wrap;
 }
 
 .p0-title-big {
   display: block;
-  font-size: 5rem;
-  line-height: 1.1;
-  letter-spacing: -1px;
-  color: #2d1e3a;
+  font-size: 6rem;
+  line-height: 1.05;
+  letter-spacing: -2px;
+  color: #ffffff;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
 .p0-word-light {
-  /* "Delivery," — now a bolder, more distinctive geometric sans-serif
-     (Space Grotesk) instead of the previous ultra-light Inter 200, so it
-     balances visually with "elevated!" on the right. */
-  font-family: 'Space Grotesk', 'Inter', -apple-system, BlinkMacSystemFont,
-    'Helvetica Neue', sans-serif;
+  font-family: 'Helvetica Neue', 'Helvetica Now Display', Helvetica,
+    -apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 700;
   letter-spacing: 1px;
-  color: rgba(13, 33, 55, 0.95);
+  color: rgba(200, 225, 255, 0.85);
 }
 
 .p0-word-bold {
+  font-family: 'Helvetica Neue', 'Helvetica Now Display', Helvetica,
+    -apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 900;
-  color: #2d1e3a;
+  color: #ffffff;
   position: relative;
-  text-shadow: 0 0 20px rgba(200, 120, 104, 0.3);
+  text-shadow: 0 0 30px rgba(80, 160, 255, 0.35);
 }
 
 /* ─── Glitch effect ─── */
@@ -251,13 +230,13 @@
 }
 
 .p0-glitch::before {
-  color: #c87868;
+  color: #5599dd;
   z-index: -1;
   animation: p0-glitch1 3s infinite linear alternate-reverse;
 }
 
 .p0-glitch::after {
-  color: #e8a090;
+  color: #1a3a6c;
   z-index: -2;
   animation: p0-glitch2 2.5s infinite linear alternate-reverse;
 }
@@ -280,82 +259,76 @@
 
 /* ─── Subtitle ─── */
 .p0-subtitle {
-  font-size: 1.15rem;
-  color: rgba(30, 60, 100, 0.6);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.05rem;
+  color: #ffffff;
   line-height: 1.75;
-  margin-top: 28px;
-  margin-bottom: 40px;
+  margin: 0;
   text-transform: uppercase;
   letter-spacing: 2px;
   display: flex;
   align-items: center;
-  justify-content: center;
   flex-wrap: wrap;
   gap: 8px;
 }
 
 .p0-sub-light {
-  font-weight: 300;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
   letter-spacing: 2px;
 }
 
 .p0-sub-boxed {
   display: inline-block;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 800;
   font-size: 1.3rem;
-  color: #2d1e3a;
-  /* No border / background — rendered as plain emphasized text now. */
+  color: #f5e6a3;
   padding: 0;
   letter-spacing: 3px;
   transform-origin: left center;
   position: relative;
+  text-shadow: 0 0 15px rgba(245, 230, 163, 0.3);
 }
 
-/* ─── Shenzhen wrapper (keeps "in ShenZhen" glued on one line) ─── */
+/* ─── Shenzhen wrapper ─── */
 .p0-sub-shenzhen-wrap {
   position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  white-space: nowrap;   /* never let "in" and "ShenZhen" break apart */
+  white-space: nowrap;
 }
 
 .p0-sub-in {
-  /* inherits the .p0-sub-light visual weight to keep the caption rhythm,
-     but sits inside the nowrap wrapper so it moves together with
-     ShenZhen onto whichever line has room for both. */
-  font-weight: 300;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
   letter-spacing: 2px;
 }
 
-/* ─── Enter Button (square) ─── */
+/* ─── Enter Button ─── */
 .p0-enter-btn {
   position: relative;
   width: 140px;
   height: 52px;
-  border-radius: 4px;
-  border: 1.5px solid rgba(200, 120, 104, 0.4);
-  background: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  color: #c87868;
+  border-radius: 26px;
+  border: none;
+  background: #ffffff;
+  color: #000000;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 40px auto 0;
-  /* The intro/entrance animation is owned by GSAP in Page0Cover.jsx
-     (keeps choreography in one place). Previously this element had a
-     CSS `animation: p0-enterAppear 0.8s 1.4s ... both` which would run
-     in parallel and cause jumpy double-animating. */
-  transition: border-color 0.4s, background 0.4s, box-shadow 0.4s;
+  margin: 0;
+  transition: background 0.4s, box-shadow 0.4s, transform 0.4s;
 }
 
 .p0-enter-text {
   font-size: 0.95rem;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 4px;
   text-transform: uppercase;
+  color: #000000;
   position: relative;
   z-index: 2;
 }
@@ -363,8 +336,8 @@
 .p0-enter-ring {
   position: absolute;
   inset: -5px;
-  border-radius: 6px;
-  border: 1px solid rgba(200, 120, 104, 0.2);
+  border-radius: 31px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
   animation: p0-ringPulse 2.5s ease-in-out infinite;
 }
 
@@ -372,8 +345,8 @@
   content: '';
   position: absolute;
   inset: -5px;
-  border-radius: 8px;
-  border: 1px solid rgba(200, 120, 104, 0.1);
+  border-radius: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   animation: p0-ringPulse 2.5s ease-in-out infinite 0.5s;
 }
 
@@ -383,21 +356,17 @@
 }
 
 .p0-enter-btn:hover {
-  border-color: #c87868;
-  background: rgba(200, 120, 104, 0.08);
-  transform: scale(1.08);
-  box-shadow:
-    0 0 30px rgba(200, 120, 104, 0.15),
-    inset 0 0 30px rgba(200, 120, 104, 0.05);
+  background: rgba(255, 255, 255, 0.9);
+  transform: scale(1.06);
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
 }
 
 .p0-enter-btn:hover .p0-enter-text {
-  color: #2d1e3a;
-  text-shadow: 0 0 12px rgba(200, 120, 104, 0.6);
+  color: #000000;
 }
 
 .p0-enter-btn:hover .p0-enter-ring {
-  border-color: rgba(200, 120, 104, 0.35);
+  border-color: rgba(255, 255, 255, 0.4);
   animation-duration: 1.5s;
 }
 
@@ -426,10 +395,6 @@
   visibility: hidden;
 }
 
-/* While the intro overlay is playing the hero content is hidden, but
-   `visibility: hidden` alone does NOT pause CSS animations. The glitch
-   pseudo-elements, dot pulse, enter-ring pulse, etc. would still tick
-   every frame and thrash the compositor. Force-pause them here. */
 .p0-hidden,
 .p0-hidden *,
 .p0-hidden *::before,
@@ -464,7 +429,7 @@
   display: block;
   width: 1px;
   height: 36px;
-  background: linear-gradient(180deg, rgba(200, 120, 104, 0.6), transparent);
+  background: linear-gradient(180deg, rgba(100, 180, 255, 0.5), transparent);
   animation: p0-scrollPulse 2s ease-in-out infinite;
 }
 
@@ -477,7 +442,7 @@
   font-size: 0.65rem;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: rgba(60, 30, 70, 0.35);
+  color: rgba(140, 190, 240, 0.3);
 }
 
 /* ═══════════════════════════════════════════
@@ -516,9 +481,8 @@
   }
 
   .p0-hero-content {
-    padding: 0 20px;
+    padding: 0 6vw;
   }
-
 }
 
 @media (max-width: 480px) {

@@ -362,7 +362,7 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
         <Map
           ref={mapRef}
           mapboxAccessToken={MAPBOX_TOKEN}
-          mapStyle="mapbox://styles/mapbox/light-v11"
+          mapStyle="mapbox://styles/mapbox/dark-v11"
           projection="mercator"
           style={{ width: '100%', height: '100%' }}
           onLoad={e => {
@@ -395,7 +395,7 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
 
           <Source id="sz-highlight" type="geojson" data={highlightFeatures}>
             <Layer id="sz-district-highlight" type="fill" beforeId="sz-boundary-line"
-              paint={{ 'fill-color': '#e0d0e0', 'fill-opacity': 0.3 }} />
+              paint={{ 'fill-color': '#2E5E7E', 'fill-opacity': 0.5 }} />
             <Layer id="sz-district-highlight-border" type="line"
               paint={{ 'line-color': 'rgba(220,220,230,0.9)', 'line-width': 1.5 }} />
           </Source>

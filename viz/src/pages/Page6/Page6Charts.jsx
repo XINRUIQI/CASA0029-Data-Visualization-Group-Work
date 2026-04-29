@@ -190,7 +190,7 @@ export default function Page6Charts({ strategy, budget, sites, coverageTable }) 
               <Area type="monotone" dataKey="demand" stroke="#ffa028" fill="#ffa028" fillOpacity={0.15} strokeWidth={2} name="Demand %" />
               <Area type="monotone" dataKey="pop" stroke="#c864ff" fill="#c864ff" fillOpacity={0.1} strokeWidth={2} name="Population %" />
               <Area type="monotone" dataKey="area" stroke="#64c8ff" fill="#64c8ff" fillOpacity={0.08} strokeWidth={1.5} strokeDasharray="4 4" name="Area %" />
-              <Legend iconSize={8} wrapperStyle={{ fontSize: 10, color: '#8a78a0' }} />
+              <Legend iconSize={8} wrapperStyle={{ fontSize: 10, color: '#B8B0A0' }} />
             </AreaChart>
           </ResponsiveContainer>
           <p className="p6c-insight">
@@ -228,13 +228,13 @@ export default function Page6Charts({ strategy, budget, sites, coverageTable }) 
               <ResponsiveContainer width="100%" height={160}>
                 <RadarChart cx="50%" cy="50%" outerRadius={50} data={radarData}>
                   <PolarGrid stroke="#2a1e3a" />
-                  <PolarAngleAxis dataKey="dim" tick={{ fill: '#8a78a0', fontSize: 10 }} />
+                  <PolarAngleAxis dataKey="dim" tick={{ fill: '#B8B0A0', fontSize: 10 }} />
                   <PolarRadiusAxis tick={{ fill: '#555', fontSize: 8 }} domain={[0, 1]} />
                   {CLASS_ORDER.map(c => (
                     <Radar key={c} dataKey={c} stroke={CLASS_COLORS[c]} fill={CLASS_COLORS[c]}
                       fillOpacity={0.12} strokeWidth={1.5} name={c} />
                   ))}
-                  <Legend iconSize={8} wrapperStyle={{ fontSize: 10, color: '#8a78a0' }} />
+                  <Legend iconSize={8} wrapperStyle={{ fontSize: 10, color: '#B8B0A0' }} />
                   <Tooltip contentStyle={tooltipStyle} />
                 </RadarChart>
               </ResponsiveContainer>
@@ -256,7 +256,7 @@ export default function Page6Charts({ strategy, budget, sites, coverageTable }) 
               <Bar dataKey="demand" fill="#ffa028" fillOpacity={0.75} radius={[3, 3, 0, 0]} name="Demand %" />
               <Bar dataKey="pop" fill="#c864ff" fillOpacity={0.65} radius={[3, 3, 0, 0]} name="Population %" />
               <Bar dataKey="area" fill="#64c8ff" fillOpacity={0.55} radius={[3, 3, 0, 0]} name="Area %" />
-              <Legend iconSize={8} wrapperStyle={{ fontSize: 10, color: '#8a78a0' }} />
+              <Legend iconSize={8} wrapperStyle={{ fontSize: 10, color: '#B8B0A0' }} />
             </BarChart>
           </ResponsiveContainer>
           <p className="p6c-insight">
@@ -273,7 +273,7 @@ export default function Page6Charts({ strategy, budget, sites, coverageTable }) 
           <ResponsiveContainer width="100%" height={140}>
             <BarChart data={landUseData} layout="vertical" margin={{ left: 70, right: 10, top: 5, bottom: 5 }}>
               <XAxis type="number" tick={{ fill: '#555', fontSize: 10 }} />
-              <YAxis dataKey="name" type="category" tick={{ fill: '#8a78a0', fontSize: 10 }} width={65} />
+              <YAxis dataKey="name" type="category" tick={{ fill: '#B8B0A0', fontSize: 10 }} width={65} />
               <Tooltip contentStyle={tooltipStyle} />
               <Bar dataKey="value" radius={[0, 4, 4, 0]} name="Sites">
                 {landUseData.map(d => (
@@ -315,11 +315,11 @@ export default function Page6Charts({ strategy, budget, sites, coverageTable }) 
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={frictionBreak} layout="vertical" margin={{ left: 30, right: 10, top: 5, bottom: 5 }}>
               <XAxis type="number" tick={{ fill: '#555', fontSize: 10 }} domain={[0, 100]} unit="%" />
-              <YAxis dataKey="rank" type="category" tick={{ fill: '#8a78a0', fontSize: 9 }} width={28} />
+              <YAxis dataKey="rank" type="category" tick={{ fill: '#B8B0A0', fontSize: 9 }} width={28} />
               <Tooltip contentStyle={tooltipStyle} />
               <Bar dataKey="detour" stackId="a" fill="#ff8c00" fillOpacity={0.7} name="Detour %" />
               <Bar dataKey="congestion" stackId="a" fill="#ff3264" fillOpacity={0.7} radius={[0, 3, 3, 0]} name="Congestion %" />
-              <Legend iconSize={8} wrapperStyle={{ fontSize: 10, color: '#8a78a0' }} />
+              <Legend iconSize={8} wrapperStyle={{ fontSize: 10, color: '#B8B0A0' }} />
             </BarChart>
           </ResponsiveContainer>
         </div>

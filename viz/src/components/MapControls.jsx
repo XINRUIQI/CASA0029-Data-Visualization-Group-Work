@@ -64,7 +64,7 @@ export default function MapControls({
         <button className="mc-btn mc-compass" onClick={onResetBearing}
           title="Reset bearing" aria-label="Reset bearing">
           <span className="mc-compass-inner" style={{ transform: `rotate(${-bearing}deg)` }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="1.4">
               <circle cx="12" cy="12" r="9" />
               <polygon points="12,4 14.2,12 12,10.6 9.8,12" fill="#ff5a5a" stroke="#ff5a5a" />

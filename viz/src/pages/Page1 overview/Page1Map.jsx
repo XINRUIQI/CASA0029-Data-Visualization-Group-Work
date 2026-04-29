@@ -126,7 +126,7 @@ export default function Page1Map({ data, showPlanned, showExisting, flyTo }) {
       >
         <Map
           mapboxAccessToken={MAPBOX_TOKEN}
-          mapStyle="mapbox://styles/mapbox/light-v11"
+          mapStyle="mapbox://styles/mapbox/dark-v11"
           reuseMaps
         />
         {tooltip && (

@@ -5,10 +5,10 @@ const SQRT3 = Math.sqrt(3);
 const MOUSE_RADIUS = 180;
 
 const PALETTE = [
-  [210, 170, 200], // soft lavender
-  [230, 160, 150], // warm coral
-  [190, 160, 210], // lilac
-  [220, 190, 180], // dusty rose
+  [90, 137, 166],  // #5A89A6 中天蓝
+  [46, 94, 126],   // #2E5E7E 深天蓝
+  [168, 196, 212], // #A8C4D4 浅天蓝
+  [232, 168, 139], // #E8A88B 暖粉橙
 ];
 
 function lerpColor(a, b, t) {

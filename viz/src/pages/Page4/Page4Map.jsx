@@ -67,7 +67,7 @@ export default function Page4Map({ sites, candidateSites, boundary, hexGrid }) {
         {...viewState}
         onMove={e => setViewState(e.viewState)}
         mapboxAccessToken={MAPBOX_TOKEN}
-        mapStyle="mapbox://styles/mapbox/light-v11"
+        mapStyle="mapbox://styles/mapbox/dark-v11"
         projection="mercator"
         reuseMaps
         maxBounds={SHENZHEN_MAX_BOUNDS}
@@ -124,10 +124,10 @@ export default function Page4Map({ sites, candidateSites, boundary, hexGrid }) {
       <div style={{
         position: 'absolute', bottom: 14, left: 14,
         background: 'rgba(255,255,255,0.92)', borderRadius: 8,
-        padding: '8px 14px', fontSize: 11, color: '#4a3858',
+        padding: '8px 14px', fontSize: 11, color: '#F2EBD9',
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         display: 'flex', flexDirection: 'column', gap: 6,
-        zIndex: 20, border: '1px solid rgba(90,50,110,0.1)',
+        zIndex: 20, border: '1px solid rgba(168,196,212,0.1)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <PinIcon color={EXISTING_COLOR} size={12} />

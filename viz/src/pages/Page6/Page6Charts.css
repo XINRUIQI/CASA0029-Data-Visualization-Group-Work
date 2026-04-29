@@ -8,7 +8,7 @@
 
 .p6c-section h4 {
   font-size: 0.75rem;
-  color: #8a78a0;
+  color: #B8B0A0;
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-bottom: 4px;
@@ -16,18 +16,18 @@
 
 .p6c-note {
   font-size: 0.7rem;
-  color: #b0a0b8;
+  color: #706860;
   margin-bottom: 8px;
 }
 
 .p6c-insight {
   font-size: 0.72rem;
-  color: #9b59b6;
+  color: #A8C4D4;
   font-style: italic;
   margin-top: 6px;
   padding: 6px 10px;
   background: rgba(200, 100, 255, 0.1);
-  border-left: 3px solid #9b59b6;
+  border-left: 3px solid #A8C4D4;
   border-radius: 0 6px 6px 0;
   line-height: 1.4;
 }
@@ -44,18 +44,18 @@
   min-width: 0;
   margin-bottom: 0;
   padding: 10px 8px;
-  background: rgba(255, 255, 255, 0.35);
-  border: 1px solid rgba(90, 50, 110, 0.08);
+  background: rgba(46, 94, 126, 0.35);
+  border: 1px solid rgba(168, 196, 212, 0.08);
   border-radius: 10px;
 }
 
 /* Recharts legend / label color overrides */
 .p6c .recharts-legend-item-text {
-  color: #8a78a0 !important;
+  color: #B8B0A0 !important;
   font-size: 0.68rem;
 }
 
 .p6c .recharts-pie-label-text {
-  fill: #6a5878;
+  fill: #E0D8C4;
   font-size: 0.62rem;
 }

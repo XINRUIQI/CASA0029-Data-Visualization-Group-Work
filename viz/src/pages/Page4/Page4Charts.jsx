@@ -6,8 +6,8 @@ import {
 } from 'recharts';
 
 const TT_STYLE = {
-  background: '#ffffff',
-  border: '1px solid rgba(90, 50, 110, 0.15)',
+  background: '#2E5E7E',
+  border: '1px solid rgba(168, 196, 212, 0.2)',
   borderRadius: 8,
   fontSize: 12,
 };
@@ -85,19 +85,19 @@ export function OptimisationChart({ strategy }) {
     <div className="p4-chart">
       <ResponsiveContainer width="100%" height={260}>
         <LineChart data={data} margin={{ top: 14, right: 24, bottom: 28, left: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(90,50,110,0.08)" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.08)" vertical={false} />
           <XAxis
             dataKey="n" type="number" scale="log"
             domain={[3, 100]} ticks={[3, 5, 10, 20, 50, 100]}
             tick={{ fill: '#888', fontSize: 11 }}
-            axisLine={{ stroke: 'rgba(90, 50, 110, 0.15)' }}
+            axisLine={{ stroke: 'rgba(168, 196, 212, 0.15)' }}
             tickLine={false}
             label={{ value: 'Number of sites (log)', position: 'bottom', fill: '#666', fontSize: 11, offset: 6 }}
           />
           <YAxis
             domain={[0, 100]} tickFormatter={v => `${v}%`}
             tick={{ fill: '#888', fontSize: 11 }}
-            axisLine={{ stroke: 'rgba(90, 50, 110, 0.15)' }}
+            axisLine={{ stroke: 'rgba(168, 196, 212, 0.15)' }}
             tickLine={false} width={42}
           />
           <Tooltip contentStyle={TT_STYLE} labelStyle={{ color: '#aaa' }}
@@ -108,14 +108,14 @@ export function OptimisationChart({ strategy }) {
             iconType="plainline" iconSize={18} />
           <Line type="monotone" dataKey="demand" name="Demand coverage"
             stroke="#ff7a5c" strokeWidth={2.2}
-            dot={{ r: 3, stroke: '#ff7a5c', fill: '#f0e8ee', strokeWidth: 1.5 }}
+            dot={{ r: 3, stroke: '#ff7a5c', fill: '#5A89A6', strokeWidth: 1.5 }}
             activeDot={{ r: 5 }} />
           <Line type="monotone" dataKey="pop" name="Population coverage"
             stroke="#64c8ff" strokeWidth={2}
-            dot={{ r: 3, stroke: '#64c8ff', fill: '#f0e8ee', strokeWidth: 1.5 }} />
+            dot={{ r: 3, stroke: '#64c8ff', fill: '#5A89A6', strokeWidth: 1.5 }} />
           <Line type="monotone" dataKey="area" name="Area coverage"
             stroke="#8a8d99" strokeWidth={1.8} strokeDasharray="4 3"
-            dot={{ r: 2.5, stroke: '#8a8d99', fill: '#f0e8ee', strokeWidth: 1.2 }} />
+            dot={{ r: 2.5, stroke: '#8a8d99', fill: '#5A89A6', strokeWidth: 1.2 }} />
         </LineChart>
       </ResponsiveContainer>
       <p className="p4-chart-note">
@@ -276,18 +276,18 @@ export function DistanceDistributionChart({ gapZones }) {
 
       <ResponsiveContainer width="100%" height={240}>
         <BarChart data={bins} margin={{ top: 10, right: 30, bottom: 28, left: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(90,50,110,0.08)" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.08)" vertical={false} />
           <XAxis dataKey="range" tick={{ fill: '#888', fontSize: 10 }}
-            axisLine={{ stroke: 'rgba(90, 50, 110, 0.15)' }} tickLine={false}
+            axisLine={{ stroke: 'rgba(168, 196, 212, 0.15)' }} tickLine={false}
             label={{ value: 'Distance to nearest vertiport (km)', position: 'bottom', fill: '#666', fontSize: 11, offset: 6 }} />
           <YAxis tick={{ fill: '#888', fontSize: 11 }}
-            axisLine={{ stroke: 'rgba(90, 50, 110, 0.15)' }} tickLine={false} width={36} />
+            axisLine={{ stroke: 'rgba(168, 196, 212, 0.15)' }} tickLine={false} width={36} />
           <Tooltip contentStyle={TT_STYLE}
             formatter={(v, name) => [v, name === 'count' ? 'Hex count' : name]}
             labelFormatter={l => `${l} km`} />
           <Bar dataKey="count" name="Hex count" radius={[3, 3, 0, 0]}>
             {bins.map((b, i) => (
-              <Cell key={i} fill={b.km > 5 ? '#ff7a5c' : 'rgba(90, 50, 110, 0.25)'} />
+              <Cell key={i} fill={b.km > 5 ? '#ff7a5c' : 'rgba(168, 196, 212, 0.25)'} />
             ))}
           </Bar>
         </BarChart>
@@ -356,16 +356,16 @@ export function FrictionDemandScatter({ h3Gap }) {
 
       <ResponsiveContainer width="100%" height={280}>
         <ScatterChart margin={{ top: 14, right: 20, bottom: 32, left: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(90,50,110,0.08)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.08)" />
           <XAxis dataKey="friction" type="number" name="Ground friction"
             domain={[0, 'auto']}
             tick={{ fill: '#888', fontSize: 11 }}
-            axisLine={{ stroke: 'rgba(90, 50, 110, 0.15)' }} tickLine={false}
+            axisLine={{ stroke: 'rgba(168, 196, 212, 0.15)' }} tickLine={false}
             label={{ value: 'Ground friction index', position: 'bottom', fill: '#666', fontSize: 11, offset: 10 }} />
           <YAxis dataKey="demand" type="number" name="Demand pressure"
             domain={[0, 'auto']}
             tick={{ fill: '#888', fontSize: 11 }}
-            axisLine={{ stroke: 'rgba(90, 50, 110, 0.15)' }} tickLine={false} width={48}
+            axisLine={{ stroke: 'rgba(168, 196, 212, 0.15)' }} tickLine={false} width={48}
             label={{ value: 'Demand pressure', angle: -90, position: 'insideLeft', fill: '#666', fontSize: 11, offset: 4 }} />
           <ZAxis dataKey="pop" range={[20, 200]} name="Population" />
           <Tooltip contentStyle={TT_STYLE} cursor={{ strokeDasharray: '3 3' }}
@@ -374,7 +374,7 @@ export function FrictionDemandScatter({ h3Gap }) {
               if (name === 'Demand pressure') return [v.toFixed(1), name];
               return [v.toLocaleString(), name];
             }} />
-          <Scatter name="Covered" data={data.filter(d => d.covered)} fill="rgba(90,50,110,0.2)" />
+          <Scatter name="Covered" data={data.filter(d => d.covered)} fill="rgba(168,196,212,0.2)" />
           <Scatter name="Not covered" data={data.filter(d => !d.covered)} fill="#ff7a5c" fillOpacity={0.6} />
         </ScatterChart>
       </ResponsiveContainer>
@@ -543,16 +543,16 @@ export function DemandVulnerabilityBubble({ h3Gap }) {
 
       <ResponsiveContainer width="100%" height={280}>
         <ScatterChart margin={{ top: 14, right: 20, bottom: 32, left: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(90,50,110,0.08)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.08)" />
           <XAxis dataKey="intensity" type="number" name="Intensity"
             domain={[0, 'auto']}
             tick={{ fill: '#888', fontSize: 11 }}
-            axisLine={{ stroke: 'rgba(90, 50, 110, 0.15)' }} tickLine={false}
+            axisLine={{ stroke: 'rgba(168, 196, 212, 0.15)' }} tickLine={false}
             label={{ value: 'Intensity index', position: 'bottom', fill: '#666', fontSize: 11, offset: 10 }} />
           <YAxis dataKey="vulnerability" type="number" name="Vulnerability"
             domain={[0, 'auto']}
             tick={{ fill: '#888', fontSize: 11 }}
-            axisLine={{ stroke: 'rgba(90, 50, 110, 0.15)' }} tickLine={false} width={52}
+            axisLine={{ stroke: 'rgba(168, 196, 212, 0.15)' }} tickLine={false} width={52}
             label={{ value: 'Relief vulnerability', angle: -90, position: 'insideLeft', fill: '#666', fontSize: 11, offset: 4 }} />
           <ZAxis dataKey="pop" range={[20, 300]} name="Population" />
           <Tooltip contentStyle={TT_STYLE} cursor={{ strokeDasharray: '3 3' }}
@@ -560,7 +560,7 @@ export function DemandVulnerabilityBubble({ h3Gap }) {
               if (name === 'Population') return [v.toLocaleString(), name];
               return [v.toFixed(4), name];
             }} />
-          <Scatter name="Covered" data={data.filter(d => d.covered)} fill="rgba(90,50,110,0.18)" />
+          <Scatter name="Covered" data={data.filter(d => d.covered)} fill="rgba(168,196,212,0.18)" />
           <Scatter name="Uncovered" data={data.filter(d => !d.covered)} fill="#ff7a5c" fillOpacity={0.55} />
         </ScatterChart>
       </ResponsiveContainer>

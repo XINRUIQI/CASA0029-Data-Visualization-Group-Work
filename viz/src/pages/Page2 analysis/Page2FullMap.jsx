@@ -27,15 +27,6 @@ const MODE_DESC = {
   priority: 'Demand × friction — composite score: where drones create the most value',
 };
 
-const POI_ITEMS = [
-  { key: 'food_count', label: 'Food', color: '#ff8c00' },
-  { key: 'retail_count', label: 'Retail', color: '#ff3264' },
-  { key: 'edu_count', label: 'Education', color: '#64c8ff' },
-  { key: 'med_count', label: 'Medical', color: '#00e896' },
-  { key: 'scenic_count', label: 'Scenic', color: '#c864ff' },
-  { key: 'leisure_count', label: 'Leisure', color: '#ffa028' },
-];
-
 export default function Page2FullMap() {
   const navigate = useNavigate();
   const [barriers, setBarriers] = useState({});
@@ -53,6 +44,7 @@ export default function Page2FullMap() {
   const [selectedHour, setSelectedHour] = useState(11);
   const [playing, setPlaying] = useState(false);
   const playRef = useRef(null);
+  const [demandSelectedH3, setDemandSelectedH3] = useState(null);
 
   useEffect(() => {
     ['water', 'waterway', 'railway', 'highway_major'].forEach(t => {
@@ -111,6 +103,10 @@ export default function Page2FullMap() {
   }, [activeMode]);
 
   useEffect(() => {
+    if (activeMode !== 'demand') setDemandSelectedH3(null);
+  }, [activeMode]);
+
+  useEffect(() => {
     if (activeMode !== 'friction') setShowOdArcs(false);
   }, [activeMode]);
 
@@ -138,12 +134,8 @@ export default function Page2FullMap() {
     setHighlightFilter(() => filter);
   }, []);
 
-  const poiMax = hoveredHex
-    ? Math.max(...POI_ITEMS.map(p => hoveredHex[p.key] || 0), 1)
-    : 1;
-
   return (
-    <div className="p2f">
+    <div className="p2f p2f--light">
       <div className="p2f-hero-bar">
         <button
           className="p2f-back"
@@ -173,8 +165,14 @@ export default function Page2FullMap() {
             </button>
           ))}
         </div>
-        {highlightFilter && (
-          <button className="p2f-clear-hl" onClick={() => setHighlightFilter(null)}>
+        {(highlightFilter || demandSelectedH3) && (
+          <button
+            className="p2f-clear-hl"
+            onClick={() => {
+              setHighlightFilter(null);
+              setDemandSelectedH3(null);
+            }}
+          >
             Clear highlight ×
           </button>
         )}
@@ -207,62 +205,73 @@ export default function Page2FullMap() {
             odAnalysis={odAnalysis}
             showOdArcs={showOdArcs}
             hoveredHexData={hoveredHex}
+            selectedDemandH3={demandSelectedH3}
+            onDemandHexClick={(h3) => {
+              setDemandSelectedH3(h3);
+              setHighlightFilter(null);
+            }}
           />
 
           {/* Hover tooltip — per–active-mode metrics on the hex grid */}
           {hoveredHex && (
-            <div className="p2f-hex-tooltip">
+            <div
+              className="p2f-hex-tooltip"
+              style={
+                hoveredHex._x != null
+                  ? { left: hoveredHex._x + 16, top: hoveredHex._y - 8, transform: 'none' }
+                  : undefined
+              }
+            >
+              <div className="p2f-tt-mode">{activeMode}</div>
               {activeMode === 'demand' && (
-                <div className="p2f-hv-row">
-                  <div className="p2f-hv"><span>Orders</span> {hoveredHex.real_order_count?.toLocaleString() ?? '—'}</div>
-                  <div className="p2f-hv"><span>Demand</span> {hoveredHex.takeout_demand_index?.toFixed(3) ?? '—'}</div>
-                  <div className="p2f-hv"><span>1km</span> {hoveredHex.food_access_1km?.toLocaleString() ?? '—'}</div>
-                  <div className="p2f-hv"><span>2km</span> {hoveredHex.food_access_2km?.toLocaleString() ?? '—'}</div>
-                  <div className="p2f-hv"><span>3km</span> {hoveredHex.food_access_3km?.toLocaleString() ?? '—'}</div>
+                <div className="p2f-tt-grid">
+                  <div className="p2f-tt-item">
+                    <span className="p2f-tt-val">{hoveredHex.real_order_count?.toLocaleString() ?? '—'}</span>
+                    <span className="p2f-tt-label">Real Orders</span>
+                  </div>
+                  <div className="p2f-tt-item">
+                    <span className="p2f-tt-val">{hoveredHex.takeout_demand_index?.toFixed(3) ?? '—'}</span>
+                    <span className="p2f-tt-label">Demand Index</span>
+                  </div>
+                  <div className="p2f-tt-item">
+                    <span className="p2f-tt-val">{(hoveredHex.pop_n ?? 0).toFixed(3)}</span>
+                    <span className="p2f-tt-label">Population</span>
+                  </div>
+                  <div className="p2f-tt-item">
+                    <span className="p2f-tt-val">{(hoveredHex.res_n ?? 0).toFixed(3)}</span>
+                    <span className="p2f-tt-label">Residential</span>
+                  </div>
                 </div>
               )}
               {activeMode === 'supply' && (
-                <>
-                  <div className="p2f-hv-row">
-                    <div className="p2f-hv"><span>Supply</span> {hoveredHex.dp?.toFixed(1) ?? '—'}</div>
-                    <div className="p2f-hv"><span>Pop</span> {hoveredHex.pop_count?.toFixed(0) ?? '—'}</div>
+                <div className="p2f-tt-grid p2f-tt-grid--single">
+                  <div className="p2f-tt-item">
+                    <span className="p2f-tt-val">{hoveredHex.dp?.toFixed(1) ?? '—'}</span>
+                    <span className="p2f-tt-label">Supply</span>
                   </div>
-                  <div className="p2f-hv-poi">
-                    {POI_ITEMS.map(p => {
-                      const v = hoveredHex[p.key] || 0;
-                      if (v === 0) return null;
-                      return (
-                        <div key={p.key} className="p2f-poi-bar">
-                          <span className="p2f-poi-label">{p.label}</span>
-                          <div className="p2f-poi-track">
-                            <div
-                              className="p2f-poi-fill"
-                              style={{ width: `${(v / poiMax) * 100}%`, background: p.color }}
-                            />
-                          </div>
-                          <span className="p2f-poi-val">{v}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
+                </div>
               )}
               {activeMode === 'friction' && (
-                <div className="p2f-hv-row">
-                  <div className="p2f-hv"><span>Friction</span> {hoveredHex.avg_friction?.toFixed(3) ?? '—'}</div>
+                <div className="p2f-tt-grid p2f-tt-grid--single">
+                  <div className="p2f-tt-item">
+                    <span className="p2f-tt-val">{hoveredHex.avg_friction?.toFixed(3) ?? '—'}</span>
+                    <span className="p2f-tt-label">Friction</span>
+                  </div>
                 </div>
               )}
               {activeMode === 'priority' && (
-                <div className="p2f-hv-row">
-                  <div className="p2f-hv">
-                    <span>D×F</span>
-                    {(() => {
-                      const tdi = hoveredHex.takeout_demand_index ?? 0;
-                      const fr = hoveredHex.avg_friction ?? 0;
-                      const dv = Math.min(tdi, 1) * timeWeight;
-                      const fv = Math.min(fr, 1);
-                      return (dv * fv).toFixed(4);
-                    })()}
+                <div className="p2f-tt-grid p2f-tt-grid--single">
+                  <div className="p2f-tt-item">
+                    <span className="p2f-tt-val">
+                      {(() => {
+                        const tdi = hoveredHex.takeout_demand_index ?? 0;
+                        const fr = hoveredHex.avg_friction ?? 0;
+                        const dv = Math.min(tdi, 1) * timeWeight;
+                        const fv = Math.min(fr, 1);
+                        return (dv * fv).toFixed(4);
+                      })()}
+                    </span>
+                    <span className="p2f-tt-label">Demand × Friction</span>
                   </div>
                 </div>
               )}
@@ -301,6 +310,18 @@ export default function Page2FullMap() {
             </div>
           )}
 
+          {activeMode === 'demand' && (
+            <div className="p2f-demand-legend" aria-hidden="false">
+              <div className="p2f-dl-title">Fused demand index</div>
+              <div className="p2f-dl-bar" />
+              <div className="p2f-dl-labels">
+                <span>Lower</span>
+                <span>Higher</span>
+              </div>
+              <p className="p2f-dl-note">Colour scales with hourly order-weight</p>
+            </div>
+          )}
+
           {/* Demand mode: 24h timeline with slider */}
           {activeMode === 'demand' && hourlyDemand && (
             <div className="p2f-timeline">
@@ -312,7 +333,7 @@ export default function Page2FullMap() {
                   {playing ? '⏸' : '▶'}
                 </button>
                 <span className="p2f-tl-time">{String(selectedHour).padStart(2, '0')}:00</span>
-                <span className="p2f-tl-weight">weight: {timeWeight.toFixed(3)}</span>
+                <span className="p2f-tl-weight">Use timeslide to view order volumes for different time periods.</span>
                 <span className="p2f-tl-label">Meituan 654K orders</span>
               </div>
               <ResponsiveContainer width="100%" height={60}>

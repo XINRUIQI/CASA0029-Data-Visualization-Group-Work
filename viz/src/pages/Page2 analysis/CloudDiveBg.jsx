@@ -221,50 +221,9 @@ export default function CloudDiveBg({ onIntroComplete }) {
 
       const grd = ctx.createLinearGradient(0, baseY - 5, 0, baseY + 15);
       grd.addColorStop(0, `rgba(12, 15, 30, ${cityAlpha})`);
-      grd.addColorStop(1, `rgba(240, 230, 238, ${cityAlpha})`);
+      grd.addColorStop(1, `rgba(46, 94, 126, ${cityAlpha})`);
       ctx.fillStyle = grd;
       ctx.fillRect(0, baseY - 5, w, 25);
-    };
-
-    const drawDrone = (t, dp) => {
-      const droneX = w * 0.5 + Math.sin(t * 0.7) * 25;
-      const baseY = dp < 0.5
-        ? h * 0.3 + dp * h * 0.4
-        : h * 0.5 + (dp - 0.5) * h * 0.15;
-      const droneY = baseY + Math.sin(t * 1.5) * 5;
-      const droneScale = 0.8 + dp * 0.8;
-      const s = 7 * droneScale;
-
-      ctx.save();
-      ctx.translate(droneX, droneY);
-
-      ctx.fillStyle = `rgba(200, 220, 240, ${0.85 + dp * 0.15})`;
-      ctx.fillRect(-s * 0.45, -s * 0.15, s * 0.9, s * 0.3);
-
-      const armLen = s * 1.3;
-      ctx.strokeStyle = `rgba(180, 200, 220, ${0.6 + dp * 0.3})`;
-      ctx.lineWidth = 1.5 * droneScale;
-      for (const angle of [-0.6, 0.6, Math.PI - 0.6, Math.PI + 0.6]) {
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(Math.cos(angle) * armLen, Math.sin(angle) * armLen);
-        ctx.stroke();
-      }
-
-      const propSpeed = 14;
-      const propR = s * 0.65;
-      ctx.strokeStyle = `rgba(0, 232, 150, ${0.4 + dp * 0.3})`;
-      ctx.lineWidth = 1.5 * droneScale;
-      for (const angle of [-0.6, 0.6, Math.PI - 0.6, Math.PI + 0.6]) {
-        const hx = Math.cos(angle) * armLen;
-        const hy = Math.sin(angle) * armLen;
-        const pAngle = t * propSpeed + angle * 3;
-        ctx.beginPath();
-        ctx.arc(hx, hy, propR, pAngle, pAngle + Math.PI * 1.3);
-        ctx.stroke();
-      }
-
-      ctx.restore();
     };
 
     const LINGER_DURATION = 2500;
@@ -298,7 +257,6 @@ export default function CloudDiveBg({ onIntroComplete }) {
       drawSun(dp);
       drawClouds(t, dp, elapsed);
       drawCity(dp);
-      drawDrone(t, dp);
 
       animRef.current = requestAnimationFrame(draw);
     };

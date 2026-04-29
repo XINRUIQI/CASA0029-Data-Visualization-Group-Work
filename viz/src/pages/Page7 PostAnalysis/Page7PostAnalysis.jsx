@@ -678,10 +678,10 @@ export default function Page7PostAnalysis() {
               <h4>Friction Distribution</h4>
               <ResponsiveContainer width="100%" height={150}>
                 <AreaChart data={frictionDistData} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(90,50,110,0.1)" />
-                  <XAxis dataKey="range" tick={{ fill: '#9888a8', fontSize: 8 }}
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.1)" />
+                  <XAxis dataKey="range" tick={{ fill: '#A09888', fontSize: 8 }}
                     tickFormatter={v => v.toFixed(2)} interval="preserveStartEnd" />
-                  <YAxis tick={{ fill: '#9888a8', fontSize: 8 }} />
+                  <YAxis tick={{ fill: '#A09888', fontSize: 8 }} />
                   <Tooltip contentStyle={TT_STYLE}
                     labelFormatter={l => `Friction ${Number(l).toFixed(3)}`}
                     formatter={(v, name) => [v, name === 'before' ? 'Before' : 'After']} />
@@ -707,10 +707,10 @@ export default function Page7PostAnalysis() {
               <h4>Budget Efficiency</h4>
               <ResponsiveContainer width="100%" height={150}>
                 <AreaChart data={efficiencyCurve} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(90,50,110,0.1)" />
-                  <XAxis dataKey="sites" tick={{ fill: '#9888a8', fontSize: 8 }}
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.1)" />
+                  <XAxis dataKey="sites" tick={{ fill: '#A09888', fontSize: 8 }}
                     label={{ value: 'Sites', position: 'bottom', fill: '#999', fontSize: 8, offset: -2 }} />
-                  <YAxis tick={{ fill: '#9888a8', fontSize: 8 }}
+                  <YAxis tick={{ fill: '#A09888', fontSize: 8 }}
                     label={{ value: '%', angle: -90, position: 'insideLeft', fill: '#999', fontSize: 8 }} />
                   <Tooltip contentStyle={TT_STYLE}
                     formatter={(v, name) => [`${v}%`, name === 'coverage' ? 'Coverage' : 'Friction ↓']} />
@@ -730,9 +730,9 @@ export default function Page7PostAnalysis() {
               <h4>Barrier Crossings / Trip</h4>
               <ResponsiveContainer width="100%" height={140}>
                 <BarChart data={barrierComparison} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(90,50,110,0.1)" />
-                  <XAxis dataKey="type" tick={{ fill: '#9888a8', fontSize: 8 }} />
-                  <YAxis tick={{ fill: '#9888a8', fontSize: 8 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.1)" />
+                  <XAxis dataKey="type" tick={{ fill: '#A09888', fontSize: 8 }} />
+                  <YAxis tick={{ fill: '#A09888', fontSize: 8 }} />
                   <Tooltip contentStyle={TT_STYLE} />
                   <Bar dataKey="before" fill="#ff3264" fillOpacity={0.6} name="Before" radius={[3, 3, 0, 0]} />
                   <Bar dataKey="after" fill="#00e896" fillOpacity={0.6} name="After" radius={[3, 3, 0, 0]} />
@@ -821,12 +821,12 @@ export default function Page7PostAnalysis() {
               <h4>Site ROI (Score vs Coverage)</h4>
               <ResponsiveContainer width="100%" height={150}>
                 <ScatterChart margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(90,50,110,0.1)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.1)" />
                   <XAxis dataKey="score" type="number" name="Score"
-                    tick={{ fill: '#9888a8', fontSize: 8 }}
+                    tick={{ fill: '#A09888', fontSize: 8 }}
                     label={{ value: 'Score', position: 'bottom', fill: '#999', fontSize: 8, offset: -2 }} />
                   <YAxis dataKey="covered" type="number" name="Hexes Covered"
-                    tick={{ fill: '#9888a8', fontSize: 8 }}
+                    tick={{ fill: '#A09888', fontSize: 8 }}
                     label={{ value: 'Hexes', angle: -90, position: 'insideLeft', fill: '#999', fontSize: 8 }} />
                   <ZAxis range={[20, 20]} />
                   <Tooltip contentStyle={TT_STYLE}

@@ -14,9 +14,15 @@ Outputs (→ viz/public/data/):
   - h3_population.json  — [{h3_id, pop_count, pop_density, …}, …]
   - h3_building.json    — [{h3_id, building_count, avg_height, …}, …]
   - h3_gap.json         — [{h3_id, gap_index, avg_friction, covered_by_10, …}, …]
+  - page2_h3_gap.json    — same as h3_gap.json (Page2 / Page7 fetch)
   - h3_takeout.json     — [{h3_id, takeout_demand_index, food_access_1/2/3km, …}, …]
 
 All files: array of objects, keyed by h3_id, NO geometry (deck.gl H3HexagonLayer renders from h3_id).
+
+avg_friction on h3_gap: after square-grid aggregation, if ``page2_od_analysis.json`` exists,
+each OD’s ``ground_friction`` is assigned to **both** origin and destination hex (res-8),
+then per-hex **mean** replaces the legacy value for those hexes. ``friction_norm`` and
+``gap_index`` are recomputed citywide to stay consistent with notebook 11.
 """
 
 import json, os
@@ -42,6 +48,11 @@ def save(name, data):
 # ══════════════════════════════════════════
 print("Loading H3 master grid (res 8) …")
 h3_master = gpd.read_file(NB / "03 Boundary" / "data_out" / "sz_hex_grid_res8.gpkg")
+h3_master_wgs84 = h3_master[["h3_id", "geometry"]].copy()
+if h3_master_wgs84.crs is None:
+    h3_master_wgs84.set_crs(4326, inplace=True)
+else:
+    h3_master_wgs84 = h3_master_wgs84.to_crs(4326)
 print(f"  {len(h3_master)} hexagons")
 
 
@@ -163,7 +174,118 @@ for _, r in grouped.iterrows():
         else:
             rec[col] = val
     gap_records.append(rec)
+
+# ── Override avg_friction using route-line densification (every 200 m) ──
+# Falls back to OD endpoint (O+D) if route gpkg is unavailable.
+from shapely.geometry import Point as _Point
+from shapely.ops import transform as _shp_transform
+import pyproj as _pyproj
+
+ROUTES_PATH = NB / "10 OD & Ground Friction" / "data_out" / "sz_routes.gpkg"
+_SAMPLE_STEP_M = 200
+
+print("\nRoute-line densification → hex friction …")
+if ROUTES_PATH.exists():
+    _routes = gpd.read_file(ROUTES_PATH)
+    print(f"  Loaded {len(_routes)} routes from sz_routes.gpkg")
+
+    _proj_to_m = _pyproj.Transformer.from_crs("EPSG:4326", "EPSG:32650", always_xy=True).transform
+    _proj_to_ll = _pyproj.Transformer.from_crs("EPSG:32650", "EPSG:4326", always_xy=True).transform
+
+    _sample_lons, _sample_lats, _sample_gfs = [], [], []
+    for _, _row in _routes.iterrows():
+        _gf = float(_row.get("ground_friction") or 0)
+        _line_m = _shp_transform(_proj_to_m, _row.geometry)
+        _length = _line_m.length
+        if _length <= 0:
+            continue
+        _n_pts = max(2, int(_length / _SAMPLE_STEP_M) + 1)
+        for _k in range(_n_pts):
+            _frac = _k / (_n_pts - 1)
+            _pt_m = _line_m.interpolate(_frac, normalized=True)
+            _pt_ll = _shp_transform(_proj_to_ll, _pt_m)
+            _sample_lons.append(_pt_ll.x)
+            _sample_lats.append(_pt_ll.y)
+            _sample_gfs.append(_gf)
+
+    print(f"  Sampled {len(_sample_gfs):,} points ({_SAMPLE_STEP_M}m step)")
+    if _sample_gfs:
+        _pts_gdf = gpd.GeoDataFrame(
+            {"gf": _sample_gfs},
+            geometry=gpd.points_from_xy(_sample_lons, _sample_lats, crs="EPSG:4326"),
+        )
+        _joined = gpd.sjoin(_pts_gdf, h3_master_wgs84, how="inner", predicate="within")
+        _fr_mean = _joined.groupby("h3_id", observed=True)["gf"].mean()
+        _friction_by_h3 = {str(k): float(v) for k, v in _fr_mean.items()}
+        _n_assigned = sum(1 for rec in gap_records if str(rec["h3"]) in _friction_by_h3)
+        for rec in gap_records:
+            _hid = str(rec["h3"])
+            if _hid in _friction_by_h3:
+                rec["avg_friction"] = round(_friction_by_h3[_hid], 4)
+        print(f"  {len(_friction_by_h3)} hexagons with route-sampled friction ({_n_assigned} rows updated)")
+else:
+    print("  sz_routes.gpkg not found — falling back to OD endpoint (O+D) …")
+    _od_path = OUT / "page2_od_analysis.json"
+    if not _od_path.exists():
+        _od_path = OUT / "od_analysis.json"
+    if _od_path.exists():
+        with open(_od_path, encoding="utf-8") as _f:
+            _od_raw = json.load(_f)
+        _feats = _od_raw.get("features", _od_raw)
+        _rows = []
+        for _feat in _feats:
+            _p = _feat.get("properties", _feat)
+            try:
+                _gf = float(_p.get("ground_friction") or 0)
+            except (TypeError, ValueError):
+                continue
+            _rows.append((_p["o_lon"], _p["o_lat"], _gf))
+            _rows.append((_p["d_lon"], _p["d_lat"], _gf))
+        if _rows:
+            _pts = gpd.GeoDataFrame(
+                {"gf": [t[2] for t in _rows]},
+                geometry=gpd.points_from_xy([t[0] for t in _rows], [t[1] for t in _rows], crs="EPSG:4326"),
+            )
+            _joined = gpd.sjoin(_pts, h3_master_wgs84, how="inner", predicate="within")
+            _fr_mean = _joined.groupby("h3_id", observed=True)["gf"].mean()
+            _friction_by_h3 = {str(k): float(v) for k, v in _fr_mean.items()}
+            _n_assigned = sum(1 for rec in gap_records if str(rec["h3"]) in _friction_by_h3)
+            for rec in gap_records:
+                _hid = str(rec["h3"])
+                if _hid in _friction_by_h3:
+                    rec["avg_friction"] = round(_friction_by_h3[_hid], 4)
+            print(f"  OD endpoint fallback: {len(_friction_by_h3)} hexagons ({_n_assigned} rows updated)")
+    else:
+        print("  No OD data found — friction stays as square-grid aggregate only")
+
+# Recompute demand_norm, friction_norm, intensity_norm, gap_index (notebook 11 formula)
+def _norm_array(vals):
+    vals = np.asarray(vals, dtype=float)
+    mn, mx = float(vals.min()), float(vals.max())
+    if mx <= mn:
+        return np.zeros_like(vals)
+    return (vals - mn) / (mx - mn)
+
+_dp = np.array([float(rec.get("demand_pressure") or 0) for rec in gap_records])
+_af = np.array([float(rec.get("avg_friction") or 0) for rec in gap_records])
+_ii = np.array([float(rec.get("intensity_index") or 0) for rec in gap_records])
+_dn = _norm_array(_dp)
+_fn = _norm_array(_af)
+_in = _norm_array(_ii)
+for _i, rec in enumerate(gap_records):
+    _dnv = float(_dn[_i])
+    _fnv = float(_fn[_i])
+    _inv = float(_in[_i])
+    rec["demand_norm"] = round(_dnv, 4)
+    rec["friction_norm"] = round(_fnv, 4)
+    rec["intensity_norm"] = round(_inv, 4)
+    rec["gap_index"] = round(
+        0.4 * _dnv * _fnv + 0.3 * _inv * _fnv + 0.3 * _dnv * _inv,
+        4,
+    )
+
 save("h3_gap.json", gap_records)
+save("page2_h3_gap.json", gap_records)
 
 
 # ══════════════════════════════════════════
@@ -221,5 +343,6 @@ else:
 # Summary
 # ══════════════════════════════════════════
 print("\n✅ All grid data converted to H3 hex res-8!")
-print("   Files: h3_demand.json, h3_population.json, h3_building.json, h3_gap.json, h3_takeout.json")
+print("   Files: h3_demand.json, h3_population.json, h3_building.json, "
+      "h3_gap.json (+ page2_h3_gap.json), h3_takeout.json")
 print("   All keyed by h3_id — no geometry needed (deck.gl H3HexagonLayer renders natively)")
