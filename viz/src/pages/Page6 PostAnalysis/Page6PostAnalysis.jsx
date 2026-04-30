@@ -1,19 +1,16 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { cellToLatLng, latLngToCell } from 'h3-js';
 import Map from 'react-map-gl/mapbox';
 import DeckGL from '@deck.gl/react';
-import { GeoJsonLayer, ScatterplotLayer } from '@deck.gl/layers';
 import { H3HexagonLayer } from '@deck.gl/geo-layers';
-import { MAPBOX_TOKEN, SHENZHEN_CENTER } from '../../config';
+import { MAPBOX_TOKEN } from '../../config';
 import { publicDataUrl } from '../../config';
 import MapControls from '../../components/MapControls';
-import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+import { AreaChart, Area, Cell,
          ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid,
          Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './Page6PostAnalysis.css';
 
-const COVERAGE_RADIUS_KM = 3;
 const FRICTION_REDUCTION = 0.7;
 
 const LAYER_MODES = [
@@ -21,20 +18,6 @@ const LAYER_MODES = [
   { id: 'friction',   label: 'Burden',    color: '#ff3264' },
   { id: 'composite',  label: 'Composite', color: '#c864ff' },
 ];
-
-const BARRIER_TYPES = [
-  { id: 'water',         label: 'Water',      color: '#4688dc' },
-  { id: 'waterway',      label: 'Waterway',   color: '#64a0f0' },
-  { id: 'railway',       label: 'Railway',    color: '#888' },
-  { id: 'highway_major', label: 'Expressway', color: '#dc3c3c' },
-];
-
-const BARRIER_COLORS = {
-  water:         [70, 130, 220, 140],
-  waterway:      [100, 160, 240, 100],
-  railway:       [160, 160, 160, 180],
-  highway_major: [220, 60, 60, 140],
-};
 
 const BUDGETS = [20, 50, 100];
 
@@ -45,24 +28,6 @@ const VIEW = {
   pitch: 0,
   bearing: 0,
 };
-
-function haversineKm(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function compositeScore(site) {
-  const d = site.demand_norm ?? 0;
-  const f = site.friction_norm ?? 0;
-  const i = site.intensity_norm ?? 0;
-  return 0.4 * d * f + 0.3 * i * f + 0.3 * d * i;
-}
 
 const SUPPLY_RAMP = [
   [216, 232, 242],
@@ -94,33 +59,18 @@ function rampLerp(ramp, v01) {
 
 const TT_STYLE = { background: '#1a1a2e', border: '1px solid #333', borderRadius: 8, fontSize: 11 };
 
-function computeGini(values) {
-  if (!values.length) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  const n = sorted.length;
-  const mean = sorted.reduce((a, b) => a + b, 0) / n;
-  if (mean === 0) return 0;
-  let sum = 0;
-  for (let i = 0; i < n; i++) {
-    sum += (2 * (i + 1) - n - 1) * sorted[i];
-  }
-  return sum / (n * n * mean);
-}
-
 function hexColor(mode, d) {
   if (!d) return [80, 80, 80, 40];
 
   if (mode === 'acc_demand') {
     const ad = d._ad ?? 0;
-    if (ad === 0 && (d.demand_norm ?? 0) === 0) return [0, 0, 0, 0];
-    // diverging: negative (demand > accessibility) = red, positive = blue
-    if (ad < 0) {
-      const v = Math.min(Math.abs(ad), 1);
-      return [Math.round(180 + 75 * v), Math.round(80 * (1 - v)), Math.round(60 * (1 - v)), Math.round(50 + 200 * v)];
+    if (ad === 0 && (d.dn ?? 0) === 0) return [0, 0, 0, 0];
+    if (ad <= 0) {
+      return [216, 232, 242, 120];
     }
-    const v = Math.min(ad, 1);
+    const v = Math.min(ad / 3, 1);
     const rgb = rampLerp(SUPPLY_RAMP, v);
-    return [...rgb, Math.round(70 + 180 * v)];
+    return [...rgb, Math.round(60 + 195 * v)];
   }
 
   const fr = d.avg_friction || 0;
@@ -145,19 +95,11 @@ function hexColor(mode, d) {
 }
 
 export default function Page7PostAnalysis() {
-  const [barriers, setBarriers]           = useState({});
-  const [h3Demand, setH3Demand]           = useState(null);
-  const [h3Gap, setH3Gap]                 = useState(null);
-  const [h3Takeout, setH3Takeout]         = useState(null);
-  const [candidateSites, setCandidateSites] = useState(null);
-  const [routes, setRoutes]               = useState(null);
-  const [odAnalysis, setOdAnalysis]       = useState(null);
-  const [accData, setAccData]             = useState(null);
+  const [precomputed, setPrecomputed] = useState(null);
 
   const [viewState, setViewState]         = useState(VIEW);
   const [activeMode, setActiveMode]       = useState('acc_demand');
   const [budget, setBudget]               = useState(50);
-  const [showCoverage, setShowCoverage]   = useState(true);
   const [hoveredHex, setHoveredHex]       = useState(null);
   const [sliderPct, setSliderPct]         = useState(15);
   const mapCardRef = useRef(null);
@@ -178,293 +120,122 @@ export default function Page7PostAnalysis() {
   const onSliderUp = useCallback(() => { dragging.current = false; }, []);
 
   useEffect(() => {
-    ['water', 'waterway', 'railway', 'highway_major'].forEach(t => {
-      fetch(publicDataUrl(`data/page2_barrier_${t}.json`))
-        .then(r => r.json())
-        .then(data => setBarriers(prev => ({ ...prev, [t]: data })))
-        .catch(() => {});
-    });
-    fetch(publicDataUrl('data/h3_demand.json')).then(r => r.json()).then(setH3Demand).catch(() => {});
-    fetch(publicDataUrl('data/page2_h3_gap.json')).then(r => r.json()).then(setH3Gap).catch(() => {});
-    fetch(publicDataUrl('data/h3_takeout.json')).then(r => r.json()).then(setH3Takeout).catch(() => {});
-    fetch(publicDataUrl('data/page6_candidate_sites.json')).then(r => r.json()).then(setCandidateSites).catch(() => {});
-    fetch(publicDataUrl('data/page6_accessibility.json')).then(r => r.json()).then(setAccData).catch(() => {});
-    fetch(publicDataUrl('data/page2_routes.json')).then(r => r.json()).then(setRoutes).catch(() => {});
-    fetch(publicDataUrl('data/page2_od_analysis.json'))
+    fetch(publicDataUrl('data/page6_precomputed.json'))
       .then(r => r.json())
-      .then(data => setOdAnalysis(data?.features?.map(f => f.properties) || []))
+      .then(setPrecomputed)
       .catch(() => {});
   }, []);
 
-  const selectedSites = useMemo(() => {
-    if (!candidateSites) return [];
-    const scored = candidateSites.map(s => ({ ...s, score: compositeScore(s) }));
-    scored.sort((a, b) => b.score - a.score);
-    return scored.slice(0, budget);
-  }, [candidateSites, budget]);
+  const budgetData      = precomputed?.budgets?.[budget];
+  const selectedSites   = budgetData?.selectedSites ?? [];
+  const metrics         = budgetData?.metrics ?? null;
+  const frictionDistData = budgetData?.frictionDistData ?? [];
 
-  const coverageSet = useMemo(() => {
-    if (!h3Gap?.length || !selectedSites.length) return new Set();
-    const set = new Set();
-    for (const hex of h3Gap) {
-      try {
-        const [lat, lng] = cellToLatLng(hex.h3);
-        if (selectedSites.some(s => haversineKm(lat, lng, s.lat, s.lon) <= COVERAGE_RADIUS_KM)) {
-          set.add(hex.h3);
-        }
-      } catch { /* skip invalid h3 */ }
-    }
-    return set;
-  }, [h3Gap, selectedSites]);
+  const coveredSet = useMemo(() => {
+    return new Set(budgetData?.coveredH3 ?? []);
+  }, [budgetData]);
 
-  const accIndex = useMemo(() => {
-    if (!accData?.length) return null;
-    const accMap = new window.Map(accData.map(a => [a.h3, a]));
-
-    const droneHexes = [];
-    const droneHexIds = new Set();
-    for (const s of selectedSites) {
-      try {
-        const hid = latLngToCell(s.lat, s.lon, 8);
-        if (!droneHexIds.has(hid)) {
-          droneHexIds.add(hid);
-          const acc = accMap.get(hid);
-          const [lat, lon] = cellToLatLng(hid);
-          droneHexes.push({ h3: hid, lat, lon, localAcc: acc?.local_acc_count ?? 0 });
-        }
-      } catch { /* skip */ }
-    }
-
-    const extraAcc = new window.Map();
-    for (const a of droneHexes) {
-      let extra = 0;
-      for (const b of droneHexes) {
-        if (a.h3 === b.h3) continue;
-        if (haversineKm(a.lat, a.lon, b.lat, b.lon) <= COVERAGE_RADIUS_KM) {
-          extra += b.localAcc;
-        }
-      }
-      extraAcc.set(a.h3, extra);
-    }
-
-    const finals = [];
-    for (const a of accData) {
-      const ex = extraAcc.get(a.h3) ?? 0;
-      finals.push(a.local_acc_count + ex);
-    }
-    const fMin = Math.min(...finals);
-    const fMax = Math.max(...finals);
-    const fSpan = fMax > fMin ? fMax - fMin : 1;
-
-    const result = new window.Map();
-    accData.forEach((a, i) => {
-      result.set(a.h3, {
-        local_acc_index: a.local_acc_index,
-        final_acc_index: (finals[i] - fMin) / fSpan,
-      });
-    });
-    return result;
-  }, [accData, selectedSites]);
+  const adaKey = `ada${budget}`;
+  const faiKey = `fai${budget}`;
 
   const mergedHex = useMemo(() => {
-    if (!h3Demand) return null;
-    const gapMap     = new window.Map((h3Gap || []).map(g => [g.h3, g]));
-    const takeoutMap = new window.Map((h3Takeout || []).map(t => [t.h3, t]));
-
-    return h3Demand.map(d => {
-      const gap = gapMap.get(d.h3);
-      const tk  = takeoutMap.get(d.h3);
-      const isCovered   = coverageSet.has(d.h3);
-      const frictionMul = isCovered ? (1 - FRICTION_REDUCTION) : 1;
-      let lon = 0;
-      try { [, lon] = cellToLatLng(d.h3); } catch { /* skip */ }
-
-      const ai = accIndex?.get(d.h3);
-      const demandNorm = gap?.demand_norm ?? 0;
-      const localAccIdx  = ai?.local_acc_index ?? 0;
-      const finalAccIdx  = ai?.final_acc_index ?? localAccIdx;
-
+    if (!precomputed?.baseMergedHex) return null;
+    return precomputed.baseMergedHex.map(d => {
+      const covered = coveredSet.has(d.h3);
       return {
-        ...d,
-        _lon: lon,
-        dp:                  d.dp || 0,
-        demand_norm:         demandNorm,
-        acc_demand_before:   localAccIdx - demandNorm,
-        acc_demand_after:    finalAccIdx - demandNorm,
-        avg_friction:        (gap?.avg_friction || 0) * frictionMul,
-        avg_friction_before: gap?.avg_friction || 0,
-        gap_index:           (gap?.gap_index || 0) * (isCovered ? 0.4 : 1),
-        gap_index_before:    gap?.gap_index || 0,
-        food_count:    d.food    || gap?.food_count    || 0,
-        retail_count:  d.retail  || gap?.retail_count   || 0,
-        edu_count:     d.edu     || gap?.education_count || 0,
-        med_count:     d.med     || gap?.medical_count  || 0,
-        scenic_count:  d.scenic  || gap?.scenic_count   || 0,
-        leisure_count: d.leisure || gap?.leisure_count   || 0,
-        pop_count:             tk?.pop_count            || gap?.pop_count || 0,
-        takeout_demand_index:  tk?.takeout_demand_index || 0,
-        relief_vulnerability: (gap?.relief_vulnerability || 0) * (isCovered ? 0.3 : 1),
-        covered: isCovered,
+        h3: d.h3,
+        _lon: d._lon,
+        dp: d.dp,
+        dn: d.dn,
+        avg_friction: d.fr * (covered ? (1 - FRICTION_REDUCTION) : 1),
+        avg_friction_before: d.fr,
+        gap_index: d.gi * (covered ? 0.4 : 1),
+        gap_index_before: d.gi,
+        covered,
+        lai: d.lai ?? 0,
+        acc_demand_before: d.adb ?? 0,
+        acc_demand_after: d[adaKey] ?? d.adb ?? 0,
+        _fai: d[faiKey] ?? d.lai ?? 0,
       };
     });
-  }, [h3Demand, h3Gap, h3Takeout, coverageSet, accIndex]);
+  }, [precomputed, coveredSet, adaKey, faiKey]);
 
-  const metrics = useMemo(() => {
-    if (!h3Gap?.length || !mergedHex?.length) return null;
-
-    const beforeFrictions = h3Gap.filter(g => g.avg_friction > 0).map(g => g.avg_friction);
-    const afterFrictions  = mergedHex.filter(h => h.avg_friction_before > 0).map(h => h.avg_friction);
-
-    const avgBefore = beforeFrictions.length
-      ? beforeFrictions.reduce((a, b) => a + b, 0) / beforeFrictions.length : 0;
-    const avgAfter = afterFrictions.length
-      ? afterFrictions.reduce((a, b) => a + b, 0) / afterFrictions.length : 0;
-
-    const coveredCount     = coverageSet.size;
-    const totalWithFriction = beforeFrictions.length;
-    const coveragePct      = totalWithFriction > 0 ? (coveredCount / totalWithFriction * 100) : 0;
-    const frictionReduction = avgBefore > 0 ? ((avgBefore - avgAfter) / avgBefore * 100) : 0;
-
-    return {
-      avgFrictionBefore: avgBefore.toFixed(3),
-      avgFrictionAfter:  avgAfter.toFixed(3),
-      frictionReduction: frictionReduction.toFixed(1),
-      coveredHexes:      coveredCount,
-      totalHexes:        totalWithFriction,
-      coveragePct:       coveragePct.toFixed(1),
-      numSites:          selectedSites.length,
-    };
-  }, [h3Gap, mergedHex, coverageSet, selectedSites]);
-
-  const frictionDistData = useMemo(() => {
-    if (!h3Gap?.length || !mergedHex?.length) return [];
-    const binW = 0.02;
-    const beforeVals = h3Gap.filter(g => g.avg_friction > 0).map(g => g.avg_friction);
-    const afterVals = mergedHex.filter(h => h.avg_friction_before > 0).map(h => h.avg_friction);
-    const maxV = Math.max(...beforeVals, ...afterVals, 0);
-    const result = [];
-    for (let i = 0; i <= maxV + binW; i += binW) {
-      result.push({ range: +i.toFixed(3), before: 0, after: 0 });
+  const [beforeColors, afterColors] = useMemo(() => {
+    if (!mergedHex) return [null, null];
+    const before = new window.Map();
+    const after  = new window.Map();
+    for (const d of mergedHex) {
+      before.set(d.h3, hexColor(activeMode, {
+        ...d,
+        avg_friction: d.avg_friction_before,
+        gap_index: d.gap_index_before,
+        _ad: d.acc_demand_before,
+      }));
+      after.set(d.h3, hexColor(activeMode, {
+        ...d,
+        _ad: d.acc_demand_after,
+      }));
     }
-    beforeVals.forEach(v => {
-      const idx = Math.min(Math.floor(v / binW), result.length - 1);
-      if (idx >= 0) result[idx].before++;
-    });
-    afterVals.forEach(v => {
-      const idx = Math.min(Math.floor(v / binW), result.length - 1);
-      if (idx >= 0) result[idx].after++;
-    });
-    return result.filter(d => d.before > 0 || d.after > 0);
-  }, [h3Gap, mergedHex]);
+    return [before, after];
+  }, [mergedHex, activeMode]);
 
-  const efficiencyCurve = useMemo(() => {
-    if (!candidateSites?.length || !h3Gap?.length) return [];
-    const scored = candidateSites.map(s => ({ ...s, score: compositeScore(s) }));
-    scored.sort((a, b) => b.score - a.score);
-    const hexCoords = h3Gap.filter(g => g.avg_friction > 0).map(g => {
-      try {
-        const [lat, lng] = cellToLatLng(g.h3);
-        return { h3: g.h3, lat, lng, friction: g.avg_friction };
-      } catch { return null; }
-    }).filter(Boolean);
-    const totalFriction = hexCoords.reduce((s, h) => s + h.friction, 0);
-    const totalHexes = hexCoords.length;
-    if (!totalHexes || !totalFriction) return [];
-    const maxSites = Math.min(scored.length, 100);
-    const milestones = new Set([1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100]);
-    const coveredS = new Set();
-    let frictionSaved = 0;
-    const result = [{ sites: 0, coverage: 0, reduction: 0 }];
-    for (let i = 0; i < maxSites; i++) {
-      const site = scored[i];
-      for (const hex of hexCoords) {
-        if (!coveredS.has(hex.h3) && haversineKm(hex.lat, hex.lng, site.lat, site.lon) <= COVERAGE_RADIUS_KM) {
-          coveredS.add(hex.h3);
-          frictionSaved += hex.friction * FRICTION_REDUCTION;
-        }
-      }
-      if (milestones.has(i + 1)) {
-        result.push({
-          sites: i + 1,
-          coverage: +(coveredS.size / totalHexes * 100).toFixed(1),
-          reduction: +(frictionSaved / totalFriction * 100).toFixed(1),
-        });
-      }
-    }
-    return result;
-  }, [candidateSites, h3Gap]);
-
-  const barrierComparison = useMemo(() => {
-    if (!odAnalysis?.length || !metrics) return null;
-    const n = odAnalysis.length;
-    const avg = (key) => +(odAnalysis.reduce((s, d) => s + (d[key] || 0), 0) / n).toFixed(2);
-    const covPct = +metrics.coveragePct / 100;
-    const rf = 1 - covPct * FRICTION_REDUCTION;
-    return [
-      { type: 'Water', before: avg('n_water_crossings'), after: +(avg('n_water_crossings') * rf).toFixed(2) },
-      { type: 'Waterway', before: avg('n_waterway_crossings'), after: +(avg('n_waterway_crossings') * rf).toFixed(2) },
-      { type: 'Railway', before: avg('n_railway_crossings'), after: +(avg('n_railway_crossings') * rf).toFixed(2) },
-      { type: 'Highway', before: avg('n_highway_major_crossings'), after: +(avg('n_highway_major_crossings') * rf).toFixed(2) },
-    ];
-  }, [odAnalysis, metrics]);
-
-  const topImproved = useMemo(() => {
+  const adDistData = useMemo(() => {
     if (!mergedHex?.length) return [];
-    return mergedHex
-      .filter(h => h.covered && h.avg_friction_before > 0)
-      .map(h => ({
-        h3: h.h3,
-        before: h.avg_friction_before,
-        after: h.avg_friction,
-        delta: h.avg_friction_before - h.avg_friction,
-      }))
-      .sort((a, b) => b.delta - a.delta)
-      .slice(0, 8);
+    const bVals = mergedHex.map(d => d.acc_demand_before).filter(v => isFinite(v));
+    const aVals = mergedHex.map(d => d.acc_demand_after).filter(v => isFinite(v));
+    if (!bVals.length) return [];
+    const all = [...bVals, ...aVals];
+    const sorted = [...all].sort((a, b) => a - b);
+    const lo = sorted[sorted.length * 0.02 | 0];
+    const hi = sorted[sorted.length * 0.98 | 0];
+    const binW = (hi - lo) / 40;
+    if (binW <= 0) return [];
+    const nBin = 40;
+    const result = Array.from({ length: nBin }, (_, i) => ({
+      range: +(lo + (i + 0.5) * binW).toFixed(3), before: 0, after: 0,
+    }));
+    bVals.forEach(v => { const idx = Math.min(nBin - 1, Math.max(0, Math.floor((v - lo) / binW))); result[idx].before++; });
+    aVals.forEach(v => { const idx = Math.min(nBin - 1, Math.max(0, Math.floor((v - lo) / binW))); result[idx].after++; });
+    return result;
   }, [mergedHex]);
 
-  const demandCoverage = useMemo(() => {
-    if (!h3Takeout?.length || !coverageSet.size) return null;
-    const highDemand = h3Takeout.filter(d => (d.takeout_demand_index || 0) > 0.3);
-    if (!highDemand.length) return null;
-    const coveredHigh = highDemand.filter(d => coverageSet.has(d.h3));
-    return [
-      { name: 'Covered', value: coveredHigh.length, fill: '#00e896' },
-      { name: 'Uncovered', value: highDemand.length - coveredHigh.length, fill: '#ff3264' },
-    ];
-  }, [h3Takeout, coverageSet]);
+  const frDemandData = useMemo(() => {
+    if (!mergedHex?.length) return null;
+    let pts = mergedHex.filter(d => d.avg_friction_before > 0 && d.dn > 0)
+      .map(d => ({ friction: +d.avg_friction_before.toFixed(3), demand: +d.dn.toFixed(3), covered: d.covered ? 1 : 0 }));
+    if (pts.length > 500) { const every = Math.ceil(pts.length / 500); pts = pts.filter((_, i) => i % every === 0); }
+    return pts.length ? pts : null;
+  }, [mergedHex]);
 
-  const giniData = useMemo(() => {
-    if (!h3Gap?.length || !mergedHex?.length) return null;
-    const beforeVals = h3Gap.filter(g => g.avg_friction > 0).map(g => g.avg_friction);
-    const afterVals = mergedHex.filter(h => h.avg_friction_before > 0).map(h => h.avg_friction);
-    if (!beforeVals.length) return null;
-    return {
-      before: +computeGini(beforeVals).toFixed(4),
-      after: +computeGini(afterVals).toFixed(4),
-    };
-  }, [h3Gap, mergedHex]);
-
-  const siteRoi = useMemo(() => {
-    if (!selectedSites.length || !h3Gap?.length) return [];
-    const hexCoords = h3Gap.filter(g => g.avg_friction > 0).map(g => {
-      try {
-        const [lat, lng] = cellToLatLng(g.h3);
-        return { lat, lng };
-      } catch { return null; }
+  const budgetHeatmap = useMemo(() => {
+    if (!precomputed?.budgets || !precomputed?.baseMergedHex) return null;
+    const base = precomputed.baseMergedHex;
+    const labels = ['A-D Gap ↓', 'Burden ↓', 'Composite ↓'];
+    const rows = BUDGETS.map(b => {
+      const bd = precomputed.budgets[b];
+      if (!bd?.metrics) return null;
+      const m = bd.metrics;
+      const covSet = new Set(bd.coveredH3 ?? []);
+      const adaKey = `ada${b}`;
+      let negBefore = 0, negAfter = 0, giBefore = 0, giAfter = 0;
+      for (const d of base) {
+        if ((d.adb ?? 0) < 0) negBefore++;
+        if ((d[adaKey] ?? d.adb ?? 0) < 0) negAfter++;
+        if (d.gi > 0) { giBefore += d.gi; giAfter += d.gi * (covSet.has(d.h3) ? 0.4 : 1); }
+      }
+      return {
+        budget: b,
+        values: [
+          negBefore > 0 ? +((negBefore - negAfter) / negBefore * 100).toFixed(1) : 0,
+          +m.frictionReduction,
+          giBefore > 0 ? +((giBefore - giAfter) / giBefore * 100).toFixed(1) : 0,
+        ],
+      };
     }).filter(Boolean);
-    return selectedSites.map(s => ({
-      score: +s.score.toFixed(4),
-      covered: hexCoords.filter(h => haversineKm(h.lat, h.lng, s.lat, s.lon) <= COVERAGE_RADIUS_KM).length,
-    }));
-  }, [selectedSites, h3Gap]);
-
-  const toggleBarrier = (id) => {
-    setActiveBarriers(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
+    if (rows.length < 2) return null;
+    const maxVals = labels.map((_, ci) => Math.max(...rows.map(r => r.values[ci])));
+    return { rows, labels, maxVals };
+  }, [precomputed]);
 
   const splitLon = useMemo(() => {
     const w = mapCardRef.current?.clientWidth || 800;
@@ -472,73 +243,137 @@ export default function Page7PostAnalysis() {
     return viewState.longitude + (w * sliderPct / 100 - w / 2) * degPerPx;
   }, [viewState.longitude, viewState.zoom, sliderPct]);
 
+  const splitLonRef = useRef(splitLon);
+  splitLonRef.current = splitLon;
+
   const layers = useMemo(() => {
     const result = [];
 
-    if (mergedHex) {
+    if (mergedHex && beforeColors && afterColors) {
       result.push(new H3HexagonLayer({
         id: 'analysis-hex',
         data: mergedHex,
         getHexagon: d => d.h3,
         getFillColor: d => {
-          const isBefore = d._lon < splitLon;
-          const viewD = isBefore
-            ? { ...d, avg_friction: d.avg_friction_before, gap_index: d.gap_index_before, _ad: d.acc_demand_before }
-            : { ...d, _ad: d.acc_demand_after };
-          return hexColor(activeMode, viewD);
+          const cache = d._lon < splitLonRef.current ? beforeColors : afterColors;
+          return cache.get(d.h3) || [0, 0, 0, 0];
         },
         extruded: false,
         pickable: true,
         stroked: false,
-        updateTriggers: { getFillColor: [activeMode, coverageSet, splitLon, accIndex] },
+        updateTriggers: { getFillColor: [beforeColors, afterColors, splitLon] },
         onHover: info => setHoveredHex(info.object || null),
       }));
     }
 
-    if (showCoverage && selectedSites.length) {
-      const afterSites = selectedSites.filter(s => s.lon >= splitLon);
-      result.push(new ScatterplotLayer({
-        id: 'drone-coverage',
-        data: afterSites,
-        getPosition: d => [d.lon, d.lat],
-        getRadius: COVERAGE_RADIUS_KM * 1000,
-        getFillColor: [0, 232, 150, 15],
-        getLineColor: [0, 232, 150, 60],
-        lineWidthMinPixels: 1,
-        stroked: true, filled: true,
-        updateTriggers: { data: [splitLon] },
-      }));
-    }
-
-    if (selectedSites.length) {
-      const afterSites = selectedSites.filter(s => s.lon >= splitLon);
-      result.push(new ScatterplotLayer({
-        id: 'drone-glow',
-        data: afterSites,
-        getPosition: d => [d.lon, d.lat],
-        getRadius: 600,
-        getFillColor: [0, 232, 150, 50],
-        radiusMinPixels: 10, radiusMaxPixels: 30,
-        updateTriggers: { data: [splitLon] },
-      }));
-      result.push(new ScatterplotLayer({
-        id: 'drone-sites',
-        data: afterSites,
-        getPosition: d => [d.lon, d.lat],
-        getRadius: 150,
-        getFillColor: [0, 232, 150, 220],
-        radiusMinPixels: 4, radiusMaxPixels: 12,
-        pickable: true,
-        updateTriggers: { data: [splitLon] },
-      }));
-    }
-
     return result;
-  }, [activeMode, mergedHex, showCoverage, selectedSites, coverageSet, splitLon, accIndex]);
+  }, [mergedHex, beforeColors, afterColors, selectedSites, splitLon]);
 
   return (
     <section id="page-7" className="page page-7-post">
-      {/* ═══ TOP BAR ═══ */}
+      {/* ═══ OPTIMIZATION RESULTS ═══ */}
+      <div className="p6-opt-section">
+        <h2 className="p6-opt-h2">Optimisation Results</h2>
+        <p className="p6-opt-sub">Comparing key indicators before and after drone site deployment.</p>
+        <div className="p6-charts-grid">
+          {frictionDistData.length > 0 && (
+            <div className="p6-xc">
+              <h4 className="p6-xc-title">Burden Distribution</h4>
+              <ResponsiveContainer width="100%" height={180}>
+                <AreaChart data={frictionDistData} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.1)" />
+                  <XAxis dataKey="range" tick={{ fill: '#A09888', fontSize: 8 }}
+                    tickFormatter={v => v.toFixed(2)} interval="preserveStartEnd" />
+                  <YAxis tick={{ fill: '#A09888', fontSize: 8 }} />
+                  <Tooltip contentStyle={TT_STYLE}
+                    labelFormatter={l => `Burden ${Number(l).toFixed(3)}`}
+                    formatter={(v, name) => [v, name === 'before' ? 'Before' : 'After']} />
+                  <Area type="monotone" dataKey="before" stroke="#ff3264" fill="#ff3264"
+                    fillOpacity={0.2} strokeWidth={1.5} name="before" />
+                  <Area type="monotone" dataKey="after" stroke="#00e896" fill="#00e896"
+                    fillOpacity={0.2} strokeWidth={1.5} name="after" />
+                  <Legend formatter={v => v === 'before' ? 'Before' : 'After'} />
+                </AreaChart>
+              </ResponsiveContainer>
+              <p className="p6-xc-note">Green curve shifts left — burden reduced in covered hexagons.</p>
+            </div>
+          )}
+
+          {adDistData.length > 0 && (
+            <div className="p6-xc">
+              <h4 className="p6-xc-title">A − D Distribution</h4>
+              <ResponsiveContainer width="100%" height={180}>
+                <AreaChart data={adDistData} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.1)" />
+                  <XAxis dataKey="range" tick={{ fill: '#A09888', fontSize: 8 }}
+                    tickFormatter={v => v.toFixed(2)} interval="preserveStartEnd" />
+                  <YAxis tick={{ fill: '#A09888', fontSize: 8 }} />
+                  <Tooltip contentStyle={TT_STYLE}
+                    labelFormatter={l => `A − D: ${Number(l).toFixed(3)}`}
+                    formatter={(v, name) => [v, name === 'before' ? 'Before' : 'After']} />
+                  <Area type="monotone" dataKey="before" stroke="#ff3264" fill="#ff3264"
+                    fillOpacity={0.2} strokeWidth={1.5} name="before" />
+                  <Area type="monotone" dataKey="after" stroke="#00e896" fill="#00e896"
+                    fillOpacity={0.2} strokeWidth={1.5} name="after" />
+                  <Legend formatter={v => v === 'before' ? 'Before' : 'After'} />
+                </AreaChart>
+              </ResponsiveContainer>
+              <p className="p6-xc-note">Green curve shifts right — accessibility gap reduced after drone deployment.</p>
+            </div>
+          )}
+
+          {frDemandData && (
+            <div className="p6-xc">
+              <h4 className="p6-xc-title">Friction vs Demand (by Coverage)</h4>
+              <ResponsiveContainer width="100%" height={180}>
+                <ScatterChart margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.1)" />
+                  <XAxis dataKey="friction" type="number" name="Friction" tick={{ fill: '#A09888', fontSize: 8 }}
+                    label={{ value: 'Friction', position: 'bottom', fill: '#999', fontSize: 8, offset: -2 }} />
+                  <YAxis dataKey="demand" type="number" name="Demand" tick={{ fill: '#A09888', fontSize: 8 }}
+                    label={{ value: 'Demand', angle: -90, position: 'insideLeft', fill: '#999', fontSize: 8 }} />
+                  <ZAxis range={[15, 15]} />
+                  <Tooltip contentStyle={TT_STYLE} formatter={(v, n) => [v, n]} />
+                  <Scatter data={frDemandData}>
+                    {frDemandData.map((d, i) => (
+                      <Cell key={i} fill={d.covered ? '#00e896' : '#ff3264'} fillOpacity={0.6} />
+                    ))}
+                  </Scatter>
+                </ScatterChart>
+              </ResponsiveContainer>
+              <p className="p6-xc-note">Green = drone-covered. High-friction + high-demand = priority targets.</p>
+            </div>
+          )}
+
+          {budgetHeatmap && (
+            <div className="p6-xc">
+              <h4 className="p6-xc-title">Budget × Metric Comparison</h4>
+              <div className="p6-heatmap">
+                <div className="p6-hm-header">
+                  <div className="p6-hm-corner" />
+                  {budgetHeatmap.labels.map(l => <div key={l} className="p6-hm-col-label">{l}</div>)}
+                </div>
+                {budgetHeatmap.rows.map(r => (
+                  <div key={r.budget} className="p6-hm-row">
+                    <div className="p6-hm-row-label">+{r.budget}</div>
+                    {r.values.map((v, ci) => {
+                      const intensity = budgetHeatmap.maxVals[ci] > 0 ? v / budgetHeatmap.maxVals[ci] : 0;
+                      return (
+                        <div key={ci} className="p6-hm-cell" style={{ background: `rgba(0,232,150,${(0.1 + intensity * 0.5).toFixed(2)})` }}>
+                          {v.toFixed(1)}%
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+              <p className="p6-xc-note">Darker = stronger improvement. Compare metrics across deployment scales.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ═══ CONTROL BAR ═══ */}
       <div className="p6-topbar">
         <div className="p6-tab-group">
           {LAYER_MODES.map(m => (
@@ -593,32 +428,32 @@ export default function Page7PostAnalysis() {
           />
 
           {hoveredHex && (
-            <div className="p6-hex-tooltip">
+            <div className="p6-hex-tooltip" style={{ color: '#E5E7EB' }}>
               {activeMode === 'acc_demand' && (
                 <div className="p6-hv-row">
-                  <div className="p6-hv"><span>A − D</span> {hoveredHex.acc_demand_after?.toFixed(3) ?? '—'}</div>
+                  <div className="p6-hv" style={{ color: '#E5E7EB' }}><span style={{ color: '#E5E7EB' }}>A − D</span> {hoveredHex.acc_demand_after?.toFixed(3) ?? '—'}</div>
                   {hoveredHex.covered && (
-                    <div className="p6-hv p6-hv-strike"><span>Before</span> {hoveredHex.acc_demand_before?.toFixed(3) ?? '—'}</div>
+                    <div className="p6-hv p6-hv-strike" style={{ color: '#E5E7EB' }}><span style={{ color: '#E5E7EB' }}>Before</span> {hoveredHex.acc_demand_before?.toFixed(3) ?? '—'}</div>
                   )}
-                  {hoveredHex.covered && <div className="p6-hv-badge">Drone covered</div>}
+                  {hoveredHex.covered && <div className="p6-hv-badge" style={{ color: '#E5E7EB' }}>Drone covered</div>}
                 </div>
               )}
               {activeMode === 'friction' && (
                 <div className="p6-hv-row">
-                  <div className="p6-hv"><span>Burden</span> {hoveredHex.avg_friction?.toFixed(3) ?? '—'}</div>
+                  <div className="p6-hv" style={{ color: '#E5E7EB' }}><span style={{ color: '#E5E7EB' }}>Burden</span> {hoveredHex.avg_friction?.toFixed(3) ?? '—'}</div>
                   {hoveredHex.covered && (
-                    <div className="p6-hv p6-hv-strike"><span>Before</span> {hoveredHex.avg_friction_before?.toFixed(3) ?? '—'}</div>
+                    <div className="p6-hv p6-hv-strike" style={{ color: '#E5E7EB' }}><span style={{ color: '#E5E7EB' }}>Before</span> {hoveredHex.avg_friction_before?.toFixed(3) ?? '—'}</div>
                   )}
-                  {hoveredHex.covered && <div className="p6-hv-badge">Drone covered</div>}
+                  {hoveredHex.covered && <div className="p6-hv-badge" style={{ color: '#E5E7EB' }}>Drone covered</div>}
                 </div>
               )}
               {activeMode === 'composite' && (
                 <div className="p6-hv-row">
-                  <div className="p6-hv"><span>Gap</span> {hoveredHex.gap_index?.toFixed(4) ?? '—'}</div>
+                  <div className="p6-hv" style={{ color: '#E5E7EB' }}><span style={{ color: '#E5E7EB' }}>Gap</span> {hoveredHex.gap_index?.toFixed(4) ?? '—'}</div>
                   {hoveredHex.covered && (
-                    <div className="p6-hv p6-hv-strike"><span>Before</span> {hoveredHex.gap_index_before?.toFixed(4) ?? '—'}</div>
+                    <div className="p6-hv p6-hv-strike" style={{ color: '#E5E7EB' }}><span style={{ color: '#E5E7EB' }}>Before</span> {hoveredHex.gap_index_before?.toFixed(4) ?? '—'}</div>
                   )}
-                  {hoveredHex.covered && <div className="p6-hv-badge">Drone covered</div>}
+                  {hoveredHex.covered && <div className="p6-hv-badge" style={{ color: '#E5E7EB' }}>Drone covered</div>}
                 </div>
               )}
             </div>
@@ -635,25 +470,119 @@ export default function Page7PostAnalysis() {
           <div className="p6-slider-label p6-slider-before" style={{ right: `${100 - sliderPct + 2}%` }}>BEFORE</div>
           <div className="p6-slider-label p6-slider-after" style={{ left: `${sliderPct + 2}%` }}>AFTER</div>
 
-          <div className="p6-summary-bar">
-            +{selectedSites.length} drone sites: burden reduced by {metrics?.frictionReduction ?? '—'}% in covered areas
+          {/* ── Map Legend ── */}
+          <div className="p6-map-legend">
+            {activeMode === 'acc_demand' && (
+              <>
+                <span className="p6-ml-title">A − D</span>
+                {[
+                  { color: 'rgb(216,232,242)', label: '≤ 0' },
+                  { color: 'rgb(184,214,230)', label: '0.3' },
+                  { color: 'rgb(148,194,216)', label: '0.5' },
+                  { color: 'rgb(90,137,166)', label: '1.0' },
+                  { color: 'rgb(44,88,126)', label: '2.0' },
+                  { color: 'rgb(10,38,72)', label: '≥ 3' },
+                ].map(s => (
+                  <div key={s.label} className="p6-ml-item">
+                    <span className="p6-ml-swatch" style={{ background: s.color }} />
+                    <span className="p6-ml-label">{s.label}</span>
+                  </div>
+                ))}
+              </>
+            )}
+            {activeMode === 'friction' && (
+              <>
+                <span className="p6-ml-title">Burden</span>
+                {[
+                  { color: 'rgb(255,235,175)', label: '0' },
+                  { color: 'rgb(255,200,130)', label: '0.1' },
+                  { color: 'rgb(255,160,90)', label: '0.2' },
+                  { color: 'rgb(255,120,60)', label: '0.3' },
+                  { color: 'rgb(255,80,30)', label: '0.4' },
+                  { color: 'rgb(240,40,10)', label: '> 0.5' },
+                ].map(s => (
+                  <div key={s.label} className="p6-ml-item">
+                    <span className="p6-ml-swatch" style={{ background: s.color }} />
+                    <span className="p6-ml-label">{s.label}</span>
+                  </div>
+                ))}
+              </>
+            )}
+            {activeMode === 'composite' && (
+              <>
+                <span className="p6-ml-title">Composite</span>
+                {[
+                  { color: 'rgb(118,238,168)', label: '0' },
+                  { color: 'rgb(160,180,190)', label: '0.1' },
+                  { color: 'rgb(190,140,200)', label: '0.2' },
+                  { color: 'rgb(210,100,210)', label: '0.4' },
+                  { color: 'rgb(235,60,230)', label: '0.6' },
+                  { color: 'rgb(255,0,255)', label: '> 0.8' },
+                ].map(s => (
+                  <div key={s.label} className="p6-ml-item">
+                    <span className="p6-ml-swatch" style={{ background: s.color }} />
+                    <span className="p6-ml-label">{s.label}</span>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
+
         </div>
         </div>
 
         {/* ─── RIGHT: panel (33.33%) ─── */}
         <div className="p6-panel-half">
         <div className="p6-panel">
-          <h3 className="p6-panel-title">Before vs After Drone Deployment</h3>
+          <h3 className="p6-panel-title">
+            {activeMode === 'acc_demand' && 'Accessibility − Demand Gap'}
+            {activeMode === 'friction' && 'Ground Friction Burden'}
+            {activeMode === 'composite' && 'Composite Gap Index'}
+          </h3>
 
           <div className="p6-method-note">
-            <p>
-              <strong>Accessibility − Demand</strong> identifies spatial mismatch:
-              zones where delivery demand exceeds local service accessibility.
-              Accessibility is defined as the total POIs within a cell and all
-              neighbouring cells within a 3 km buffer. Negative A − D values
-              mark priority intervention zones for drone deployment.
-            </p>
+            {activeMode === 'acc_demand' && (
+              <p>
+                This view identifies <strong>spatial mismatch</strong>: zones
+                where delivery demand exceeds local service accessibility.
+                It is calculated as the difference between a cell's accessibility
+                (total POIs reachable within a 3 km buffer) and its normalised
+                demand index. A <strong>positive value</strong> means supply
+                exceeds demand, while a <strong>negative value</strong> marks
+                under-served areas where demand outstrips available services.
+                By adding drone sites, we extend each cell's reachable supply
+                pool, shifting A − D toward positive values and reducing
+                service deserts.
+              </p>
+            )}
+            {activeMode === 'friction' && (
+              <p>
+                This view maps <strong>ground-level delivery burden</strong> —
+                the physical difficulty of last-mile travel caused by terrain
+                slope, building density, and road network barriers.
+                It is calculated as a normalised friction cost (0 – 1) averaged
+                across each H3 cell. A <strong>higher value</strong> means
+                deliveries in that zone face greater obstacles, while a
+                <strong> value near zero</strong> indicates smooth, low-cost
+                ground access. By deploying drone sites, we bypass
+                ground-level barriers entirely, reducing average burden
+                by up to 70 % in covered areas.
+              </p>
+            )}
+            {activeMode === 'composite' && (
+              <p>
+                This view combines accessibility gap and friction burden into
+                a single <strong>composite priority score</strong>, highlighting
+                zones that suffer from both poor access and high delivery cost.
+                It is calculated as a weighted product of demand, friction,
+                and inverse accessibility (0.4 · D · F + 0.3 · I · F + 0.3 · D · I).
+                A <strong>higher value</strong> flags the most critical
+                intervention zones, while a <strong>value near zero</strong> indicates
+                the area is already well-served. By placing drone hubs in
+                high-composite cells, we simultaneously improve accessibility
+                and reduce ground friction where it matters most.
+              </p>
+            )}
           </div>
 
           {metrics && (
@@ -688,237 +617,6 @@ export default function Page7PostAnalysis() {
             </div>
           )}
 
-          {metrics && (
-            <div className="p6-comparison">
-              <h4>Burden Comparison</h4>
-              <div className="p6-comp-row">
-                <span className="p6-comp-label">Before</span>
-                <div className="p6-comp-track">
-                  <div
-                    className="p6-comp-fill p6-comp-before"
-                    style={{ width: '100%' }}
-                  />
-                </div>
-                <span className="p6-comp-val">{metrics.avgFrictionBefore}</span>
-              </div>
-              <div className="p6-comp-row">
-                <span className="p6-comp-label">After</span>
-                <div className="p6-comp-track">
-                  <div
-                    className="p6-comp-fill p6-comp-after"
-                    style={{ width: `${(+metrics.avgFrictionAfter / Math.max(+metrics.avgFrictionBefore, 0.001)) * 100}%` }}
-                  />
-                </div>
-                <span className="p6-comp-val">{metrics.avgFrictionAfter}</span>
-              </div>
-              <div className="p6-comp-row">
-                <span className="p6-comp-label">Covered</span>
-                <div className="p6-comp-track">
-                  <div
-                    className="p6-comp-fill p6-comp-coverage"
-                    style={{ width: `${metrics.coveragePct}%` }}
-                  />
-                </div>
-                <span className="p6-comp-val">{metrics.coveredHexes}/{metrics.totalHexes}</span>
-              </div>
-            </div>
-          )}
-
-          {/* ═══ CHARTS ═══ */}
-          {frictionDistData.length > 0 && (
-            <div className="p6-chart-section">
-              <h4>Burden Distribution</h4>
-              <ResponsiveContainer width="100%" height={150}>
-                <AreaChart data={frictionDistData} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.1)" />
-                  <XAxis dataKey="range" tick={{ fill: '#A09888', fontSize: 8 }}
-                    tickFormatter={v => v.toFixed(2)} interval="preserveStartEnd" />
-                  <YAxis tick={{ fill: '#A09888', fontSize: 8 }} />
-                  <Tooltip contentStyle={TT_STYLE}
-                    labelFormatter={l => `Burden ${Number(l).toFixed(3)}`}
-                    formatter={(v, name) => [v, name === 'before' ? 'Before' : 'After']} />
-                  <Area type="monotone" dataKey="before" stroke="#ff3264" fill="#ff3264"
-                    fillOpacity={0.2} strokeWidth={1.5} name="before" />
-                  <Area type="monotone" dataKey="after" stroke="#00e896" fill="#00e896"
-                    fillOpacity={0.2} strokeWidth={1.5} name="after" />
-                  <Legend formatter={v => v === 'before' ? 'Before' : 'After'} />
-                </AreaChart>
-              </ResponsiveContainer>
-              <p className="p6-chart-note">
-Green curve shifts left — burden reduced in covered hexagons.
-              </p>
-            </div>
-          )}
-
-          {efficiencyCurve.length > 1 && (
-            <div className="p6-chart-section">
-              <h4>Budget Efficiency</h4>
-              <ResponsiveContainer width="100%" height={150}>
-                <AreaChart data={efficiencyCurve} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.1)" />
-                  <XAxis dataKey="sites" tick={{ fill: '#A09888', fontSize: 8 }}
-                    label={{ value: 'Sites', position: 'bottom', fill: '#999', fontSize: 8, offset: -2 }} />
-                  <YAxis tick={{ fill: '#A09888', fontSize: 8 }}
-                    label={{ value: '%', angle: -90, position: 'insideLeft', fill: '#999', fontSize: 8 }} />
-                  <Tooltip contentStyle={TT_STYLE}
-                    formatter={(v, name) => [`${v}%`, name === 'coverage' ? 'Coverage' : 'Burden ↓']} />
-                  <Area type="monotone" dataKey="coverage" stroke="#64c8ff" fill="#64c8ff"
-                    fillOpacity={0.15} strokeWidth={1.5} name="coverage" />
-                  <Area type="monotone" dataKey="reduction" stroke="#00e896" fill="#00e896"
-                    fillOpacity={0.15} strokeWidth={1.5} name="reduction" />
-                  <Legend formatter={v => v === 'coverage' ? 'Coverage %' : 'Burden Reduction %'} />
-                </AreaChart>
-              </ResponsiveContainer>
-              <p className="p6-chart-note">Diminishing returns: early sites cover the most high-burden area.</p>
-            </div>
-          )}
-
-          {barrierComparison && (
-            <div className="p6-chart-section">
-              <h4>Barrier Crossings / Trip</h4>
-              <ResponsiveContainer width="100%" height={140}>
-                <BarChart data={barrierComparison} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.1)" />
-                  <XAxis dataKey="type" tick={{ fill: '#A09888', fontSize: 8 }} />
-                  <YAxis tick={{ fill: '#A09888', fontSize: 8 }} />
-                  <Tooltip contentStyle={TT_STYLE} />
-                  <Bar dataKey="before" fill="#ff3264" fillOpacity={0.6} name="Before" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="after" fill="#00e896" fillOpacity={0.6} name="After" radius={[3, 3, 0, 0]} />
-                  <Legend />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {topImproved.length > 0 && (
-            <div className="p6-chart-section">
-              <h4>Most Improved Hexagons</h4>
-              <div className="p6-improved-list">
-                {topImproved.map((hex, i) => (
-                  <div key={hex.h3} className="p6-imp-row">
-                    <span className="p6-imp-rank">#{i + 1}</span>
-                    <div className="p6-imp-bars">
-                      <div className="p6-imp-before"
-                        style={{ width: `${(hex.before / topImproved[0].before) * 100}%` }} />
-                      <div className="p6-imp-after"
-                        style={{ width: `${(hex.after / topImproved[0].before) * 100}%` }} />
-                    </div>
-                    <span className="p6-imp-delta">-{(hex.delta / hex.before * 100).toFixed(0)}%</span>
-                  </div>
-                ))}
-              </div>
-              <p className="p6-chart-note">Red = before, green = after. Covered hexagons with largest burden drop.</p>
-            </div>
-          )}
-
-          {demandCoverage && (
-            <div className="p6-chart-section">
-              <h4>High-Demand Area Coverage</h4>
-              <div className="p6-donut-wrap">
-                <ResponsiveContainer width="100%" height={150}>
-                  <PieChart>
-                    <Pie data={demandCoverage} cx="50%" cy="50%"
-                      innerRadius={38} outerRadius={60} paddingAngle={3} dataKey="value">
-                      {demandCoverage.map((d, i) => (
-                        <Cell key={i} fill={d.fill} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={TT_STYLE}
-                      formatter={(v, name) => [v, name]} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="p6-donut-center">
-                  {((demandCoverage[0].value / Math.max(demandCoverage[0].value + demandCoverage[1].value, 1)) * 100).toFixed(0)}%
-                </div>
-              </div>
-              <p className="p6-chart-note">High-demand hexagons (index &gt; 0.3) covered by drone sites.</p>
-            </div>
-          )}
-
-          {giniData && (
-            <div className="p6-chart-section">
-              <h4>Spatial Equity (Gini)</h4>
-              <div className="p6-gini">
-                <div className="p6-gini-row">
-                  <span className="p6-gini-label">Before</span>
-                  <div className="p6-gini-track">
-                    <div className="p6-gini-fill p6-gini-before"
-                      style={{ width: `${Math.min(giniData.before * 100, 100)}%` }} />
-                  </div>
-                  <span className="p6-gini-val">{giniData.before.toFixed(4)}</span>
-                </div>
-                <div className="p6-gini-row">
-                  <span className="p6-gini-label">After</span>
-                  <div className="p6-gini-track">
-                    <div className="p6-gini-fill p6-gini-after"
-                      style={{ width: `${Math.min(giniData.after * 100, 100)}%` }} />
-                  </div>
-                  <span className="p6-gini-val">{giniData.after.toFixed(4)}</span>
-                </div>
-              </div>
-              <p className="p6-chart-note">
-                Lower = more equal distribution.
-                {giniData.before > 0 && ` Change: ${((giniData.before - giniData.after) / giniData.before * 100).toFixed(1)}% more equitable.`}
-              </p>
-            </div>
-          )}
-
-          {siteRoi.length > 0 && (
-            <div className="p6-chart-section">
-              <h4>Site ROI (Score vs Coverage)</h4>
-              <ResponsiveContainer width="100%" height={150}>
-                <ScatterChart margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.1)" />
-                  <XAxis dataKey="score" type="number" name="Score"
-                    tick={{ fill: '#A09888', fontSize: 8 }}
-                    label={{ value: 'Score', position: 'bottom', fill: '#999', fontSize: 8, offset: -2 }} />
-                  <YAxis dataKey="covered" type="number" name="Hexes Covered"
-                    tick={{ fill: '#A09888', fontSize: 8 }}
-                    label={{ value: 'Hexes', angle: -90, position: 'insideLeft', fill: '#999', fontSize: 8 }} />
-                  <ZAxis range={[20, 20]} />
-                  <Tooltip contentStyle={TT_STYLE}
-                    formatter={(v, name) => [v, name]} />
-                  <Scatter data={siteRoi} fill="#ffa028" fillOpacity={0.7} />
-                </ScatterChart>
-              </ResponsiveContainer>
-              <p className="p6-chart-note">Each dot = one drone site. Top-right = best return on investment.</p>
-            </div>
-          )}
-
-          {(
-            <div className="p6-budget-info">
-              <h4>Drone Site Budget</h4>
-              <p className="p6-budget-desc">
-                Adding <strong>{selectedSites.length}</strong> drone sites (ranked by composite
-                score: 0.4·D·F + 0.3·I·F + 0.3·D·I) with a 3 km coverage radius reduces
-                average ground burden by <strong>{metrics?.frictionReduction ?? '—'}%</strong>.
-              </p>
-              <div className="p6-budget-visual">
-                {BUDGETS.map(b => (
-                  <button
-                    key={b}
-                    className={`p6-bv-btn ${budget === b ? 'active' : ''}`}
-                    onClick={() => setBudget(b)}
-                  >
-                    <div className="p6-bv-num">+{b}</div>
-                    <div className="p6-bv-label">sites</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="p6-insight">
-            <p>
-              Drag the slider to compare before vs after.
-              With <strong>{selectedSites.length}</strong> drone sites,
-              {metrics ? ` ${metrics.coveragePct}% of high-burden areas are covered. ` : ' '}
-              Drone-connected grids share accessibility — two sites within 3 km
-              each gain access to the other's local supply pool, shifting the
-              A − D balance toward positive values.
-            </p>
-          </div>
         </div>
         </div>
       </div>

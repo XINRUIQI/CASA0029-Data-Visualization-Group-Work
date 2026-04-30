@@ -143,6 +143,12 @@ export default function Page2FullMap() {
   return (
     <div className="p2f p2f--light">
       <div className="p2f-hero-bar">
+        <button
+          className="p2f-back"
+          onClick={() => navigate('/', { state: { scrollTo: 'page-2' } })}
+        >
+          ← Back
+        </button>
         <div className="p2f-hero-text">
           <h2 className="p2f-hero-title">Where Should Drone Delivery Be Prioritised?</h2>
           <p className="p2f-hero-desc">
@@ -163,12 +169,6 @@ export default function Page2FullMap() {
           }
         >
           <div className="p2f-tab-group p2f-tab-group--map">
-            <button
-              className="p2f-back"
-              onClick={() => navigate('/', { state: { scrollTo: 'page-2' } })}
-            >
-              ← Back
-            </button>
             {LAYER_MODES.map(m => (
               <button
                 key={m.id}

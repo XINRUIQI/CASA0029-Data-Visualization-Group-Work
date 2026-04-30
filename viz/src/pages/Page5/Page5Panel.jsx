@@ -97,11 +97,15 @@ function fmtMin(sec) {
 }
 function fmtKm(m) { return (m / 1000).toFixed(1) + ' km'; }
 
-export default function Page5Panel({ onResult, onClear, pickMode, setPickMode, injectedPoint, tallBuildings, defaultOrigin }) {
+function sameCoord(a, b) {
+  return a && b && a[0] === b[0] && a[1] === b[1];
+}
+
+export default function Page5Panel({ onResult, onClear, pickMode, setPickMode, injectedPoint, tallBuildings, defaultOrigin, defaultDest }) {
   const [originQ,      setOriginQ]      = useState(defaultOrigin?.name ?? '');
-  const [destQ,        setDestQ]        = useState('');
+  const [destQ,        setDestQ]        = useState(defaultDest?.name ?? '');
   const [originCoords, setOriginCoords] = useState(defaultOrigin?.coords ?? null);
-  const [destCoords,   setDestCoords]   = useState(null);
+  const [destCoords,   setDestCoords]   = useState(defaultDest?.coords ?? null);
   const [loading,      setLoading]      = useState(false);
   const [error,        setError]        = useState('');
   const [result,       setResult]       = useState(null);
@@ -127,39 +131,42 @@ export default function Page5Panel({ onResult, onClear, pickMode, setPickMode, i
       if (!orig) { setError(`Location not found: "${originQ}"`); return; }
       if (!dest) { setError(`Location not found: "${destQ}"`);   return; }
 
-      // Replace input fields with English geocoded names
       setOriginQ(orig.name);
       setDestQ(dest.name);
 
+      const isDirect =
+        sameCoord(orig.coords, defaultOrigin?.coords) &&
+        sameCoord(dest.coords, defaultDest?.coords);
+
       const directDist = straightDist(orig.coords, dest.coords);
 
-      if (directDist < HUB_DIST_M * 2.5) {
+      if (!isDirect && directDist < HUB_DIST_M * 2.5) {
         setError('Locations are too close for drone delivery to be effective (min ~1.25 km).');
         return;
       }
 
-      const hub1 = pointAlongLine(orig.coords, dest.coords, HUB_DIST_M);
-      const hub2 = pointAlongLine(dest.coords, orig.coords, HUB_DIST_M);
+      const hub1 = isDirect ? orig.coords : pointAlongLine(orig.coords, dest.coords, HUB_DIST_M);
+      const hub2 = isDirect ? dest.coords : pointAlongLine(dest.coords, orig.coords, HUB_DIST_M);
 
-      // ── Constraint 1: drone flight segment (hub1→hub2) must be ≤ 3 km ──
-      const arcDirect = straightDist(hub1, hub2);
-      if (arcDirect > DRONE_MAX_M) {
-        setError(`Drone flight segment is ${fmtKm(arcDirect)} — air range is limited to ${fmtKm(DRONE_MAX_M)}.`);
-        return;
+      if (!isDirect) {
+        const arcCheck = straightDist(hub1, hub2);
+        if (arcCheck > DRONE_MAX_M) {
+          setError(`Drone flight segment is ${fmtKm(arcCheck)} — air range is limited to ${fmtKm(DRONE_MAX_M)}.`);
+          return;
+        }
       }
 
       const [leg1, leg2, ground] = await Promise.all([
-        getRoute(orig.coords, hub1,        'cycling'),
-        getRoute(hub2,        dest.coords, 'cycling'),
+        isDirect ? Promise.resolve(null) : getRoute(orig.coords, hub1, 'cycling'),
+        isDirect ? Promise.resolve(null) : getRoute(hub2, dest.coords, 'cycling'),
         getRoute(orig.coords, dest.coords, 'cycling'),
       ]);
 
       if (!ground) { setError('Unable to fetch route. Please check network.'); return; }
 
-      const leg1Sec = leg1?.duration ?? straightDist(orig.coords, hub1) / DRONE_SPEED;
-      const leg2Sec = leg2?.duration ?? straightDist(hub2, dest.coords) / DRONE_SPEED;
+      const leg1Sec = isDirect ? 0 : (leg1?.duration ?? straightDist(orig.coords, hub1) / DRONE_SPEED);
+      const leg2Sec = isDirect ? 0 : (leg2?.duration ?? straightDist(hub2, dest.coords) / DRONE_SPEED);
 
-      // ── Constraint 2: avoid buildings > 110 m ──
       let arcDist = straightDist(hub1, hub2);
       let arcSec  = arcDist / DRONE_SPEED;
       let droneWaypoint = null;
@@ -181,12 +188,13 @@ export default function Page5Panel({ onResult, onClear, pickMode, setPickMode, i
         originName:  orig.name,
         destName:    dest.name,
         hub1, hub2,
+        directFlight: isDirect,
         droneWaypoint,
         buildingDetour,
         drone: {
-          leg1: leg1 ?? { coords: [orig.coords, hub1], distance: HUB_DIST_M, duration: leg1Sec },
+          leg1: isDirect ? null : (leg1 ?? { coords: [orig.coords, hub1], distance: HUB_DIST_M, duration: leg1Sec }),
           arcDist, arcSec,
-          leg2: leg2 ?? { coords: [hub2, dest.coords], distance: HUB_DIST_M, duration: leg2Sec },
+          leg2: isDirect ? null : (leg2 ?? { coords: [hub2, dest.coords], distance: HUB_DIST_M, duration: leg2Sec }),
           totalDuration: leg1Sec + arcSec + leg2Sec,
         },
         ground: {
@@ -206,10 +214,11 @@ export default function Page5Panel({ onResult, onClear, pickMode, setPickMode, i
   };
 
   const handleClear = () => {
-    setResult(null); setDestQ('');
+    setResult(null);
     setOriginQ(defaultOrigin?.name ?? '');
     setOriginCoords(defaultOrigin?.coords ?? null);
-    setDestCoords(null);
+    setDestQ(defaultDest?.name ?? '');
+    setDestCoords(defaultDest?.coords ?? null);
     setError(''); onClear();
   };
 
@@ -217,6 +226,12 @@ export default function Page5Panel({ onResult, onClear, pickMode, setPickMode, i
     if (!defaultOrigin) return;
     setOriginQ(defaultOrigin.name);
     setOriginCoords(defaultOrigin.coords);
+  };
+
+  const resetDestToDefault = () => {
+    if (!defaultDest) return;
+    setDestQ(defaultDest.name);
+    setDestCoords(defaultDest.coords);
   };
 
   const togglePick = (mode) => setPickMode(pickMode === mode ? null : mode);
@@ -233,12 +248,11 @@ export default function Page5Panel({ onResult, onClear, pickMode, setPickMode, i
       <div className="p5-header-card">
         <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#e8904a', marginBottom: '6px' }}>How to use the map?</div>
         <div className="p5-default-note">
-          A drone departure hub is pre-selected as the default origin. You can compare directly by choosing a destination, or pick your own origin.
+          A default drone route is pre-loaded between two vertiport stations — direct flight with no couriers. Click <strong>"Search"</strong> to compare instantly, or customise your own origin / destination.
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <div className="p5-panel-desc"><span style={{ fontWeight: 700, color: '#e8904a' }}>Step 1 —</span> Pick a destination: click <strong>"Pick 02"</strong> or type an address below.</div>
-          <div className="p5-panel-desc"><span style={{ fontWeight: 700, color: '#e8904a' }}>Step 2 —</span> Click <strong>"Search"</strong> to compare drone vs. rider delivery times.</div>
-          <div className="p5-panel-desc" style={{ color: 'rgba(255,255,255,0.6)' }}><span style={{ fontWeight: 700, color: 'rgba(232,144,74,0.6)' }}>Optional —</span> Change the origin by clicking <strong>"Pick 01"</strong> or typing a new address.</div>
+          <div className="p5-panel-desc"><span style={{ fontWeight: 700, color: '#e8904a' }}>Quick start —</span> Click <strong>"Search"</strong> to compare the default drone route vs. rider.</div>
+          <div className="p5-panel-desc"><span style={{ fontWeight: 700, color: '#e8904a' }}>Or customise —</span> Use <strong>"Pick 01" / "Pick 02"</strong> or type addresses to set your own origin &amp; destination.</div>
         </div>
         <div className="p5-panel-inputs">
           <div className="p5-input-row">
@@ -261,10 +275,17 @@ export default function Page5Panel({ onResult, onClear, pickMode, setPickMode, i
 
           <div className="p5-input-row">
             <label className="p5-input-label">Destination Point</label>
-            <button className={`p5-pick-btn ${pickMode === 'destination' ? 'active' : ''}`}
-              onClick={() => togglePick('destination')} title="Click on map to set destination">
-              {pickMode === 'destination' ? '✕ Cancel' : '📍 Pick 02'}
-            </button>
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              {defaultDest && destQ !== defaultDest.name && (
+                <button className="p5-default-btn" onClick={resetDestToDefault} title="Reset to default landing hub">
+                  ↻ Default Hub
+                </button>
+              )}
+              <button className={`p5-pick-btn ${pickMode === 'destination' ? 'active' : ''}`}
+                onClick={() => togglePick('destination')} title="Click on map to set destination">
+                {pickMode === 'destination' ? '✕ Cancel' : '📍 Pick 02'}
+              </button>
+            </div>
           </div>
           <input className="p5-input" placeholder="e.g. Shenzhen North Station"
             value={destQ} onChange={e => { setDestQ(e.target.value); setDestCoords(null); }}
@@ -307,9 +328,14 @@ export default function Page5Panel({ onResult, onClear, pickMode, setPickMode, i
                   <span className="p5-route-time">{fmtMin(result.drone.totalDuration)}</span>
                 </div>
                 <div className="p5-route-detail">
-                  Ride {fmtMin(result.drone.leg1.duration)} →&nbsp;
-                  Fly {fmtMin(result.drone.arcSec)} ({fmtKm(result.drone.arcDist)}) →&nbsp;
-                  Ride {fmtMin(result.drone.leg2.duration)}
+                  {result.directFlight
+                    ? `Direct flight ${fmtMin(result.drone.arcSec)} · ${fmtKm(result.drone.arcDist)}`
+                    : <>
+                        Ride {fmtMin(result.drone.leg1.duration)} →&nbsp;
+                        Fly {fmtMin(result.drone.arcSec)} ({fmtKm(result.drone.arcDist)}) →&nbsp;
+                        Ride {fmtMin(result.drone.leg2.duration)}
+                      </>
+                  }
                 </div>
               </div>
 

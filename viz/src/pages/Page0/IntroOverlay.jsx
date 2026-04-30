@@ -1,12 +1,9 @@
 import { useEffect, useRef, useCallback } from 'react';
 
-const PHASE_CIRCLES = 900;
-const PHASE_MERGE = 2700;   // was 700ms — slowed by +2s so the two circles
-                            //            crawl toward each other
-const PHASE_TEXT = 1800;    // longer hold so the tagline has time to breathe
-const PHASE_EXPAND = 1700;  // was 900ms — pill now expands to full screen
-                            //            nearly twice as slowly for a more
-                            //            cinematic "open-up" feel
+const PHASE_CIRCLES = 500;
+const PHASE_MERGE = 1200;
+const PHASE_TEXT = 1200;
+const PHASE_EXPAND = 900;
 
 export default function IntroOverlay({ onComplete }) {
   const canvasRef = useRef(null);
@@ -147,9 +144,8 @@ export default function IntroOverlay({ onComplete }) {
           ctx.save();
           ctx.textAlign = 'center';
           ctx.textBaseline = 'top';
-          // Bigger (was min(w*0.022, 22)) and sits lower below the pill
           const fontSize = Math.min(w * 0.036, 36);
-          ctx.font = `300 ${fontSize}px -apple-system, "Helvetica Neue", sans-serif`;
+          ctx.font = `700 ${fontSize}px -apple-system, "Helvetica Neue", sans-serif`;
           ctx.fillStyle = `rgba(180, 200, 220, ${textAlpha * 0.9})`;
           ctx.fillText('Say goodbye to soggy french fries.', cx, cy + 150);
           ctx.restore();

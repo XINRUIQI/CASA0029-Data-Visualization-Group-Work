@@ -7,6 +7,13 @@ function ParticleBg() {
     const ctx = canvas.getContext('2d');
     let raf;
     let pts = [];
+    let visible = true;
+
+    const obs = new IntersectionObserver(
+      ([entry]) => { visible = entry.isIntersecting; },
+      { rootMargin: '200px' }
+    );
+    obs.observe(canvas);
 
     const resize = () => {
       canvas.width  = canvas.offsetWidth;
@@ -27,6 +34,8 @@ function ParticleBg() {
 
     const LINK_DIST = 90;
     const draw = () => {
+      raf = requestAnimationFrame(draw);
+      if (!visible) return;
       const W = canvas.width, H = canvas.height;
       ctx.clearRect(0, 0, W, H);
       for (const p of pts) {
@@ -54,10 +63,9 @@ function ParticleBg() {
         ctx.fillStyle = `rgba(200,205,215,${p.a})`;
         ctx.fill();
       }
-      raf = requestAnimationFrame(draw);
     };
     draw();
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
+    return () => { cancelAnimationFrame(raf); ro.disconnect(); obs.disconnect(); };
   }, []);
 
   return (
@@ -300,7 +308,7 @@ const SLICES = [
     cardSubtitle: null,
     detail:
       'Low-altitude activity surged across Shenzhen in 2024. Helicopter operations reached 28,000 flights, carrying 136,800 passengers and expanding into medical rescue, business travel, and cross-border transport. Unmanned cargo flights reached 776,000 — up 27% year-on-year — spanning express delivery, on-demand consumer logistics, and medical services.',
-    color: PALETTE[3],
+    color: '#E8A88B',
     num: '04',
   },
   {
@@ -420,7 +428,7 @@ export default function Page1Slices() {
                 {i === 3 && <ScalingChart />}
                 {i === 4 && (
                   <div className="p1s-card-img-wrap">
-                    <img src={`${import.meta.env.BASE_URL}images/future.png`} alt="Low-altitude economy future" className="p1s-card-img" />
+                    <img src={`${import.meta.env.BASE_URL}images/future1.png`} alt="Low-altitude economy future" className="p1s-card-img" />
                   </div>
                 )}
               </div>

@@ -12,6 +12,14 @@ export default function EnterTransition({ active, spawnPoints, onComplete }) {
   const animRef = useRef(null);
   const startRef = useRef(null);
 
+  const bgImgRef = useRef(null);
+
+  useEffect(() => {
+    const img = new Image();
+    img.src = `${import.meta.env.BASE_URL}images/enter.png`;
+    img.onload = () => { bgImgRef.current = img; };
+  }, []);
+
   const run = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -80,8 +88,21 @@ export default function EnterTransition({ active, spawnPoints, onComplete }) {
       } else {
         bgAlpha = 1;
       }
-      ctx.fillStyle = `rgba(5, 5, 24, ${bgAlpha})`;
-      ctx.fillRect(0, 0, w, h);
+      const bgImg = bgImgRef.current;
+      if (bgImg) {
+        ctx.save();
+        ctx.globalAlpha = bgAlpha;
+        const imgRatio = bgImg.width / bgImg.height;
+        const screenRatio = w / h;
+        let dw, dh;
+        if (screenRatio > imgRatio) { dw = w; dh = w / imgRatio; }
+        else { dh = h; dw = h * imgRatio; }
+        ctx.drawImage(bgImg, (w - dw) / 2, (h - dh) / 2, dw, dh);
+        ctx.restore();
+      } else {
+        ctx.fillStyle = `rgba(5, 5, 24, ${bgAlpha})`;
+        ctx.fillRect(0, 0, w, h);
+      }
 
       const showParticles = elapsed < T_RETREAT_END;
 
@@ -151,7 +172,7 @@ export default function EnterTransition({ active, spawnPoints, onComplete }) {
 
           const fontSize = Math.min(w * 0.028, 26);
           const lineGap = fontSize * 2.2;
-          ctx.font = `400 ${fontSize}px "Kalam", cursive`;
+          ctx.font = `400 ${fontSize}px -apple-system, "Helvetica Neue", sans-serif`;
           ctx.letterSpacing = '2px';
 
           ctx.shadowColor = 'rgba(100, 200, 255, 0.6)';

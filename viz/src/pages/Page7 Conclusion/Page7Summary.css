@@ -11,7 +11,7 @@
   margin: 0 auto;
   padding: 64px 0 44px;
   display: grid;
-  grid-template-rows: minmax(260px, 0.72fr) minmax(300px, 0.88fr);
+  grid-template-rows: minmax(230px, 0.62fr) minmax(300px, 0.88fr);
   gap: 18px;
 }
 
@@ -87,11 +87,13 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
+  align-items: start;
 }
 
 .s8-text-card {
+  height: clamp(300px, 34vh, 360px);
   border-radius: 18px;
-  padding: clamp(22px, 3vw, 34px);
+  padding: clamp(18px, 2.4vw, 26px) clamp(22px, 3vw, 34px);
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -124,7 +126,7 @@
 
 .s8-text-card h2 {
   position: relative;
-  margin: 28px 0 12px;
+  margin: 16px 0 12px;
   color: inherit;
   font-size: clamp(1.35rem, 2.2vw, 2rem);
   line-height: 1.08;
@@ -385,6 +387,7 @@
   }
 
   .s8-text-card {
+    height: auto;
     min-height: 220px;
   }
 

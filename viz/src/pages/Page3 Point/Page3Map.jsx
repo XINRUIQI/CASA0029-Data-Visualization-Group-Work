@@ -314,16 +314,28 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
     });
   }, [activeTab, tab3Data, districtStats, onDistrictFocus]);
 
+  const lastHoverDistRef = useRef(null);
+  const hoverThrottleRef = useRef(0);
   const handleDeckHover = useCallback((info) => {
+    const now = performance.now();
+    if (now - hoverThrottleRef.current < 32) return;
+    hoverThrottleRef.current = now;
+
     const map = mapRef.current?.getMap?.();
     if (!map) return;
     const features = map.queryRenderedFeatures([info.x, info.y], { layers: ['sz-boundary-fill'] });
     if (!features || features.length === 0) {
-      setDistrictPanel(null);
-      setHoverDistrict(null);
+      if (lastHoverDistRef.current !== null) {
+        lastHoverDistRef.current = null;
+        setDistrictPanel(null);
+        setHoverDistrict(null);
+      }
       return;
     }
     const featureName = features[0].properties.name;
+    if (featureName === lastHoverDistRef.current) return;
+    lastHoverDistRef.current = featureName;
+
     setHoverDistrict(featureName);
     const enName   = DISTRICT_EN[featureName] || featureName;
     const distInfo = DISTRICT_INFO[featureName] || {};

@@ -264,61 +264,72 @@ export default function Page3Friction() {
     'Nanshan':   188, 'Futian':   153, 'Luohu':   116,
   };
 
+  const siteDistrictMap = useMemo(() => {
+    if (!sites || !boundary) return null;
+    return sites.map(s => {
+      const pt = turfPoint([s.lon, s.lat]);
+      for (const f of boundary.features) {
+        if (booleanPointInPolygon(pt, f))
+          return DISTRICT_EN[f.properties.name] || f.properties.name.replace('区', '');
+      }
+      return null;
+    });
+  }, [sites, boundary]);
+
   const districtContextStats = useMemo(() => {
-    if (!sites || !boundary) return [];
+    if (!siteDistrictMap || !sites || !boundary) return [];
     const types = Object.keys(POI_COLORS);
-    return boundary.features.map(feature => {
-      const name = DISTRICT_EN[feature.properties.name] || feature.properties.name.replace('区', '');
+    const buckets = {};
+    boundary.features.forEach(f => {
+      const name = DISTRICT_EN[f.properties.name] || f.properties.name.replace('区', '');
       const row = { name };
       types.forEach(t => { row[t] = 0; });
-      sites.forEach(s => {
-        const pt = turfPoint([s.lon, s.lat]);
-        if (booleanPointInPolygon(pt, feature)) {
-          const poi = s.dominant_poi;
-          if (poi && row[poi] !== undefined) row[poi]++;
-        }
-      });
-      return row;
-    }).sort((a, b) => {
+      buckets[name] = row;
+    });
+    sites.forEach((s, i) => {
+      const dist = siteDistrictMap[i];
+      if (dist && buckets[dist]) {
+        const poi = s.dominant_poi;
+        if (poi && buckets[dist][poi] !== undefined) buckets[dist][poi]++;
+      }
+    });
+    return Object.values(buckets).sort((a, b) => {
       const sumA = types.reduce((s, k) => s + a[k], 0);
       const sumB = types.reduce((s, k) => s + b[k], 0);
       return sumB - sumA;
     });
-  }, [sites, boundary]);
+  }, [sites, siteDistrictMap, boundary]);
 
   const districtCoverageStats = useMemo(() => {
-    if (!sites || !boundary) return [];
-    return boundary.features.map(feature => {
-      const name = DISTRICT_EN[feature.properties.name] || feature.properties.name.replace('区', '');
-      let total = 0;
-      sites.forEach(s => {
-        const pt = turfPoint([s.lon, s.lat]);
-        if (booleanPointInPolygon(pt, feature)) total++;
-      });
+    if (!siteDistrictMap || !sites || !boundary) return [];
+    const counts = {};
+    boundary.features.forEach(f => {
+      const name = DISTRICT_EN[f.properties.name] || f.properties.name.replace('区', '');
+      counts[name] = 0;
+    });
+    siteDistrictMap.forEach(dist => { if (dist && counts[dist] !== undefined) counts[dist]++; });
+    return Object.entries(counts).map(([name, total]) => {
       const pop = DISTRICT_POP[name] || 1;
-      return {
-        name,
-        total,
-        ratio: parseFloat((total / pop).toFixed(2)),
-      };
+      return { name, total, ratio: parseFloat((total / pop).toFixed(2)) };
     }).sort((a, b) => b.ratio - a.ratio);
-  }, [sites, boundary]);
+  }, [siteDistrictMap, sites, boundary]);
 
   const districtStats = useMemo(() => {
-    if (!sites || !boundary) return [];
-    return boundary.features.map(feature => {
-      const name = DISTRICT_EN[feature.properties.name] || feature.properties.name.replace('区', '');
-      let commercial = 0, last_mile = 0;
-      sites.forEach(s => {
-        const pt = turfPoint([s.lon, s.lat]);
-        if (booleanPointInPolygon(pt, feature)) {
-          if (s.zone_type === 'commercial') commercial++;
-          else if (s.zone_type === 'last_mile') last_mile++;
-        }
-      });
-      return { name, commercial, last_mile };
-    }).sort((a, b) => (b.commercial + b.last_mile) - (a.commercial + a.last_mile));
-  }, [sites, boundary]);
+    if (!siteDistrictMap || !sites || !boundary) return [];
+    const buckets = {};
+    boundary.features.forEach(f => {
+      const name = DISTRICT_EN[f.properties.name] || f.properties.name.replace('区', '');
+      buckets[name] = { name, commercial: 0, last_mile: 0 };
+    });
+    sites.forEach((s, i) => {
+      const dist = siteDistrictMap[i];
+      if (dist && buckets[dist]) {
+        if (s.zone_type === 'commercial') buckets[dist].commercial++;
+        else if (s.zone_type === 'last_mile') buckets[dist].last_mile++;
+      }
+    });
+    return Object.values(buckets).sort((a, b) => (b.commercial + b.last_mile) - (a.commercial + a.last_mile));
+  }, [sites, siteDistrictMap, boundary]);
 
   const chartData = useMemo(() => {
     if (!siteStats) return [];
@@ -342,29 +353,26 @@ export default function Page3Friction() {
   }
 
   const odMatrix = useMemo(() => {
-    if (!sites || !boundary) return null;
+    if (!sites || !boundary || !siteDistrictMap) return null;
     const names = boundary.features.map(f =>
       DISTRICT_EN[f.properties.name] || f.properties.name.replace('区', '')
     );
-    const siteDistrict = (s) => {
-      const pt = turfPoint([s.lon, s.lat]);
-      for (const f of boundary.features) {
-        if (booleanPointInPolygon(pt, f))
-          return DISTRICT_EN[f.properties.name] || f.properties.name.replace('区', '');
-      }
-      return null;
-    };
-    const hubs = sites.filter(s => s.zone_type === 'commercial');
-    const lms  = sites.filter(s => s.zone_type === 'last_mile');
+    const hubIndices = [], lmIndices = [];
+    sites.forEach((s, i) => {
+      if (s.zone_type === 'commercial') hubIndices.push(i);
+      else if (s.zone_type === 'last_mile') lmIndices.push(i);
+    });
     const matrix = {};
     names.forEach(o => { matrix[o] = {}; names.forEach(d => { matrix[o][d] = 0; }); });
     let maxVal = 0;
-    hubs.forEach(hub => {
-      const oName = siteDistrict(hub);
+    hubIndices.forEach(hi => {
+      const hub = sites[hi];
+      const oName = siteDistrictMap[hi];
       if (!oName) return;
-      lms.forEach(lm => {
+      lmIndices.forEach(li => {
+        const lm = sites[li];
         if (haversineKm([hub.lon, hub.lat], [lm.lon, lm.lat]) <= FLIGHT_RADIUS_KM) {
-          const dName = siteDistrict(lm);
+          const dName = siteDistrictMap[li];
           if (!dName) return;
           matrix[oName][dName]++;
           if (matrix[oName][dName] > maxVal) maxVal = matrix[oName][dName];
@@ -377,7 +385,7 @@ export default function Page3Friction() {
       return sumB - sumA;
     });
     return { names: sorted, matrix, maxVal };
-  }, [sites, boundary]);
+  }, [sites, boundary, siteDistrictMap]);
 
   return (
     <section id="page-3" className="page page-3">

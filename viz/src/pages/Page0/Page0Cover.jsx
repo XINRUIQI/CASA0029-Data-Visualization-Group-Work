@@ -42,11 +42,9 @@ export default function Page0Cover() {
   }, [introDone]);
 
   // Safety fallback: ensure intro completes even if animation fails.
-  // IntroOverlay's natural run-time is ~7.1s (900+2700+1800+1700), so we
-  // give it a comfortable margin before forcing the page forward.
   useEffect(() => {
     if (introDone) return;
-    const timer = setTimeout(() => setIntroDone(true), 9000);
+    const timer = setTimeout(() => setIntroDone(true), 5000);
     return () => clearTimeout(timer);
   }, [introDone]);
 
@@ -148,19 +146,20 @@ export default function Page0Cover() {
             <span className="p0-title-big">
               <span className="p0-word-light">Delivery,</span>
               {' '}
-              <span className="p0-word-bold p0-glitch" data-text="elevated!">elevated!</span>
+              <span className="p0-word-bold">elevated!</span>
             </span>
           </h1>
+        </div>
+
+        <div className="p0-hero-bottom-group">
           <p className="p0-subtitle">
-            <span className="p0-sub-light">We are exploring how drone take-off and landing sites can be optimally located in Shenzhen through multi-objective spatial optimisation, balancing delivery demand, service coverage, operational efficiency, and urban constraints. So, where should drone delivery hubs be located?</span>
+            <span className="p0-sub-light">Exploring how drone take-off and landing sites can be optimally located<br />in <span className="p0-highlight">Shenzhen</span> through multi-objective spatial optimisation.</span>
           </p>
           <button className={`p0-enter-btn ${transitioning ? 'p0-enter-hide' : ''}`} onClick={handleEnter}>
             <span className="p0-enter-text">Enter</span>
             <span className="p0-enter-ring" />
           </button>
         </div>
-
-        <div className="p0-hero-bottom-group" />
       </div>
 
       <EnterTransition active={transitioning} spawnPoints={spawnPoints} onComplete={handleTransitionComplete} />

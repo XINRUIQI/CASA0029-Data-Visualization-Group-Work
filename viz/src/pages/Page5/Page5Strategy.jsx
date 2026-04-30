@@ -8,7 +8,12 @@ const N = 80;
 
 const DEFAULT_ORIGIN = {
   coords: [114.063796, 22.560153],
-  name: 'UpperHills (Drone Hub)',
+  name: 'UpperHills (Departure Hub)',
+};
+
+const DEFAULT_DEST = {
+  coords: [114.043844, 22.555514],
+  name: 'Jingzhou Building (Landing Hub)',
 };
 
 function sampleRoutes(features, n) {
@@ -51,7 +56,7 @@ export default function Page5Strategy() {
   const [pickMode,        setPickMode]        = useState(null);
   const [injectedPoint,   setInjectedPoint]   = useState(null);
   const [pickedOrigin,    setPickedOrigin]    = useState(DEFAULT_ORIGIN.coords);
-  const [pickedDest,      setPickedDest]      = useState(null);
+  const [pickedDest,      setPickedDest]      = useState(DEFAULT_DEST.coords);
 
   useEffect(() => {
     fetch(publicDataUrl('data/buildings_all.geojson'))
@@ -99,7 +104,7 @@ export default function Page5Strategy() {
   const handleClear = () => {
     setComparisonRoute(null);
     setPickedOrigin(DEFAULT_ORIGIN.coords);
-    setPickedDest(null);
+    setPickedDest(DEFAULT_DEST.coords);
   };
 
   return (
@@ -113,6 +118,7 @@ export default function Page5Strategy() {
           injectedPoint={injectedPoint}
           tallBuildings={tallBuildings}
           defaultOrigin={DEFAULT_ORIGIN}
+          defaultDest={DEFAULT_DEST}
         />
       </div>
       <div className="p5-right">
