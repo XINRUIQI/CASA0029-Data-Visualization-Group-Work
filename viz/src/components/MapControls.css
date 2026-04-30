@@ -1,0 +1,112 @@
+/* ── Shared map controls: Home / Compass / Scale ── */
+
+.mc-nav {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mc-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(168, 196, 212, 0.12);
+  background: rgba(46, 94, 126, 0.88);
+  backdrop-filter: blur(8px);
+  color: #D0C8B0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  position: relative;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+}
+
+.mc-btn:hover {
+  background: rgba(15, 27, 31, 0.95);
+  color: #F2EBD9;
+}
+
+.mc-btn:active {
+  transform: scale(0.95);
+}
+
+.mc-btn-follow-on {
+  color: #E8A88B;
+  box-shadow: inset 0 0 0 1px rgba(168, 196, 212, 0.45);
+  background: rgba(46, 94, 126, 0.95);
+}
+
+.mc-compass {
+  width: 36px;
+  height: 36px;
+}
+
+.mc-compass-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s ease-out;
+  transform-origin: 50% 50%;
+}
+
+.mc-compass-n {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #ff5a5a;
+  pointer-events: none;
+}
+
+/* ── Scale bar (bottom-left by default) ── */
+.mc-scale {
+  position: absolute;
+  bottom: 14px;
+  left: 16px;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 6px 10px;
+  background: rgba(46, 94, 126, 0.75);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(168, 196, 212, 0.12);
+  border-radius: 6px;
+  color: #D0C8B0;
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.mc-scale.mc-scale--top {
+  top: 14px;
+  right: 16px;
+  left: auto;
+  bottom: auto;
+  align-items: flex-end;
+}
+
+.mc-scale-line {
+  position: relative;
+  height: 8px;
+  min-width: 24px;
+  border-bottom: 2px solid #D0C8B0;
+  border-left: 2px solid #D0C8B0;
+  border-right: 2px solid #D0C8B0;
+  box-sizing: border-box;
+  transition: width 0.15s ease-out;
+}
+
+.mc-scale-label {
+  color: #F2EBD9;
+}

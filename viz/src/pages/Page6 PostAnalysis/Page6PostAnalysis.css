@@ -1,0 +1,698 @@
+/* ═══════════════════════════════════════════
+   Page 6— Post-Drone Ground Analysis
+   Before / After comparison dashboard
+   ═══════════════════════════════════════════ */
+
+.page-7-post {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  background: transparent;
+}
+
+/* ─── TOP BAR ─── */
+.p6-topbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 0.6rem 1rem;
+  background: rgba(46, 94, 126, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(168, 196, 212, 0.12);
+  z-index: 20;
+}
+
+.p-tab-group {
+  display: flex;
+  gap: 4px;
+}
+
+.p6-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.4rem 1rem;
+  border: 1px solid rgba(168, 196, 212, 0.1);
+  border-radius: 6px;
+  background: transparent;
+  color: #888078;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.p6-tab:hover {
+  background: rgba(168, 196, 212, 0.06);
+  color: #D0C8B0;
+}
+
+.p6-tab.active {
+  background: rgba(168, 196, 212, 0.1);
+  color: var(--tab-color, #fff);
+  border-color: var(--tab-color, #fff);
+}
+
+.p6-tab-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tab-color, #888);
+  opacity: 0.6;
+}
+
+.p6-tab.active .p6-tab-dot {
+  opacity: 1;
+  box-shadow: 0 0 6px var(--tab-color);
+}
+
+/* ─── Before / After toggle ─── */
+.p6-view-toggle {
+  display: flex;
+  gap: 2px;
+  background: rgba(168, 196, 212, 0.06);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.p6-vt-btn {
+  padding: 0.35rem 0.8rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #706860;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.p6-vt-btn:hover {
+  color: #B8B0A0;
+}
+
+.p6-vt-btn.active {
+  background: rgba(0, 232, 150, 0.15);
+  color: #00e896;
+  font-weight: 600;
+}
+
+/* ─── Budget selector ─── */
+.p6-budget-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.p6-budget-label {
+  font-size: 0.72rem;
+  color: #706860;
+  margin-right: 4px;
+}
+
+.p6-budget-btn {
+  padding: 0.25rem 0.6rem;
+  border: 1px solid rgba(168, 196, 212, 0.12);
+  border-radius: 4px;
+  background: transparent;
+  color: #706860;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.p6-budget-btn:hover {
+  color: #B8B0A0;
+}
+
+.p6-budget-btn.active {
+  background: rgba(100, 200, 255, 0.15);
+  color: #64c8ff;
+  border-color: rgba(100, 200, 255, 0.4);
+}
+
+/* ─── MAIN LAYOUT ─── */
+.p6-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+/* Left half — map */
+.p6-map-half {
+  width: 66.67%;
+  flex-shrink: 0;
+  padding: 14px 8px 30px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.p6-map-card {
+  flex: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(168, 196, 212, 0.12);
+  background: #5A89A6;
+  position: relative;
+  min-height: 0;
+  min-width: 0;
+  isolation: isolate;
+}
+
+/* ─── Hex tooltip ─── */
+.p6-hex-tooltip {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.6rem 1rem;
+  background: rgba(46, 94, 126, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(168, 196, 212, 0.12);
+  border-radius: 10px;
+  z-index: 5;
+  min-width: 200px;
+}
+
+.p6-hv-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.p6-hv {
+  font-size: 0.78rem;
+  color: #F2EBD9;
+}
+
+.p6-hv span {
+  color: #706860;
+  margin-right: 0.3rem;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+}
+
+.p6-hv-strike {
+  text-decoration: line-through;
+  opacity: 0.55;
+}
+
+.p6-hv-badge {
+  font-size: 0.6rem;
+  padding: 2px 8px;
+  background: rgba(0, 232, 150, 0.15);
+  color: #00e896;
+  border-radius: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ─── Barrier float panel ─── */
+.p6-barrier-float {
+  position: absolute;
+  bottom: 60px;
+  left: 16px;
+  background: rgba(46, 94, 126, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(168, 196, 212, 0.1);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  z-index: 5;
+}
+
+.p6-bf-title {
+  font-size: 0.75rem;
+  color: #888078;
+  margin-bottom: 0.4rem;
+}
+
+.p6-bf-title label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.p6-bf-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 0.3rem 0.5rem;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #706860;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.p6-bf-chip:hover {
+  color: #B8B0A0;
+}
+
+.p6-bf-chip.on {
+  color: var(--chip-color, #888);
+}
+
+.p6-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--chip-color, #888);
+  opacity: 0.3;
+}
+
+.p6-bf-chip.on .p6-chip-dot {
+  opacity: 1;
+}
+
+/* ─── Before / After slider ─── */
+.p6-slider-line {
+  position: absolute;
+  top: 0;
+  bottom: 40px;
+  width: 3px;
+  background: #fff;
+  transform: translateX(-50%);
+  z-index: 10;
+  pointer-events: none;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+}
+
+.p6-slider-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(46, 94, 126, 0.9);
+  border: 2px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: ew-resize;
+  pointer-events: auto;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s;
+  touch-action: none;
+}
+
+.p6-slider-handle:hover {
+  transform: translate(-50%, -50%) scale(1.12);
+}
+
+.p6-slider-label {
+  position: absolute;
+  top: 12px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 4px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.p6-slider-before {
+  color: #ff3264;
+  background: rgba(26, 26, 46, 0.7);
+}
+
+.p6-slider-after {
+  color: #00e896;
+  background: rgba(26, 26, 46, 0.7);
+}
+
+/* ─── Summary bar ─── */
+.p6-summary-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.6rem 1.5rem;
+  background: rgba(46, 94, 126, 0.88);
+  border-top: 1px solid rgba(168, 196, 212, 0.1);
+  border-radius: 0 0 8px 8px;
+  color: #A09888;
+  font-size: 0.8rem;
+  text-align: center;
+  z-index: 5;
+}
+
+/* Right half — outer wrapper with padding */
+.p6-panel-half {
+  width: 33.33%;
+  flex-shrink: 0;
+  padding: 14px 60px 30px 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Right panel card */
+.p6-panel {
+  flex: 1;
+  min-height: 0;
+  background: linear-gradient(160deg, rgba(46, 94, 126, 0.88) 0%, rgba(58, 110, 138, 0.85) 50%, rgba(42, 74, 94, 0.88) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(168, 196, 212, 0.12);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  padding: 1.2rem 1rem;
+  overflow-y: auto;
+}
+
+.p6-panel::-webkit-scrollbar {
+  width: 4px;
+}
+
+.p6-panel::-webkit-scrollbar-thumb {
+  background: rgba(168, 196, 212, 0.15);
+  border-radius: 2px;
+}
+
+.p6-panel-title {
+  font-size: 1.1rem;
+  color: #F2EBD9;
+  margin-bottom: 1rem;
+}
+
+/* ─── Metrics grid ─── */
+.p6-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 1.2rem;
+}
+
+.p6-metric-card {
+  background: rgba(168, 196, 212, 0.04);
+  border: 1px solid rgba(168, 196, 212, 0.08);
+  border-radius: 10px;
+  padding: 12px 10px;
+  text-align: center;
+}
+
+.p6m-val {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.p6m-lab {
+  font-size: 0.65rem;
+  color: #706860;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+/* ─── Comparison bars ─── */
+.p6-comparison {
+  margin-bottom: 1.2rem;
+}
+
+.p6-comparison h4 {
+  font-size: 0.82rem;
+  color: #B8B0A0;
+  margin-bottom: 8px;
+}
+
+.p6-comp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.p6-comp-label {
+  width: 50px;
+  font-size: 0.7rem;
+  color: #888078;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.p6-comp-track {
+  flex: 1;
+  height: 8px;
+  background: rgba(168, 196, 212, 0.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.p6-comp-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.p6-comp-before {
+  background: linear-gradient(90deg, #ff3264, #ff6090);
+}
+
+.p6-comp-after {
+  background: linear-gradient(90deg, #00e896, #64ffb4);
+}
+
+.p6-comp-coverage {
+  background: linear-gradient(90deg, #64c8ff, #a0e0ff);
+}
+
+.p6-comp-val {
+  width: 70px;
+  font-size: 0.7rem;
+  color: #B8B0A0;
+  font-family: monospace;
+  flex-shrink: 0;
+}
+
+/* ─── Budget info ─── */
+.p6-budget-info {
+  margin-bottom: 1.2rem;
+}
+
+.p6-budget-info h4 {
+  font-size: 0.82rem;
+  color: #B8B0A0;
+  margin-bottom: 6px;
+}
+
+.p6-budget-desc {
+  font-size: 0.78rem;
+  color: #888078;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.p6-budget-visual {
+  display: flex;
+  gap: 6px;
+}
+
+.p6-bv-btn {
+  flex: 1;
+  padding: 10px 8px;
+  border: 1px solid rgba(168, 196, 212, 0.1);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.p6-bv-btn:hover {
+  border-color: rgba(168, 196, 212, 0.2);
+}
+
+.p6-bv-btn.active {
+  border-color: rgba(100, 200, 255, 0.5);
+  background: rgba(100, 200, 255, 0.08);
+}
+
+.p6-bv-num {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #B8B0A0;
+}
+
+.p6-bv-btn.active .p6-bv-num {
+  color: #64c8ff;
+}
+
+.p6-bv-label {
+  font-size: 0.65rem;
+  color: #706860;
+  margin-top: 2px;
+}
+
+/* ─── Chart sections ─── */
+.p6-chart-section {
+  margin-bottom: 1.2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(168, 196, 212, 0.06);
+}
+
+.p6-chart-section h4 {
+  font-size: 0.82rem;
+  color: #B8B0A0;
+  margin-bottom: 8px;
+}
+
+.p6-chart-note {
+  font-size: 0.68rem;
+  color: #706860;
+  line-height: 1.4;
+  margin: 6px 0 0;
+}
+
+/* ─── Improved hexagons ─── */
+.p6-improved-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.p6-imp-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.p6-imp-rank {
+  width: 24px;
+  font-size: 0.65rem;
+  color: #706860;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.p6-imp-bars {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.p6-imp-before {
+  height: 5px;
+  background: linear-gradient(90deg, #ff3264, #ff6090);
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.p6-imp-after {
+  height: 5px;
+  background: linear-gradient(90deg, #00e896, #64ffb4);
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.p6-imp-delta {
+  width: 36px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #00e896;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+/* ─── Donut chart ─── */
+.p6-donut-wrap {
+  position: relative;
+}
+
+.p6-donut-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #00e896;
+  pointer-events: none;
+}
+
+/* ─── Gini bars ─── */
+.p6-gini {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.p6-gini-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.p6-gini-label {
+  width: 42px;
+  font-size: 0.7rem;
+  color: #888078;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.p6-gini-track {
+  flex: 1;
+  height: 10px;
+  background: rgba(168, 196, 212, 0.06);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.p6-gini-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.5s ease;
+}
+
+.p6-gini-before {
+  background: linear-gradient(90deg, #ff3264, #ff6090);
+}
+
+.p6-gini-after {
+  background: linear-gradient(90deg, #00e896, #64ffb4);
+}
+
+.p6-gini-val {
+  width: 50px;
+  font-size: 0.72rem;
+  color: #B8B0A0;
+  font-family: monospace;
+  flex-shrink: 0;
+}
+
+/* ─── Insight text ─── */
+.p6-insight {
+  padding: 12px 14px;
+  background: rgba(168, 196, 212, 0.04);
+  border-radius: 10px;
+  border: 1px solid rgba(168, 196, 212, 0.08);
+}
+
+.p6-insight p {
+  font-size: 0.82rem;
+  color: #B8B0A0;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.p6-insight strong {
+  color: #F2EBD9;
+}

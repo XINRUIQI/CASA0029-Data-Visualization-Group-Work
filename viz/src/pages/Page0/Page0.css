@@ -1,0 +1,394 @@
+/* ═══════════════════════════════════════════
+   Page 0 — Cover / Hero  (dark cinematic 3D)
+   ═══════════════════════════════════════════ */
+
+/* ─── Section ─── */
+.page-0 {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* ─── Background (3D Canvas) ─── */
+.p0-bg-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: #080e1a;
+}
+
+.p0-bg-video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+}
+
+/* dark vignette overlay — frames the 3D scene cinematically */
+.p0-bg-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center,
+      transparent 35%,
+      rgba(8, 14, 26, 0.45) 100%
+    );
+  z-index: 1;
+  pointer-events: none;
+}
+
+.p0-bg-grain {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 128 128' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px 128px;
+  pointer-events: none;
+  transform: translateZ(0);
+  will-change: transform;
+  mix-blend-mode: overlay;
+}
+
+/* ─── Hero Content ─── */
+.p0-hero-content {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0 8vw;
+}
+
+.p0-hero-title-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
+  padding-top: 8vh;
+}
+
+.p0-hero-bottom-group {
+  padding-bottom: 10vh;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.p0-title {
+  margin: 0;
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.p0-title-big {
+  display: block;
+  font-size: 6rem;
+  line-height: 1.05;
+  letter-spacing: -2px;
+  color: #ffffff;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.p0-word-light {
+  font-family: 'Helvetica Neue', 'Helvetica Now Display', Helvetica,
+    -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: rgba(200, 225, 255, 0.85);
+}
+
+.p0-word-bold {
+  font-family: 'Helvetica Neue', 'Helvetica Now Display', Helvetica,
+    -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 900;
+  color: #ffffff;
+  position: relative;
+  text-shadow: 0 0 30px rgba(80, 160, 255, 0.35);
+}
+
+/* ─── Glitch effect ─── */
+.p0-glitch {
+  position: relative;
+}
+
+.p0-glitch::before,
+.p0-glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.p0-glitch::before {
+  color: #5599dd;
+  z-index: -1;
+  animation: p0-glitch1 3s infinite linear alternate-reverse;
+}
+
+.p0-glitch::after {
+  color: #1a3a6c;
+  z-index: -2;
+  animation: p0-glitch2 2.5s infinite linear alternate-reverse;
+}
+
+@keyframes p0-glitch1 {
+  0%, 90%, 100% { clip-path: inset(0 0 0 0); transform: translate(0); }
+  92% { clip-path: inset(20% 0 60% 0); transform: translate(-3px, 1px); }
+  94% { clip-path: inset(60% 0 10% 0); transform: translate(3px, -1px); }
+  96% { clip-path: inset(40% 0 30% 0); transform: translate(-2px, 2px); }
+  98% { clip-path: inset(10% 0 70% 0); transform: translate(2px, -1px); }
+}
+
+@keyframes p0-glitch2 {
+  0%, 88%, 100% { clip-path: inset(0 0 0 0); transform: translate(0); }
+  90% { clip-path: inset(50% 0 20% 0); transform: translate(3px, 1px); }
+  93% { clip-path: inset(15% 0 55% 0); transform: translate(-3px, -1px); }
+  95% { clip-path: inset(70% 0 5% 0); transform: translate(2px, 2px); }
+  97% { clip-path: inset(5% 0 80% 0); transform: translate(-2px, 0); }
+}
+
+/* ─── Subtitle ─── */
+.p0-subtitle {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.05rem;
+  color: #ffffff;
+  line-height: 1.75;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.p0-sub-light {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.p0-sub-boxed {
+  display: inline-block;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 800;
+  font-size: 1.3rem;
+  color: #f5e6a3;
+  padding: 0;
+  letter-spacing: 3px;
+  transform-origin: left center;
+  position: relative;
+  text-shadow: 0 0 15px rgba(245, 230, 163, 0.3);
+}
+
+/* ─── Shenzhen wrapper ─── */
+.p0-sub-shenzhen-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.p0-sub-in {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+/* ─── Enter Button ─── */
+.p0-enter-btn {
+  position: relative;
+  width: 140px;
+  height: 52px;
+  border-radius: 26px;
+  border: none;
+  background: #ffffff;
+  color: #000000;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  transition: background 0.4s, box-shadow 0.4s, transform 0.4s;
+}
+
+.p0-enter-text {
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: #000000;
+  position: relative;
+  z-index: 2;
+}
+
+.p0-enter-ring {
+  position: absolute;
+  inset: -5px;
+  border-radius: 31px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  animation: p0-ringPulse 2.5s ease-in-out infinite;
+}
+
+.p0-enter-ring::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  animation: p0-ringPulse 2.5s ease-in-out infinite 0.5s;
+}
+
+@keyframes p0-ringPulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.04); opacity: 1; }
+}
+
+.p0-enter-btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: scale(1.06);
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+}
+
+.p0-enter-btn:hover .p0-enter-text {
+  color: #000000;
+}
+
+.p0-enter-btn:hover .p0-enter-ring {
+  border-color: rgba(255, 255, 255, 0.4);
+  animation-duration: 1.5s;
+}
+
+.p0-enter-btn:active {
+  transform: scale(0.95);
+}
+
+.p0-enter-btn.p0-enter-hide {
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  pointer-events: none;
+}
+
+/* ─── Intro Overlay ─── */
+.p0-intro-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.p0-hidden {
+  visibility: hidden;
+}
+
+.p0-hidden,
+.p0-hidden *,
+.p0-hidden *::before,
+.p0-hidden *::after {
+  animation-play-state: paused !important;
+}
+
+/* ─── Transition Canvas ─── */
+.p0-enter-transition {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9998;
+  pointer-events: none;
+}
+
+/* ─── Scroll Hint ─── */
+.p0-scroll-hint {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.p0-scroll-line {
+  display: block;
+  width: 1px;
+  height: 36px;
+  background: linear-gradient(180deg, rgba(100, 180, 255, 0.5), transparent);
+  animation: p0-scrollPulse 2s ease-in-out infinite;
+}
+
+@keyframes p0-scrollPulse {
+  0%, 100% { opacity: 0.3; transform: scaleY(1); }
+  50% { opacity: 1; transform: scaleY(1.2); }
+}
+
+.p0-scroll-text {
+  font-size: 0.65rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(140, 190, 240, 0.3);
+}
+
+/* ═══════════════════════════════════════════
+   Responsive
+   ═══════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .p0-title-big {
+    font-size: 2.6rem;
+    letter-spacing: 0;
+    white-space: normal;
+  }
+
+  .p0-subtitle {
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+  }
+
+  .p0-sub-boxed {
+    font-size: 1rem;
+  }
+
+  .p0-hero-content {
+    padding: 0 6vw;
+  }
+}
+
+@media (max-width: 480px) {
+  .p0-title-big {
+    font-size: 1.9rem;
+  }
+
+  .p0-subtitle {
+    font-size: 0.75rem;
+  }
+
+}

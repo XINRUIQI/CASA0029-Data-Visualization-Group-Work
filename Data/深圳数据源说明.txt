@@ -1,0 +1,27 @@
+①POI数据 +公服设施
+采集时间：21 22 23 24 25 26等（文件中有标注 ）  数据源：高德API  https://lbs.amap.com/api/webservice/guide/api/search
+
+②DEM 数据
+采集时间：25.06 数据源 地理空间数据云 https://www.gscloud.cn
+
+③建筑+路网+蓝绿空间数据 
+百度版本 采集时间26.01 数据源：百度API  https://lbsyun.baidu.com/
+AI解析版本 同④
+
+④Ai解析数据 
+栅格数据采集于USGS 并使用Ai解译工具（https://engine-aiearth.aliyun.com）,基于影像提取地物斑块
+
+⑤开源土地利用分类
+欧空局（ESA）10m的土地覆盖数据集 https://esa-worldcover.org/en
+
+⑥区划边界25.09
+基础地理信息中心 https://cloudcenter.tianditu.gov.cn/dataSource  审图号：GS（2024）0650号
+
+⑦房价数据
+安居客 https://shenzhen.anjuke.com/
+
+⑧建设用地
+深圳规划一张图 （公众版）https://pnr.sz.gov.cn/d-xgmap/
+
+
+一般来说 主要注明采集时间 和 数据源 就行  具体哪类数据不清楚再问我就好 时间按照文件中的去备注就行 祝您研究顺利   （答疑微信：zjsc1125）

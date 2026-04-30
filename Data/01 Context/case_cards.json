@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "title": "美团无人机：深圳湾外卖 15 分钟达",
+    "operator": "美团",
+    "scenario": "meal_delivery",
+    "location": "深圳湾 → 后海住宅区",
+    "summary": "从深圳湾商圈取餐，无人机直飞 3km 到后海住宅区投递柜，全程 15 分钟。地面骑手同路段高峰期需 35 分钟。",
+    "year": 2024,
+    "source": "https://finance.sina.com.cn/roll/2024-12-24/doc-ineaqhun8348243.shtml"
+  },
+  {
+    "id": 2,
+    "title": "美团福田口岸跨境航线",
+    "operator": "美团",
+    "scenario": "cross_border",
+    "location": "福田口岸",
+    "summary": "国内首条口岸常态化无人机配送航线，2024 年 10 月开航。探索深港跨境低空物流可能性。",
+    "year": 2024,
+    "source": "https://finance.sina.com.cn/roll/2024-12-24/doc-ineaqhun8348243.shtml"
+  },
+  {
+    "id": 3,
+    "title": "莲花山公园无人机配送",
+    "operator": "美团",
+    "scenario": "park_internal",
+    "location": "莲花山公园",
+    "summary": "公园内部配送：游客在山顶下单咖啡，无人机从山脚商圈取货飞至山顶投递点。解决公园内部\"最后一公里\"步行难题。",
+    "year": 2024,
+    "source": "https://finance.sina.com.cn/roll/2024-12-24/doc-ineaqhun8348243.shtml"
+  },
+  {
+    "id": 4,
+    "title": "顺丰丰翼：龙华物流网络",
+    "operator": "顺丰丰翼",
+    "scenario": "parcel_delivery",
+    "location": "龙华区",
+    "summary": "日均飞行超百架次的城市物流网络，覆盖龙华区主要商圈与住宅区，快递从分拨中心直飞至社区投递柜。",
+    "year": 2023,
+    "source": "http://paper.ce.cn/pad/content/202402/29/content_290293.html"
+  },
+  {
+    "id": 5,
+    "title": "低空 + 轨道联运",
+    "operator": "多方合作",
+    "scenario": "multimodal",
+    "location": "地铁站 → 周边社区",
+    "summary": "地铁站设置无人机起降点，乘客下单后物品通过地铁运至最近站点，再由无人机配送至社区，实现轨道交通 + 低空物流联运。",
+    "year": 2025,
+    "source": "https://jtys.sz.gov.cn/gkmlpt/content/11/11965/post_11965749.html"
+  },
+  {
+    "id": 6,
+    "title": "深港跨境物流沙盒",
+    "operator": "深港合作",
+    "scenario": "cross_border",
+    "location": "蛇口 → 屯门 / 文锦渡 → 上水",
+    "summary": "2026 年计划推出深港低空跨境物流监管沙盒试点，开通蛇口—屯门、文锦渡—上水等三条跨境航线。",
+    "year": 2026,
+    "source": "https://www.21jingji.com/article/20260328/herald/973b0ec1559dfb075e3c3f6bef7b5a1c.html"
+  }
+]
