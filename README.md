@@ -10,29 +10,23 @@ The project output is an interactive scrollytelling website built with React, de
 
 ### 2. Datasets
 
-The project integrates multiple spatial and non-spatial datasets covering Shenzhen's urban environment:
+The project integrates multiple spatial and non-spatial datasets, unified on an Uber H3 hexagonal grid (resolution 8, 2,754 cells):
 
-- **Administrative Boundary & Spatial Units:** Shenzhen district-level administrative boundaries from the National Geomatics Centre of China (Tianditu), used to define the study area and support district-level statistics. An Uber H3 hexagonal grid at resolution 8 serves as the unified spatial unit for integrating all analytical layers.
-
-- **Points of Interest (POI):** Over 490,000 POI records categorised into eight types (food, retail, medical, education, office, leisure, scenic, and service), collected via the Baidu Maps Place API. These form the primary demand proxy for delivery services.
-
-- **Population Data:** Gridded population estimates from WorldPop (constrained individual countries, 100 m resolution), aggregated to H3 hexagonal cells to represent residential demand density.
-
-- **Building Footprints & Urban Morphology:** Building footprint, height, and morphology data sourced from the Shenzhen Open Data Platform. Built-up area extent (2020) is used to validate building centroid locations. These provide urban morphology indicators including building count, average height, floor-area ratio, and high-rise constraint flags per grid cell.
-
-- **Transport Network & Ground Barriers:** Road networks, water bodies, waterways, highways, bridges, tunnels, and railways extracted from OpenStreetMap via Geofabrik. These linear and polygonal features serve as physical barriers that increase ground delivery detour distances and travel times. Metro station locations and bus stop/route data from the Shenzhen Open Data Platform are used for public transport accessibility calculations within the friction framework.
-
-- **Traffic Congestion:** Congestion data, contextualised by the *Shenzhen Comprehensive Transport Management Work Plan for 2023–2024*, used as a time-based amplifier within the ground friction model.
-
-- **Parks, Compounds & Land Use:** Parks, campuses, commercial compounds, industrial parks, and residential compounds extracted from OpenStreetMap, used to identify compound-type urban spaces, access constraints, and surrounding land-use context. Residential compound points and Baidu heatmap activity data serve as proxies for residential demand intensity and weekend hotspot patterns.
-
-- **Drone Vertiport Sites:** A dataset of 206 vertiport locations (34 existing and 172 planned), sourced from the *Shenzhen Low-Altitude Aircraft Take-off and Landing Facilities Layout Plan (2026–2035)* and commercial drone operator site data (e.g. Meituan drone delivery routes). Sites are classified by adjacent land-use context into five compound types: residential, commercial, industrial, campus, and park.
-
-- **OD Route Data:** 1,818 origin–destination delivery route pairs with associated ground distances (network distance), straight-line (fly) distances, detour ratios, barrier crossing counts, and congestion amplifiers. Routes were generated using routing APIs over the OSM road network.
-
-- **Real Delivery Order Data:** Real-world order records from the RL-Dispatch Shenzhen dataset and the Meituan delivery platform, used to validate demand proxies and analyse delivery timing, distance distribution, and grid-level order patterns. Food-outlet accessibility metrics at 1 km, 2 km, and 3 km radii are combined with order volumes to construct a takeout demand index.
-
-- **Narrative Context:** Case study cards and a low-altitude economy policy timeline, compiled from official planning documents and news sources — including the *Shenzhen Comprehensive Transport Management Work Plan for 2023–2024*, Xinhua's report on Shenzhen's low-altitude economy development (Xinhua, 7 Jan 2024), and the *Shenzhen Low-Altitude Aircraft Take-off and Landing Facilities Layout Plan (2026–2035)* — used for the opening narrative and policy background sections of the website.
+| Dataset | Source | Purpose |
+|---|---|---|
+| Administrative boundaries | Tianditu (National Geomatics Centre of China) | Study area definition |
+| POI (490k+ records, 8 types) | Baidu Maps Place API | Delivery demand proxy |
+| Population (100 m grid) | WorldPop | Residential demand density |
+| Building footprints & morphology | Shenzhen Open Data Platform | Urban morphology indicators |
+| Road network, barriers (water, rail, highway) | OpenStreetMap via Geofabrik | Ground friction & detour modelling |
+| Metro & bus stops/routes | Shenzhen Open Data Platform | Public transport accessibility |
+| Traffic congestion | Shenzhen Transport Management Plan 2023–2024 | Congestion amplifier |
+| Parks, compounds & land use | OpenStreetMap | Access constraints & land-use context |
+| Vertiport sites (206: 34 existing + 172 planned) | Shenzhen Low-Altitude Facilities Plan 2026–2035; Meituan | Site evaluation & optimisation |
+| OD routes (1,818 pairs) | OSM road network + routing API | Detour ratio & barrier crossing analysis |
+| Real delivery orders | RL-Dispatch dataset; Meituan platform | Demand validation & takeout index |
+| Policy timeline & case studies | Official planning documents; Xinhua (2024) | Narrative context |
+| Cover video | [Zipline](https://www.flyzipline.com/) — [`hero video`](https://res.cloudinary.com/flyzipline/video/upload/q_auto:best,f_auto/v1776784625/homepage_hero_desktop_21042026_rw2jvh.mp4) | Landing page background |
 
 ### 3. Methodology
 
@@ -119,43 +113,30 @@ The following files are excluded from the submission archive to comply with size
 
 #### Large Spatial Datasets
 
-Some intermediate and raw spatial datasets exceed practical file-transfer sizes. The Jupyter notebooks in `Data/` document how each dataset was obtained and processed. Source links are listed below.
+Some raw/intermediate datasets exceed file-transfer limits. Notebooks in `Data/` document how each was obtained.
 
-| Dataset (folder) | Size | Source |
+| Folder | Size | Source |
 |---|---|---|
-| Transport network & road graph (`Data/04 Transport/`) | ~680 MB | OpenStreetMap via [Geofabrik](https://download.geofabrik.de/asia/china.html) (Guangdong extract); routing via OSM network |
-| Barrier layers (`Data/05 Barrier Layers/`) | ~23 MB | OpenStreetMap (water, waterways, railways, highways) |
-| Building footprints & morphology (`Data/06 Buildings/`) | ~824 MB | [Shenzhen Open Data Platform](https://opendata.sz.gov.cn/) |
-| Parks & compounds (`Data/07 Parks & Compounds/`) | ~13 MB | OpenStreetMap |
-| POI demand (`Data/08 POI Demand/`) | ~113 MB | [Baidu Maps Place API](https://lbsyun.baidu.com/faq/api?title=webapi/guide/webservice-placeapi) |
-| Population grid (`Data/09 Population/`) | ~661 MB | [WorldPop](https://www.worldpop.org/) — `chn_ppp_2020_constrained.tif` |
-| OD routes & ground friction (`Data/10 OD & Ground Friction/`) | ~786 MB | Computed from OSM road network + barrier analysis |
-| RL-Dispatch order data (`Data/12 RL-Dispatch/`) | ~71 MB | [RL-Dispatch dataset](https://github.com/RL-Dispatch) (Shenzhen subset) |
-| Meituan delivery data (`Data/13 Meituan-TSL/`) | ~175 MB | Meituan TSL research dataset |
+| `Data/04 Transport/` | ~680 MB | [Geofabrik](https://download.geofabrik.de/asia/china.html) (Guangdong OSM extract) |
+| `Data/05–07 Barriers, Buildings, Parks` | ~860 MB | OSM; [Shenzhen Open Data Platform](https://opendata.sz.gov.cn/) |
+| `Data/08 POI Demand/` | ~113 MB | [Baidu Maps Place API](https://lbsyun.baidu.com/faq/api?title=webapi/guide/webservice-placeapi) |
+| `Data/09 Population/` | ~661 MB | [WorldPop](https://www.worldpop.org/) |
+| `Data/10 OD & Ground Friction/` | ~786 MB | Computed from OSM network |
+| `Data/12–13 Delivery orders` | ~246 MB | [RL-Dispatch](https://github.com/RL-Dispatch); Meituan TSL |
 
 ### 8. Online Libraries & Dependencies
 
-The website uses the following open-source libraries (installed automatically via `npm install`):
+All libraries are installed automatically via `npm install`. Key dependencies:
 
-**Mapping & Geospatial**
-- [deck.gl](https://deck.gl/) 9.2 — GPU-accelerated geospatial layers (H3Hexagon, GeoJson, Arc, Scatterplot, SimpleMesh)
-- [Mapbox GL JS](https://docs.mapbox.com/mapbox-gl-js/) 3.21 — vector basemaps
-- [react-map-gl](https://visgl.github.io/react-map-gl/) 8.1 — React wrapper for Mapbox GL
-- [h3-js](https://github.com/uber/h3-js) 4.4 — Uber H3 hexagonal spatial indexing
-- [Turf.js](https://turfjs.org/) 7.3 — geospatial analysis helpers (`boolean-point-in-polygon`, `helpers`)
-
-**3D & Animation**
-- [Three.js](https://threejs.org/) 0.183 — WebGL 3D rendering
-- [@react-three/fiber](https://docs.pmnd.rs/react-three-fiber) 9.5 + [@react-three/drei](https://github.com/pmndrs/drei) 10.7 — React Three.js integration
-- [GSAP](https://gsap.com/) 3.14 — scroll-driven animation
-
-**Charts & Scrollytelling**
-- [Recharts](https://recharts.org/) 3.8 — statistical charts (bar, radar, scatter, area, pie)
-- [Scrollama](https://github.com/russellsamora/scrollama) 3.2 + [react-scrollama](https://github.com/jsonkao/react-scrollama) 2.4 — scroll-triggered narrative
-
-**Framework**
-- [React](https://react.dev/) 19 + [React Router](https://reactrouter.com/) 7 — SPA framework & routing
-- [Vite](https://vite.dev/) 8 — build tool & dev server
+- [deck.gl](https://deck.gl/) — GPU-accelerated geospatial layers
+- [Mapbox GL JS](https://docs.mapbox.com/mapbox-gl-js/) / [react-map-gl](https://visgl.github.io/react-map-gl/) — vector basemaps
+- [h3-js](https://github.com/uber/h3-js) — H3 hexagonal indexing
+- [Turf.js](https://turfjs.org/) — geospatial analysis
+- [Three.js](https://threejs.org/) / [@react-three/fiber](https://docs.pmnd.rs/react-three-fiber) / [@react-three/drei](https://github.com/pmndrs/drei) — 3D rendering
+- [GSAP](https://gsap.com/) — scroll-driven animation
+- [Recharts](https://recharts.org/) — statistical charts
+- [Scrollama](https://github.com/russellsamora/scrollama) / [react-scrollama](https://github.com/jsonkao/react-scrollama) — scroll-triggered narrative
+- [React](https://react.dev/) 19 / [React Router](https://reactrouter.com/) / [Vite](https://vite.dev/) — framework & build
 
 ### 9. Limitations
 
