@@ -30,6 +30,19 @@ export default function Page2Entry() {
       .then(r => r.json())
       .then(setOdData)
       .catch(() => {});
+
+    const prefetchUrls = [
+      'data/h3_demand.json',
+      'data/page2_h3_gap.json',
+      'data/h3_takeout.json',
+      'data/page2_hourly_demand.json',
+    ];
+    prefetchUrls.forEach(url => {
+      const link = document.createElement('link');
+      link.rel = 'prefetch';
+      link.href = publicDataUrl(url);
+      document.head.appendChild(link);
+    });
   }, []);
 
   return (

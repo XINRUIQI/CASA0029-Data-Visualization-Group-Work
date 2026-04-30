@@ -61,21 +61,21 @@ function LazyPage({ pageId, component: Component, rootMargin = '600px', mountKey
 const NAV_PAGES = [
   { id: 0, label: 'Cover' },
   { id: 1, label: 'Overview' },
-  { id: 2, label: 'Burden' },
-  { id: 3, label: 'Sites' },
-  { id: 4, label: 'Page 4' },
-  { id: 5, label: 'Strategy' },
-  { id: 7, label: 'Post-Analysis' },
+  { id: 2, label: 'Ground Analysis' },
+  { id: 3, label: 'Current Drone Sites' },
+  { id: 4, label: 'Gap & Optimisation' },
+  { id: 5, label: 'Drone Route' },
+  { id: 7, label: 'After Siting' },
   { id: 8, label: 'Conclusion' },
 ];
 
 const NAV_LINKS = [
   { target: 'page-1', label: 'Overview' },
-  { target: 'page-2', label: 'Analysis' },
-  { target: 'page-3', label: 'Status Quo' },
-  { target: 'page-4', label: 'Optimisation' },
-  { target: 'page-5', label: 'Strategy' },
-  { target: 'page-7', label: 'Post-Analysis' },
+  { target: 'page-2', label: 'Ground Analysis' },
+  { target: 'page-3', label: 'Current Drone Sites' },
+  { target: 'page-4', label: 'Gap & Optimisation' },
+  { target: 'page-5', label: 'Drone Route' },
+  { target: 'page-7', label: 'After Siting' },
   { target: 'page-8', label: 'Conclusion' },
 ];
 

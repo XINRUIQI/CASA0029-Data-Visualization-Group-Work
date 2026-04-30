@@ -17,8 +17,8 @@ const COVERAGE_RADIUS_KM = 3;
 const FRICTION_REDUCTION = 0.7;
 
 const LAYER_MODES = [
-  { id: 'supply',   label: 'Supply',    color: '#5A89A6' },
-  { id: 'friction', label: 'Friction',  color: '#ff3264' },
+  { id: 'supply',    label: 'Gap',       color: '#5A89A6' },
+  { id: 'friction',  label: 'Burden',    color: '#ff3264' },
   { id: 'composite', label: 'Composite', color: '#c864ff' },
 ];
 
@@ -520,12 +520,12 @@ export default function Page7PostAnalysis() {
             <div className="p6-hex-tooltip">
               {activeMode === 'supply' && (
                 <div className="p6-hv-row">
-                  <div className="p6-hv"><span>Supply</span> {hoveredHex.dp?.toFixed(1) ?? '—'}</div>
+                  <div className="p6-hv"><span>Gap</span> {hoveredHex.dp?.toFixed(1) ?? '—'}</div>
                 </div>
               )}
               {activeMode === 'friction' && (
                 <div className="p6-hv-row">
-                  <div className="p6-hv"><span>Friction</span> {hoveredHex.avg_friction?.toFixed(3) ?? '—'}</div>
+                  <div className="p6-hv"><span>Burden</span> {hoveredHex.avg_friction?.toFixed(3) ?? '—'}</div>
                   {viewMode === 'after' && hoveredHex.covered && (
                     <div className="p6-hv p6-hv-strike"><span>Before</span> {hoveredHex.avg_friction_before?.toFixed(3) ?? '—'}</div>
                   )}
@@ -557,8 +557,8 @@ export default function Page7PostAnalysis() {
 
           <div className="p6-summary-bar">
             {viewMode === 'before'
-              ? 'Ground friction before drone deployment — same as original analysis'
-              : `After +${selectedSites.length} drone sites: friction reduced by ${metrics?.frictionReduction ?? '—'}% in covered areas`}
+              ? 'Ground burden before drone deployment — same as original analysis'
+              : `After +${selectedSites.length} drone sites: burden reduced by ${metrics?.frictionReduction ?? '—'}% in covered areas`}
           </div>
         </div>
         </div>
@@ -576,7 +576,7 @@ export default function Page7PostAnalysis() {
                 <div className="p6m-val" style={{ color: '#ff3264' }}>
                   {viewMode === 'before' ? metrics.avgFrictionBefore : metrics.avgFrictionAfter}
                 </div>
-                <div className="p6m-lab">Avg Friction</div>
+                <div className="p6m-lab">Avg Burden</div>
               </div>
 
               {viewMode === 'after' && (
@@ -585,7 +585,7 @@ export default function Page7PostAnalysis() {
                     <div className="p6m-val" style={{ color: '#00e896' }}>
                       -{metrics.frictionReduction}%
                     </div>
-                    <div className="p6m-lab">Friction Reduction</div>
+                    <div className="p6m-lab">Burden Reduction</div>
                   </div>
                   <div className="p6-metric-card">
                     <div className="p6m-val" style={{ color: '#64c8ff' }}>
@@ -606,7 +606,7 @@ export default function Page7PostAnalysis() {
 
           {viewMode === 'after' && metrics && (
             <div className="p6-comparison">
-              <h4>Friction Comparison</h4>
+              <h4>Burden Comparison</h4>
               <div className="p6-comp-row">
                 <span className="p6-comp-label">Before</span>
                 <div className="p6-comp-track">
@@ -643,7 +643,7 @@ export default function Page7PostAnalysis() {
           {/* ═══ CHARTS ═══ */}
           {frictionDistData.length > 0 && (
             <div className="p6-chart-section">
-              <h4>Friction Distribution</h4>
+              <h4>Burden Distribution</h4>
               <ResponsiveContainer width="100%" height={150}>
                 <AreaChart data={frictionDistData} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.1)" />
@@ -651,7 +651,7 @@ export default function Page7PostAnalysis() {
                     tickFormatter={v => v.toFixed(2)} interval="preserveStartEnd" />
                   <YAxis tick={{ fill: '#A09888', fontSize: 8 }} />
                   <Tooltip contentStyle={TT_STYLE}
-                    labelFormatter={l => `Friction ${Number(l).toFixed(3)}`}
+                    labelFormatter={l => `Burden ${Number(l).toFixed(3)}`}
                     formatter={(v, name) => [v, name === 'before' ? 'Before' : 'After']} />
                   <Area type="monotone" dataKey="before" stroke="#ff3264" fill="#ff3264"
                     fillOpacity={0.2} strokeWidth={1.5} name="before" />
@@ -664,8 +664,8 @@ export default function Page7PostAnalysis() {
               </ResponsiveContainer>
               <p className="p6-chart-note">
                 {viewMode === 'after'
-                  ? 'Green curve shifts left — friction reduced in covered hexagons.'
-                  : 'Original friction distribution across all hexagons.'}
+                  ? 'Green curve shifts left — burden reduced in covered hexagons.'
+                  : 'Original burden distribution across all hexagons.'}
               </p>
             </div>
           )}
@@ -681,15 +681,15 @@ export default function Page7PostAnalysis() {
                   <YAxis tick={{ fill: '#A09888', fontSize: 8 }}
                     label={{ value: '%', angle: -90, position: 'insideLeft', fill: '#999', fontSize: 8 }} />
                   <Tooltip contentStyle={TT_STYLE}
-                    formatter={(v, name) => [`${v}%`, name === 'coverage' ? 'Coverage' : 'Friction ↓']} />
+                    formatter={(v, name) => [`${v}%`, name === 'coverage' ? 'Coverage' : 'Burden ↓']} />
                   <Area type="monotone" dataKey="coverage" stroke="#64c8ff" fill="#64c8ff"
                     fillOpacity={0.15} strokeWidth={1.5} name="coverage" />
                   <Area type="monotone" dataKey="reduction" stroke="#00e896" fill="#00e896"
                     fillOpacity={0.15} strokeWidth={1.5} name="reduction" />
-                  <Legend formatter={v => v === 'coverage' ? 'Coverage %' : 'Friction Reduction %'} />
+                  <Legend formatter={v => v === 'coverage' ? 'Coverage %' : 'Burden Reduction %'} />
                 </AreaChart>
               </ResponsiveContainer>
-              <p className="p6-chart-note">Diminishing returns: early sites cover the most high-friction area.</p>
+              <p className="p6-chart-note">Diminishing returns: early sites cover the most high-burden area.</p>
             </div>
           )}
 
@@ -727,7 +727,7 @@ export default function Page7PostAnalysis() {
                   </div>
                 ))}
               </div>
-              <p className="p6-chart-note">Red = before, green = after. Covered hexagons with largest friction drop.</p>
+              <p className="p6-chart-note">Red = before, green = after. Covered hexagons with largest burden drop.</p>
             </div>
           )}
 
@@ -812,7 +812,7 @@ export default function Page7PostAnalysis() {
               <p className="p6-budget-desc">
                 Adding <strong>{selectedSites.length}</strong> drone sites (ranked by composite
                 score: 0.4·D·F + 0.3·I·F + 0.3·D·I) with a 3 km coverage radius reduces
-                average ground friction by <strong>{metrics?.frictionReduction ?? '—'}%</strong>.
+                average ground burden by <strong>{metrics?.frictionReduction ?? '—'}%</strong>.
               </p>
               <div className="p6-budget-visual">
                 {BUDGETS.map(b => (
@@ -832,17 +832,17 @@ export default function Page7PostAnalysis() {
           <div className="p6-insight">
             {viewMode === 'before' ? (
               <p>
-                This map shows the original ground friction landscape across Shenzhen.
+                This map shows the original ground burden landscape across Shenzhen.
                 Water bodies, railways, and expressways create systematic delivery barriers,
-                forcing detours that compound into measurable friction. Toggle to
+                forcing detours that compound into measurable burden. Toggle to
                 <strong> After Drones</strong> to see how strategic drone placement transforms
                 this landscape.
               </p>
             ) : (
               <p>
                 With <strong>{selectedSites.length}</strong> strategically placed drone sites,
-                {metrics ? ` ${metrics.coveragePct}% of high-friction areas are now covered. ` : ' '}
-                Hexagons within the 3 km coverage radius show dramatically reduced friction
+                {metrics ? ` ${metrics.coveragePct}% of high-burden areas are now covered. ` : ' '}
+                Hexagons within the 3 km coverage radius show dramatically reduced burden
                 as drones bypass ground barriers entirely — flying straight where vehicles
                 must detour around water, railways, and expressways.
               </p>

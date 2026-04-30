@@ -47,12 +47,6 @@ export default function Page2FullMap() {
   const [selectedH3, setSelectedH3] = useState(null);
 
   useEffect(() => {
-    ['water', 'waterway', 'railway', 'highway_major'].forEach(t => {
-      fetch(publicDataUrl(`data/page2_barrier_${t}.json`))
-        .then(r => r.json())
-        .then(data => setBarriers(prev => ({ ...prev, [t]: data })))
-        .catch(() => {});
-    });
     fetch(publicDataUrl('data/h3_demand.json'))
       .then(r => r.json())
       .then(setDemandGrid)
@@ -81,6 +75,18 @@ export default function Page2FullMap() {
       })
       .catch(() => {});
   }, []);
+
+  const barriersLoadedRef = useRef(false);
+  useEffect(() => {
+    if (activeMode !== 'friction' || barriersLoadedRef.current) return;
+    barriersLoadedRef.current = true;
+    ['water', 'waterway', 'railway', 'highway_major'].forEach(t => {
+      fetch(publicDataUrl(`data/page2_barrier_${t}.json`))
+        .then(r => r.json())
+        .then(data => setBarriers(prev => ({ ...prev, [t]: data })))
+        .catch(() => {});
+    });
+  }, [activeMode]);
 
   const timeWeight = useMemo(() => {
     if (!hourlyDemand || activeMode !== 'demand') return 1;

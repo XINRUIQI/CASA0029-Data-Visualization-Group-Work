@@ -360,12 +360,13 @@ export default function Page2FrictionMap({
       id: 'hex-highlight',
       data: [{ h3: highlightH3 }],
       getHexagon: d => d.h3,
-      getFillColor: [0, 0, 0, 0],
+      getFillColor: [255, 220, 0, 30],
       stroked: true,
       lineWidthUnits: 'pixels',
-      getLineWidth: 3,
+      getLineWidth: 4,
       getLineColor: [255, 220, 0, 255],
       pickable: false,
+      extruded: false,
     });
   }, [highlightH3]);
 
@@ -408,8 +409,8 @@ export default function Page2FrictionMap({
 
   const allLayers = useMemo(() => {
     const result = [...layers];
-    if (highlightLayer) result.push(highlightLayer);
     if (supplyBuffers) result.push(...supplyBuffers);
+    if (highlightLayer) result.push(highlightLayer);
     return result;
   }, [layers, highlightLayer, supplyBuffers]);
 
