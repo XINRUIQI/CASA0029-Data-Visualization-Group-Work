@@ -1,16 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { MAPBOX_TOKEN } from '../../config';
+import LegendMeshIcon from './LegendMeshIcon';
+import { createDroneMesh, createPersonMesh, createRiderMesh } from './meshes';
 
 const DRONE_SPEED = 15;  // m/s
 const HUB_DIST_M  = 500;
 const DRONE_MAX_M = 3000; // max straight-line range
 const BUILDING_CLEARANCE_M = 80; // buffer around tall buildings
-
-/** Preset Luohu OD (~3.1 km, valid hub segment + cycling routes) — edit text or use Pick anytime */
-const PRESET_ROUTE = {
-  origin: { name: 'Huaqiangbei Commercial District, Luohu', coords: [114.0875, 22.5462] },
-  dest:   { name: 'Dongmen Pedestrian Street, Luohu', coords: [114.1178, 22.5475] },
-};
 
 async function geocode(query) {
   const url =
@@ -101,15 +97,14 @@ function fmtMin(sec) {
 }
 function fmtKm(m) { return (m / 1000).toFixed(1) + ' km'; }
 
-export default function Page5Panel({ onResult, onClear, pickMode, setPickMode, injectedPoint, tallBuildings }) {
-  const [originQ,      setOriginQ]      = useState(PRESET_ROUTE.origin.name);
-  const [destQ,        setDestQ]        = useState(PRESET_ROUTE.dest.name);
-  const [originCoords, setOriginCoords] = useState(PRESET_ROUTE.origin.coords);
-  const [destCoords,   setDestCoords]   = useState(PRESET_ROUTE.dest.coords);
+export default function Page5Panel({ onResult, onClear, pickMode, setPickMode, injectedPoint, tallBuildings, defaultOrigin }) {
+  const [originQ,      setOriginQ]      = useState(defaultOrigin?.name ?? '');
+  const [destQ,        setDestQ]        = useState('');
+  const [originCoords, setOriginCoords] = useState(defaultOrigin?.coords ?? null);
+  const [destCoords,   setDestCoords]   = useState(null);
   const [loading,      setLoading]      = useState(false);
   const [error,        setError]        = useState('');
   const [result,       setResult]       = useState(null);
-  const didAutoCompareRef = useRef(false);
 
   useEffect(() => {
     if (!injectedPoint) return;
@@ -122,7 +117,7 @@ export default function Page5Panel({ onResult, onClear, pickMode, setPickMode, i
     }
   }, [injectedPoint]);
 
-  const handleSearch = useCallback(async () => {
+  const handleSearch = async () => {
     if (!originQ.trim() || !destQ.trim()) return;
     setLoading(true); setError(''); setResult(null); onClear();
     try {
@@ -208,175 +203,193 @@ export default function Page5Panel({ onResult, onClear, pickMode, setPickMode, i
     } finally {
       setLoading(false);
     }
-  }, [originQ, destQ, originCoords, destCoords, tallBuildings, onClear, onResult]);
-
-  useEffect(() => {
-    if (didAutoCompareRef.current) return;
-    const tallReady = Array.isArray(tallBuildings) && tallBuildings.length > 0;
-    const run = () => {
-      if (didAutoCompareRef.current) return;
-      didAutoCompareRef.current = true;
-      void handleSearch();
-    };
-    if (tallReady) {
-      run();
-      return;
-    }
-    const t = setTimeout(run, 1500);
-    return () => clearTimeout(t);
-  }, [handleSearch, tallBuildings]);
+  };
 
   const handleClear = () => {
-    setResult(null);
-    setOriginQ(PRESET_ROUTE.origin.name);
-    setDestQ(PRESET_ROUTE.dest.name);
-    setOriginCoords(PRESET_ROUTE.origin.coords);
-    setDestCoords(PRESET_ROUTE.dest.coords);
-    setError('');
-    onClear();
+    setResult(null); setDestQ('');
+    setOriginQ(defaultOrigin?.name ?? '');
+    setOriginCoords(defaultOrigin?.coords ?? null);
+    setDestCoords(null);
+    setError(''); onClear();
+  };
+
+  const resetOriginToDefault = () => {
+    if (!defaultOrigin) return;
+    setOriginQ(defaultOrigin.name);
+    setOriginCoords(defaultOrigin.coords);
   };
 
   const togglePick = (mode) => setPickMode(pickMode === mode ? null : mode);
 
   return (
     <div className="p5-panel">
-      <div className="p5-panel-heading">
-        <div className="p5-panel-title">Route Comparison</div>
-        <p className="p5-panel-lead">
-          Compare estimated time for drone hub-to-hub legs plus courier first/last mile versus an all-ground rider on the same map.
-          {' '}
-          <span className="p5-panel-preset-teaser">An example Shenzhen route loads automatically; you can still edit addresses or Pick on the map.</span>
-        </p>
+      <div className="p5-header-card">
+        <div className="p5-panel-title">
+          Drone Delivery<br/><span style={{ fontSize: '1.2rem', fontWeight: 400, opacity: 0.75 }}>vs</span><br/>Rider Delivery
+        </div>
+        <div className="p5-panel-subtitle">Comparing an optimised drone-assisted route with a road-only rider route in Shenzhen's 3D urban environment — real-world road paths powered by the Mapbox Directions API</div>
       </div>
 
-      {!result && (
-        <ol className="p5-steps" aria-label="Steps">
-          <li>An example <strong>Luohu</strong> origin/destination pair is filled in — edit the text or use <em>Pick</em> on the map</li>
-          <li>This page compares automatically on load; after changes, tap <strong>Compare routes</strong> again</li>
-          <li><strong>Watch</strong> glowing routes and the 3D comparison on the map</li>
-        </ol>
-      )}
-
-      <div className="p5-panel-inputs">
-        <div className="p5-input-row">
-          <label className="p5-input-label">Starting Point</label>
-          <button className={`p5-pick-btn ${pickMode === 'origin' ? 'active' : ''}`}
-            onClick={() => togglePick('origin')} title="Click on map to set origin">
-            {pickMode === 'origin' ? '✕ Cancel' : '📍 Pick'}
-          </button>
+      <div className="p5-header-card">
+        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#e8904a', marginBottom: '6px' }}>How to use the map?</div>
+        <div className="p5-default-note">
+          A drone departure hub is pre-selected as the default origin. You can compare directly by choosing a destination, or pick your own origin.
         </div>
-        <input className="p5-input" placeholder="e.g. Shenzhen University"
-          value={originQ} onChange={e => { setOriginQ(e.target.value); setOriginCoords(null); }}
-          onKeyDown={e => e.key === 'Enter' && handleSearch()} />
-
-        <div className="p5-input-row">
-          <label className="p5-input-label">Destination</label>
-          <button className={`p5-pick-btn ${pickMode === 'destination' ? 'active' : ''}`}
-            onClick={() => togglePick('destination')} title="Click on map to set destination">
-            {pickMode === 'destination' ? '✕ Cancel' : '📍 Pick'}
-          </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div className="p5-panel-desc"><span style={{ fontWeight: 700, color: '#e8904a' }}>Step 1 —</span> Pick a destination: click <strong>"Pick 02"</strong> or type an address below.</div>
+          <div className="p5-panel-desc"><span style={{ fontWeight: 700, color: '#e8904a' }}>Step 2 —</span> Click <strong>"Search"</strong> to compare drone vs. rider delivery times.</div>
+          <div className="p5-panel-desc" style={{ color: 'rgba(255,255,255,0.6)' }}><span style={{ fontWeight: 700, color: 'rgba(232,144,74,0.6)' }}>Optional —</span> Change the origin by clicking <strong>"Pick 01"</strong> or typing a new address.</div>
         </div>
-        <input className="p5-input" placeholder="e.g. Shenzhen North Station"
-          value={destQ} onChange={e => { setDestQ(e.target.value); setDestCoords(null); }}
-          onKeyDown={e => e.key === 'Enter' && handleSearch()} />
+        <div className="p5-panel-inputs">
+          <div className="p5-input-row">
+            <label className="p5-input-label">Origin Point</label>
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              {defaultOrigin && originQ !== defaultOrigin.name && (
+                <button className="p5-default-btn" onClick={resetOriginToDefault} title="Reset to default drone hub">
+                  ↻ Default Hub
+                </button>
+              )}
+              <button className={`p5-pick-btn ${pickMode === 'origin' ? 'active' : ''}`}
+                onClick={() => togglePick('origin')} title="Click on map to set origin">
+                {pickMode === 'origin' ? '✕ Cancel' : '📍 Pick 01'}
+              </button>
+            </div>
+          </div>
+          <input className="p5-input" placeholder="e.g. Shenzhen University"
+            value={originQ} onChange={e => { setOriginQ(e.target.value); setOriginCoords(null); }}
+            onKeyDown={e => e.key === 'Enter' && handleSearch()} />
 
-        <button className="p5-search-btn" onClick={handleSearch}
-          disabled={loading || !originQ.trim() || !destQ.trim()}
-          title="Compute and compare drone vs rider routes">
-          {loading ? 'Computing…' : 'Compare routes'}
-        </button>
-        {error && <div className="p5-panel-error">{error}</div>}
+          <div className="p5-input-row">
+            <label className="p5-input-label">Destination Point</label>
+            <button className={`p5-pick-btn ${pickMode === 'destination' ? 'active' : ''}`}
+              onClick={() => togglePick('destination')} title="Click on map to set destination">
+              {pickMode === 'destination' ? '✕ Cancel' : '📍 Pick 02'}
+            </button>
+          </div>
+          <input className="p5-input" placeholder="e.g. Shenzhen North Station"
+            value={destQ} onChange={e => { setDestQ(e.target.value); setDestCoords(null); }}
+            onKeyDown={e => e.key === 'Enter' && handleSearch()} />
+
+          <button className="p5-search-btn" onClick={handleSearch}
+            disabled={loading || !originQ.trim() || !destQ.trim()}>
+            {loading ? 'Searching…' : 'Search'}
+          </button>
+          {error && <div className="p5-panel-error">{error}</div>}
+        </div>
+
+        {pickMode && (
+          <div className="p5-pick-hint">
+            Click anywhere on the map to set the{' '}
+            <strong>{pickMode === 'origin' ? 'origin point' : 'destination point'}</strong>
+          </div>
+        )}
+
+        {result && (() => {
+          const droneFaster = result.drone.totalDuration < result.ground.duration;
+          const diffSec     = Math.abs(result.ground.duration - result.drone.totalDuration);
+          return (
+            <div className="p5-route-results">
+              <div className={`p5-time-saved ${droneFaster ? 'drone-wins' : 'ground-wins'}`}>
+                {droneFaster
+                  ? `Drone saves ${fmtMin(diffSec)} vs rider`
+                  : `Rider saves ${fmtMin(diffSec)} vs drone`}
+              </div>
+
+              {result.buildingDetour && (
+                <div className="p5-detour-warn">
+                  ⚠ Building &gt;110 m detected — drone rerouted
+                </div>
+              )}
+
+              <div className="p5-route-card p5-drone">
+                <div className="p5-route-header">
+                  <span className="p5-route-badge">Drone Delivery</span>
+                  <span className="p5-route-time">{fmtMin(result.drone.totalDuration)}</span>
+                </div>
+                <div className="p5-route-detail">
+                  Ride {fmtMin(result.drone.leg1.duration)} →&nbsp;
+                  Fly {fmtMin(result.drone.arcSec)} ({fmtKm(result.drone.arcDist)}) →&nbsp;
+                  Ride {fmtMin(result.drone.leg2.duration)}
+                </div>
+              </div>
+
+              <div className="p5-route-card p5-ground">
+                <div className="p5-route-header">
+                  <span className="p5-route-badge">Rider Delivery</span>
+                  <span className="p5-route-time">{fmtMin(result.ground.duration)}</span>
+                </div>
+                <div className="p5-route-detail">{fmtKm(result.ground.distance)} · Road only</div>
+              </div>
+
+              <div className="p5-panel-note">* Animation runs at 20× speed for demonstration. Displayed times reflect real estimates.</div>
+              <button className="p5-clear-btn" onClick={handleClear}>Clear</button>
+            </div>
+          );
+        })()}
       </div>
 
-      {pickMode && (
-        <div className="p5-pick-hint">
-          Click the map to set your <strong>{pickMode === 'origin' ? 'origin' : 'destination'}</strong>
+      <div className="p5-header-card">
+        <div className="p5-flight-info-title">✈ Flight Constraints</div>
+        <div className="p5-flight-info-row">
+          <span className="p5-fi-label">Max altitude</span>
+          <span className="p5-fi-val">120 m</span>
         </div>
-      )}
-
-      <details className="p5-panel-details">
-        <summary className="p5-panel-details-summary">Flight constraints &amp; legend</summary>
-        <div className="p5-flight-info">
-          <div className="p5-flight-info-title">✈ Flight Constraints</div>
-          <div className="p5-flight-info-row">
-            <span className="p5-fi-label">Max altitude</span>
-            <span className="p5-fi-val">120 m</span>
-          </div>
-          <div className="p5-flight-info-row">
-            <span className="p5-fi-label">General flight ceiling</span>
-            <span className="p5-fi-val">110 m</span>
-          </div>
-          <div className="p5-flight-info-row p5-fi-note">
-            Commercial operators with full airspace authorisation are exempt from altitude restrictions.
-          </div>
+        <div className="p5-flight-info-row">
+          <span className="p5-fi-label">General flight ceiling</span>
+          <span className="p5-fi-val">110 m</span>
         </div>
-        <div className="p5-legend">
-          <div className="p5-legend-title">Map Legend</div>
-          <div className="p5-legend-row">
-            <span className="p5-legend-swatch tall-building" />
-            Buildings &gt; 110 m — drone avoidance zone
-          </div>
-          <div className="p5-legend-row">
-            <span className="p5-legend-swatch hub-takeoff" />
-            Drone takeoff point (Hub 1)
-          </div>
-          <div className="p5-legend-row">
-            <span className="p5-legend-swatch hub-landing" />
-            Drone landing point (Hub 2)
-          </div>
-          <div className="p5-legend-row">
-            <span className="p5-legend-icon rider-drone">🚴</span>
-            Drone-side courier (first / last mile)
-          </div>
-          <div className="p5-legend-row">
-            <span className="p5-legend-icon rider-ground">🚴</span>
-            Ground rider (full route)
-          </div>
+        <div className="p5-fi-note">
+          Commercial operators with full airspace authorisation are exempt from altitude restrictions.
         </div>
-      </details>
 
-      {result && (() => {
-        const droneFaster = result.drone.totalDuration < result.ground.duration;
-        const diffSec     = Math.abs(result.ground.duration - result.drone.totalDuration);
-        return (
-          <div className="p5-route-results">
-            <div className={`p5-time-saved ${droneFaster ? 'drone-wins' : 'ground-wins'}`}>
-              {droneFaster
-                ? `Drone saves ${fmtMin(diffSec)} vs rider`
-                : `Rider saves ${fmtMin(diffSec)} vs drone`}
-            </div>
-
-            {result.buildingDetour && (
-              <div className="p5-detour-warn">
-                ⚠ Building &gt;110 m detected — drone rerouted
-              </div>
-            )}
-
-            <div className="p5-route-card p5-drone">
-              <div className="p5-route-header">
-                <span className="p5-route-badge">Drone Delivery</span>
-                <span className="p5-route-time">{fmtMin(result.drone.totalDuration)}</span>
-              </div>
-              <div className="p5-route-detail">
-                Ride {fmtMin(result.drone.leg1.duration)} →&nbsp;
-                Fly {fmtMin(result.drone.arcSec)} ({fmtKm(result.drone.arcDist)}) →&nbsp;
-                Ride {fmtMin(result.drone.leg2.duration)}
-              </div>
-            </div>
-
-            <div className="p5-route-card p5-ground">
-              <div className="p5-route-header">
-                <span className="p5-route-badge">Rider Delivery</span>
-                <span className="p5-route-time">{fmtMin(result.ground.duration)}</span>
-              </div>
-              <div className="p5-route-detail">{fmtKm(result.ground.distance)} · Road only</div>
-            </div>
-
-            <div className="p5-panel-note">* Animation runs at 20× speed for demonstration. Displayed times reflect real estimates.</div>
-            <button className="p5-clear-btn" onClick={handleClear}>Clear</button>
-          </div>
-        );
-      })()}
+        <div className="p5-legend-title" style={{ marginTop: '10px' }}>Map Legend</div>
+        <div className="p5-legend-row">
+          <span className="p5-legend-swatch low-building" />
+          Buildings (≤110 m)
+        </div>
+        <div className="p5-legend-row">
+          <span className="p5-legend-swatch tall-building" />
+          Buildings (&gt;110 m)
+        </div>
+        <div className="p5-legend-row">
+          <span className="p5-legend-swatch hub-takeoff" />
+          Drone Departure Hub
+        </div>
+        <div className="p5-legend-row">
+          <span className="p5-legend-swatch hub-landing" />
+          Drone Landing Hub
+        </div>
+        <div className="p5-legend-row">
+          <LegendMeshIcon
+            createMesh={createDroneMesh}
+            color={[255, 220, 0]}
+            eye={[1.6, -1.6, 2.2]}
+            target={[0, 0, 0.05]}
+            size={32}
+          />
+          Drone (UAV)
+        </div>
+        <div className="p5-legend-row">
+          <LegendMeshIcon
+            createMesh={createPersonMesh}
+            color={[255, 160, 60]}
+            eye={[2.2, 0.18, 0.65]}
+            target={[0, 0.18, 0.65]}
+            size={32}
+          />
+          Delivery Courier (first / last mile)
+        </div>
+        <div className="p5-legend-row">
+          <LegendMeshIcon
+            createMesh={createRiderMesh}
+            color={[80, 255, 160]}
+            eye={[2.5, -0.05, 0.40]}
+            target={[0, -0.05, 0.38]}
+            size={32}
+          />
+          Ground Rider (full route)
+        </div>
+      </div>
     </div>
   );
 }

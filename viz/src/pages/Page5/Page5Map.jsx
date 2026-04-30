@@ -1,17 +1,49 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import Map from 'react-map-gl/mapbox';
 import DeckGL from '@deck.gl/react';
-import { GeoJsonLayer, ArcLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
-import { TripsLayer, H3HexagonLayer } from '@deck.gl/geo-layers';
-import { FlyToInterpolator, WebMercatorViewport, LightingEffect, AmbientLight, DirectionalLight } from '@deck.gl/core';
-import { SimpleMeshLayer, ScenegraphLayer } from '@deck.gl/mesh-layers';
+import { GeoJsonLayer, ArcLayer, PathLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
+import { FlyToInterpolator, WebMercatorViewport } from '@deck.gl/core';
+import { SimpleMeshLayer } from '@deck.gl/mesh-layers';
 import { MAPBOX_TOKEN } from '../../config';
-import { createPinMesh } from './meshes';
-import { buildTripTimestamps } from './page5TripUtils';
-import { computeRouteScenario, buildSparkBurst, pathYaw } from './page5Sim';
-import { GLTF_CYCLIST, GLTF_DRONE_AND_COURIER } from './page5Models';
-import MapControls from '../../components/MapControls';
+import { createDroneMesh, createPersonMesh, createRiderMesh, createPinMesh } from './meshes';
 import 'mapbox-gl/dist/mapbox-gl.css';
+
+function interpPath(coords, t) {
+  if (t <= 0) return coords[0];
+  if (t >= 1) return coords[coords.length - 1];
+  let total = 0;
+  const segs = [];
+  for (let i = 1; i < coords.length; i++) {
+    const a = coords[i - 1], b = coords[i];
+    const dx = (b[0] - a[0]) * 102500;
+    const dy = (b[1] - a[1]) * 111000;
+    const dz = (b[2] ?? 0) - (a[2] ?? 0);
+    segs.push(Math.sqrt(dx*dx + dy*dy + dz*dz) || 0.001);
+    total += segs[segs.length - 1];
+  }
+  let target = t * total, cum = 0;
+  for (let i = 0; i < segs.length; i++) {
+    if (cum + segs[i] >= target) {
+      const s = (target - cum) / segs[i];
+      const a = coords[i], b = coords[i + 1];
+      return [a[0]+(b[0]-a[0])*s, a[1]+(b[1]-a[1])*s, (a[2]??0)+((b[2]??0)-(a[2]??0))*s];
+    }
+    cum += segs[i];
+  }
+  return coords[coords.length - 1];
+}
+
+function pathYaw(coords, t) {
+  const p0 = interpPath(coords, Math.max(0, t - 0.01));
+  const p1 = interpPath(coords, Math.min(1, t + 0.01));
+  return Math.atan2((p1[0]-p0[0])*102500, (p1[1]-p0[1])*111000) * 180 / Math.PI;
+}
+
+function geoDistM([lng1, lat1], [lng2, lat2]) {
+  const dx = (lng2 - lng1) * 102500;
+  const dy = (lat2 - lat1) * 111000;
+  return Math.sqrt(dx * dx + dy * dy);
+}
 
 function droneArc(hub1, hub2, peakAlt = 120, steps = 60) {
   return Array.from({ length: steps + 1 }, (_, i) => {
@@ -24,131 +56,59 @@ function droneArc(hub1, hub2, peakAlt = 120, steps = 60) {
   });
 }
 
-const INIT_VIEW = { longitude: 114.058, latitude: 22.530, zoom: 13.2, pitch: 60, bearing: 45 };
-const MAP_STYLE = 'mapbox://styles/mapbox/navigation-night-v1';
-
-/** glTF meshes read better ~ +85° yaw on Mercator-ground paths */
-const MODEL_YAW_OFFSET = 85;
-
-function hubPulseScatter({ idPrefix, lng, lat, color, animT }) {
-  const hue = [...color.slice(0, 3)];
-  const layers = [];
-  for (let k = 0; k < 3; k++) {
-    const period = 2.8;
-    const phase = (((animT * 1.15 + k * 0.95) % period) / period);
-    const expand = phase;
-    const alpha = Math.floor((0.62 - expand * 0.45 + k * 0.06) * 255);
-    layers.push(new ScatterplotLayer({
-      id: `${idPrefix}-pulse-${k}`,
-      data: [{ position: [lng, lat, 0], fill: [...hue, alpha] }],
-      pickable: false,
-      stroked: true,
-      getPosition: d => d.position,
-      getFillColor: d => d.fill,
-      getLineWidth: 1,
-      lineWidthUnits: 'pixels',
-      getLineColor: [255, 255, 255, Math.floor(70 + expand * 120)],
-      getRadius: 36 + expand * (85 + k * 42),
-      radiusUnits: 'meters',
-      updateTriggers: { getFillColor: animT, getRadius: animT, getLineColor: animT },
-    }));
+// Single parabolic altitude profile over a bent path hub1→waypoint→hub2
+function droneDetourArc(hub1, waypoint, hub2, peakAlt = 140, steps = 60) {
+  const d1 = geoDistM(hub1, waypoint);
+  const d2 = geoDistM(waypoint, hub2);
+  const total = d1 + d2;
+  const tWP = d1 / total; // where the waypoint sits in [0,1]
+  const steps1 = Math.max(1, Math.round(steps * tWP));
+  const steps2 = steps - steps1;
+  const pts = [];
+  for (let i = 0; i <= steps1; i++) {
+    const t = (i / steps1) * tWP;
+    const s = i / steps1;
+    pts.push([hub1[0] + (waypoint[0] - hub1[0]) * s, hub1[1] + (waypoint[1] - hub1[1]) * s, 4 * peakAlt * t * (1 - t)]);
   }
-  return layers;
+  for (let i = 1; i <= steps2; i++) {
+    const t = tWP + (i / steps2) * (1 - tWP);
+    const s = i / steps2;
+    pts.push([waypoint[0] + (hub2[0] - waypoint[0]) * s, waypoint[1] + (hub2[1] - waypoint[1]) * s, 4 * peakAlt * t * (1 - t)]);
+  }
+  return pts;
 }
 
-export default function Page5Map({
-  buildingData, routes, comparisonRoute, pickMode, onMapClick, h3Cells = [],
-  optSites, optAllSites, optH3Demand, optShowCoverage, optShowBeforeAfter, onOptHoverSite,
-}) {
+const INIT_VIEW = { longitude: 114.058, latitude: 22.530, zoom: 13.2, pitch: 60, bearing: 45 };
+// Animation speed multiplier — both the courier and drone move 20× faster than real time
+// for demonstration purposes only; actual delivery durations are shown in the panel as-is.
+const ANIM_SPEED = 20;
+const MAP_STYLE = 'mapbox://styles/mapbox/navigation-night-v1';
+
+export default function Page5Map({ buildingData, routes, comparisonRoute, pickMode, onMapClick, tallBuildings, pickedOrigin, pickedDest }) {
   const [viewState, setViewState] = useState(INIT_VIEW);
-  const [cameraFollow, setCameraFollow] = useState(false);
-  const [animT, setAnimT] = useState(0);
-  const rafRef = useRef();
-  const t0Ref = useRef(0);
-  const pinMesh = useMemo(() => createPinMesh(), []);
+  const droneMesh  = useMemo(() => createDroneMesh(), []);
+  const personMesh = useMemo(() => createPersonMesh(), []);
+  const riderMesh  = useMemo(() => createRiderMesh(), []);
+  const pinMesh    = useMemo(() => createPinMesh(), []);
 
-  const lightingEffect = useMemo(() => new LightingEffect({
-    amb: new AmbientLight({ color: [235, 240, 255], intensity: 0.52 }),
-    key: new DirectionalLight({
-      intensity: 0.95,
-      direction: [-0.42, -0.38, -0.82],
-    }),
-    rim: new DirectionalLight({
-      intensity: 0.45,
-      color: [210, 230, 255],
-      direction: [0.55, -0.12, -0.82],
-    }),
-  }), []);
-
-  const leg1Path = useMemo(() => comparisonRoute?.drone.leg1.coords.map(c => [...c, 0]) ?? null, [comparisonRoute]);
-  const arcPath = useMemo(() => {
+  // 预计算路径
+  const leg1Path   = useMemo(() => comparisonRoute?.drone.leg1.coords.map(c => [...c, 0]) ?? null, [comparisonRoute]);
+  const arcPath    = useMemo(() => {
     if (!comparisonRoute) return null;
     const { hub1, hub2, droneWaypoint } = comparisonRoute;
     if (droneWaypoint) {
-      return [
-        ...droneArc(hub1, droneWaypoint, 140, 30),
-        ...droneArc(droneWaypoint, hub2, 140, 30).slice(1),
-      ];
+      return droneDetourArc(hub1, droneWaypoint, hub2, 140, 60);
     }
     return droneArc(hub1, hub2, 120, 60);
   }, [comparisonRoute]);
-  const leg2Path = useMemo(() => comparisonRoute?.drone.leg2.coords.map(c => [...c, 0]) ?? null, [comparisonRoute]);
+  const leg2Path   = useMemo(() => comparisonRoute?.drone.leg2.coords.map(c => [...c, 0]) ?? null, [comparisonRoute]);
   const groundPath = useMemo(() => comparisonRoute?.ground.coords.map(c => [...c, 0]) ?? null, [comparisonRoute]);
 
-  const pathBundle = useMemo(() => {
-    if (!comparisonRoute || !leg1Path || !arcPath || !leg2Path || !groundPath) return null;
-    return {
-      drone: comparisonRoute.drone,
-      ground: comparisonRoute.ground,
-      leg1Path,
-      arcPath,
-      leg2Path,
-      groundPath,
-    };
-  }, [comparisonRoute, leg1Path, arcPath, leg2Path, groundPath]);
-
-  const scenario = useMemo(
-    () => (pathBundle ? computeRouteScenario(comparisonRoute, animT, pathBundle) : null),
-    [comparisonRoute, animT, pathBundle],
-  );
-
-  const mergedViewState = useMemo(() => {
-    if (!cameraFollow || !scenario?.focusLngLat) return viewState;
-    return {
-      ...viewState,
-      longitude: scenario.focusLngLat[0],
-      latitude: scenario.focusLngLat[1],
-      bearing: scenario.focusBearing ?? viewState.bearing,
-      pitch: Math.max(viewState.pitch ?? 0, 48),
-    };
-  }, [cameraFollow, scenario, viewState]);
-
-  const leg1Timestamps = useMemo(() =>
-    comparisonRoute && leg1Path
-      ? buildTripTimestamps(leg1Path, 0, comparisonRoute.drone.leg1.duration)
-      : null,
-  [comparisonRoute, leg1Path]);
-
-  const arcTimestamps = useMemo(() =>
-    comparisonRoute && arcPath
-      ? buildTripTimestamps(arcPath, 0, comparisonRoute.drone.arcSec)
-      : null,
-  [comparisonRoute, arcPath]);
-
-  const leg2Timestamps = useMemo(() =>
-    comparisonRoute && leg2Path
-      ? buildTripTimestamps(leg2Path, 0, comparisonRoute.drone.leg2.duration)
-      : null,
-  [comparisonRoute, leg2Path]);
-
-  const groundTimestamps = useMemo(() =>
-    comparisonRoute && groundPath
-      ? buildTripTimestamps(groundPath, 0, comparisonRoute.ground.duration)
-      : null,
-  [comparisonRoute, groundPath]);
+  const [animT, setAnimT] = useState(0);
+  const rafRef = useRef();
+  const t0Ref  = useRef(performance.now());
 
   useEffect(() => {
-    t0Ref.current = typeof performance !== 'undefined' ? performance.now() : Date.now();
     const loop = now => {
       setAnimT((now - t0Ref.current) / 1000);
       rafRef.current = requestAnimationFrame(loop);
@@ -157,57 +117,30 @@ export default function Page5Map({
     return () => cancelAnimationFrame(rafRef.current);
   }, []);
 
+  // 搜索后 fitBounds 同时看两条路线
   useEffect(() => {
-    let cancelled = false;
-    let enableFollowTimer;
-    const id = requestAnimationFrame(() => {
-      if (cancelled) return;
-      setCameraFollow(false);
-      if (!comparisonRoute) {
-        setViewState({ ...INIT_VIEW, transitionDuration: 1200, transitionInterpolator: new FlyToInterpolator() });
-        return;
-      }
-      const { origin, destination } = comparisonRoute;
-      const vp = new WebMercatorViewport({ width: window.innerWidth, height: window.innerHeight });
-      const { longitude, latitude, zoom } = vp.fitBounds(
-        [[Math.min(origin[0], destination[0]), Math.min(origin[1], destination[1])],
-         [Math.max(origin[0], destination[0]), Math.max(origin[1], destination[1])]],
-        { padding: { top: 60, bottom: 60, left: 320, right: 40 } },
-      );
-      setViewState(vs => ({
-        ...vs, longitude, latitude,
-        zoom: Math.min(zoom, 16),
-        pitch: 50,
-        bearing: 0,
-        transitionDuration: 1400,
-        transitionInterpolator: new FlyToInterpolator(),
-      }));
-      // Brief overview fly first, then follow the drone courier (bearing matches path in page5Sim)
-      enableFollowTimer = setTimeout(() => {
-        if (cancelled) return;
-        setCameraFollow(true);
-      }, 1520);
-    });
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(id);
-      if (enableFollowTimer) clearTimeout(enableFollowTimer);
-    };
-  }, [comparisonRoute]);
-
-  const resetViewCentered = useCallback(() => {
-    setCameraFollow(false);
+    if (!comparisonRoute) {
+      setViewState({ ...INIT_VIEW, transitionDuration: 1200, transitionInterpolator: new FlyToInterpolator() });
+      return;
+    }
+    const { origin, destination } = comparisonRoute;
+    const mapW = Math.max(window.innerWidth - 340, 400);
+    const mapH = window.innerHeight - 40;
+    const vp = new WebMercatorViewport({ width: mapW, height: mapH });
+    const { longitude, latitude, zoom } = vp.fitBounds(
+      [[Math.min(origin[0], destination[0]), Math.min(origin[1], destination[1])],
+       [Math.max(origin[0], destination[0]), Math.max(origin[1], destination[1])]],
+      { padding: { top: 60, bottom: 60, left: 60, right: 60 } }
+    );
     setViewState(vs => ({
-      ...vs, ...INIT_VIEW,
-      transitionDuration: 1200,
+      ...vs, longitude, latitude,
+      zoom:   Math.min(zoom, 16),
+      pitch:  50,
+      bearing: 0,
+      transitionDuration: 1400,
       transitionInterpolator: new FlyToInterpolator(),
     }));
-  }, [setCameraFollow, setViewState]);
-
-  const resetBearingOnly = useCallback(() => {
-    setCameraFollow(false);
-    setViewState(vs => ({ ...vs, bearing: 0, pitch: 0, transitionDuration: 400 }));
-  }, [setCameraFollow, setViewState]);
+  }, [comparisonRoute]);
 
   const onMapLoad = useCallback(evt => {
     const map = evt.target;
@@ -218,12 +151,7 @@ export default function Page5Map({
     }
     styleLayers.forEach(l => {
       if (l['source-layer'] === 'building') map.setLayoutProperty(l.id, 'visibility', 'none');
-      if (l.type === 'symbol') {
-        try {
-          map.setLayoutProperty(l.id, 'visibility', 'none');
-        }
-        catch { /* ignore missing layouts */ }
-      }
+      if (l.type === 'symbol') { try { map.setLayoutProperty(l.id, 'visibility', 'none'); } catch {} }
     });
     map.addLayer({ id: 'p5-parks', source: 'composite', 'source-layer': 'landuse',
       filter: ['==', ['get', 'class'], 'park'], type: 'fill',
@@ -233,289 +161,129 @@ export default function Page5Map({
     map.addLayer({ id: 'p5-waterway', source: 'composite', 'source-layer': 'waterway', type: 'line',
       paint: { 'line-color': '#7dd3f0',
         'line-width': ['interpolate', ['linear'], ['zoom'], 8, 1, 14, 4], 'line-opacity': 0.8 } }, labelLayerId);
-
-    try {
-      if (!map.getSource('mapbox-dem')) {
-        map.addSource('mapbox-dem', {
-          type: 'raster-dem',
-          url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
-          tileSize: 512,
-        });
-      }
-      map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.08 });
-    }
-    catch { /* terrain unsupported or duplicate */ }
-
-    try {
-      if (!map.getLayer('p5-sky')) {
-        map.addLayer({
-          id: 'p5-sky',
-          type: 'sky',
-          paint: {
-            'sky-type': 'atmosphere',
-            'sky-atmosphere-sun-intensity-factor': 0.15,
-          },
-        });
-      }
-    }
-    catch { /* sky unsupported */ }
   }, []);
-
-  const handleInteractionStateChange = useCallback(({ interactionState }) => {
-    const st = interactionState || {};
-    if (cameraFollow && (
-      st.isDragging || st.isMoving || st.isZooming || st.isOrbiting ||
-      st.isPanning || st.inTransition
-    )) {
-      setCameraFollow(false);
-    }
-  }, [cameraFollow, setCameraFollow]);
 
   const layers = [];
 
-  // ── H3 backdrop (low-density population hint) ──
-  if (Array.isArray(h3Cells) && h3Cells.length > 0) {
-    layers.push(new H3HexagonLayer({
-      id: 'p5-h3-backdrop',
-      data: h3Cells,
-      getHexagon: d => d.h3,
-      getFillColor: d => {
-        const v = typeof d.weight === 'number' ? Math.min(Math.max(d.weight, 0), 1) : d.v ?? 0.55;
-        const baseA = comparisonRoute ? 28 : 22;
-        return [40 + v * 80, 30 + v * 50, 120 + v * 60, Math.floor(baseA + v * (comparisonRoute ? 35 : 60))];
-      },
-      extruded: false,
-      stroked: true,
-      getLineWidth: 1,
-      lineWidthUnits: 'pixels',
-      getLineColor: [120, 180, 255, 55],
-      pickable: false,
-      updateTriggers: { getFillColor: [comparisonRoute] },
-    }));
-  }
-
-  // ── Background OD arcs: stagger + source/target gradient ──
+  // ── 背景航线（无搜索时）──
   if (!comparisonRoute && routes?.length) {
     layers.push(new ArcLayer({
-      id: 'routes-arc',
-      data: routes,
-      updateTriggers: { getSourceColor: animT, getTargetColor: animT },
+      id: 'routes-arc', data: routes,
       getSourcePosition: d => [...d.origin, 0],
       getTargetPosition: d => [...d.destination, 0],
-      getSourceColor: d => {
-        const w = Math.sin((animT * 0.55 + d.id * 0.71) % (Math.PI * 2)) * 0.35 + 0.65;
-        return [245, Math.floor(68 + (1 - w) * 40), Math.floor(90 + (1 - w) * 30), Math.floor(55 + w * 195)];
-      },
-      getTargetColor: d => {
-        const w = Math.cos((animT * 0.48 + (d.id * 83) % 20 * 0.13) % (Math.PI * 2)) * 0.35 + 0.65;
-        return [255, Math.floor(180 + (1 - w) * 50), Math.floor(20 + (1 - w) * 50), Math.floor(40 + w * 200)];
-      },
-      getWidth: 1.85,
-      getHeight: 0.32,
-      widthUnits: 'pixels',
-      pickable: false,
+      getSourceColor: [255, 80, 80, 200],
+      getTargetColor: [255, 220, 0, 200],
+      getWidth: 1.5, getHeight: 0.3, widthUnits: 'pixels', pickable: false,
     }));
-    layers.push(new ScenegraphLayer({
-      id: 'origins',
-      scenegraph: GLTF_DRONE_AND_COURIER,
-      data: routes,
-      getPosition: d => [...d.origin, 18 + 25 * Math.sin(animT * 2.2 + d.id * 0.45)],
-      getOrientation: d => [0, (animT * 90 + d.id * 37) % 360 + MODEL_YAW_OFFSET, 0],
-      getColor: [255, 90, 90, 255],
-      sizeScale: 38,
-      pickable: false,
+    layers.push(new SimpleMeshLayer({
+      id: 'origins', data: routes, mesh: droneMesh,
+      getPosition: d => [...d.origin, 30 + 30 * Math.sin(animT * 2.2 + d.id * 0.45)],
+      getOrientation: d => [0, (animT * 90 + d.id * 37) % 360, 0],
+      getColor: [255, 80, 80, 255], sizeScale: 120, material: false, pickable: false,
       updateTriggers: { getPosition: animT, getOrientation: animT },
     }));
-    layers.push(new ScenegraphLayer({
-      id: 'destinations',
-      scenegraph: GLTF_DRONE_AND_COURIER,
-      data: routes,
-      getPosition: d => [...d.destination, 18 + 25 * Math.sin(animT * 2.2 + d.id * 0.45 + Math.PI)],
-      getOrientation: d => [0, (animT * 90 + d.id * 37 + 180) % 360 + MODEL_YAW_OFFSET, 0],
-      getColor: [255, 220, 0, 255],
-      sizeScale: 38,
-      pickable: false,
+    layers.push(new SimpleMeshLayer({
+      id: 'destinations', data: routes, mesh: droneMesh,
+      getPosition: d => [...d.destination, 30 + 30 * Math.sin(animT * 2.2 + d.id * 0.45 + Math.PI)],
+      getOrientation: d => [0, (animT * 90 + d.id * 37 + 180) % 360, 0],
+      getColor: [255, 220, 0, 255], sizeScale: 120, material: false, pickable: false,
       updateTriggers: { getPosition: animT, getOrientation: animT },
     }));
   }
 
-  // ── Comparison routes ──
-  if (comparisonRoute && leg1Path && arcPath && leg2Path && groundPath && scenario
-      && leg1Timestamps && arcTimestamps && leg2Timestamps && groundTimestamps) {
-    const {
-      drone, ground,
-    } = comparisonRoute;
-    const { origin, destination, hub1, hub2 } = comparisonRoute;
-    const s = scenario;
+  // ── 对比路线 ──
+  if (comparisonRoute && leg1Path && arcPath && leg2Path && groundPath) {
+    const { origin, destination, hub1, hub2, drone, ground } = comparisonRoute;
 
-    const trailLeg1 = Math.max(drone.leg1.duration * 0.65, 12);
-    const trailArc = Math.max(drone.arcSec * 0.55, 10);
-    const trailLeg2 = Math.max(drone.leg2.duration * 0.65, 12);
-    const trailGr = Math.max(ground.duration * 0.5, 15);
+    // ── 地面骑手（全程，循环动画）──
+    const scaledT   = animT * ANIM_SPEED;
+    const groundT   = (scaledT % ground.duration) / ground.duration;
+    const groundPos = interpPath(groundPath, groundT);
 
-    layers.push(new TripsLayer({
-      id: 'cmp-leg1',
-      data: [{ path: leg1Path, timestamps: leg1Timestamps }],
-      getPath: d => d.path,
-      getTimestamps: d => d.timestamps,
-      currentTime: s.leg1Cur,
-      trailLength: trailLeg1,
-      fadeTrail: true,
-      getColor: [255, 118, 50, 220],
-      getWidth: 4,
-      widthUnits: 'pixels',
-      capRounded: true,
-      jointRounded: true,
-      pickable: false,
-      updateTriggers: { currentTime: animT },
+    // ── 无人机三阶段动画 ──
+    const droneTotal = drone.totalDuration;
+    const loopT      = scaledT % droneTotal;
+    const leg1Dur    = drone.leg1.duration;
+    const leg2Dur    = drone.leg2.duration;
+
+    let person1Pos = null, dronePos = null, person2Pos = null;
+    if (loopT < leg1Dur) {
+      // 阶段1：跑腿员从商家 → 枢纽1
+      person1Pos = interpPath(leg1Path, loopT / leg1Dur);
+    } else if (loopT < leg1Dur + drone.arcSec) {
+      // 阶段2：无人机从枢纽1 → 枢纽2
+      dronePos = interpPath(arcPath, (loopT - leg1Dur) / drone.arcSec);
+    } else {
+      // 阶段3：跑腿员从枢纽2 → 客户
+      person2Pos = interpPath(leg2Path, (loopT - leg1Dur - drone.arcSec) / leg2Dur);
+    }
+
+    // 轨迹线
+    layers.push(new PathLayer({
+      id: 'cmp-leg1', data: [{ path: leg1Path }], getPath: d => d.path,
+      getColor: [255, 140, 0, 140], getWidth: 2, widthUnits: 'pixels', pickable: false,
     }));
-    layers.push(new TripsLayer({
-      id: 'cmp-arc',
-      data: [{ path: arcPath, timestamps: arcTimestamps }],
-      getPath: d => d.path,
-      getTimestamps: d => d.timestamps,
-      currentTime: s.arcCur,
-      trailLength: trailArc,
-      fadeTrail: true,
-      getColor: [255, 230, 80, 245],
-      getWidth: 5,
-      widthUnits: 'pixels',
-      capRounded: true,
-      jointRounded: true,
-      pickable: false,
-      updateTriggers: { currentTime: animT },
+    layers.push(new PathLayer({
+      id: 'cmp-arc', data: [{ path: arcPath }], getPath: d => d.path,
+      getColor: [255, 200, 0, 200], getWidth: 2, widthUnits: 'pixels', pickable: false,
     }));
-    layers.push(new TripsLayer({
-      id: 'cmp-leg2',
-      data: [{ path: leg2Path, timestamps: leg2Timestamps }],
-      getPath: d => d.path,
-      getTimestamps: d => d.timestamps,
-      currentTime: s.leg2Cur,
-      trailLength: trailLeg2,
-      fadeTrail: true,
-      getColor: [255, 118, 50, 220],
-      getWidth: 4,
-      widthUnits: 'pixels',
-      capRounded: true,
-      jointRounded: true,
-      pickable: false,
-      updateTriggers: { currentTime: animT },
+    layers.push(new PathLayer({
+      id: 'cmp-leg2', data: [{ path: leg2Path }], getPath: d => d.path,
+      getColor: [255, 140, 0, 140], getWidth: 2, widthUnits: 'pixels', pickable: false,
     }));
-    layers.push(new TripsLayer({
-      id: 'cmp-ground',
-      data: [{ path: groundPath, timestamps: groundTimestamps }],
-      getPath: d => d.path,
-      getTimestamps: d => d.timestamps,
-      currentTime: s.groundCur,
-      trailLength: trailGr,
-      fadeTrail: true,
-      getColor: [70, 255, 170, 200],
-      getWidth: 4,
-      widthUnits: 'pixels',
-      capRounded: true,
-      jointRounded: true,
-      pickable: false,
-      updateTriggers: { currentTime: animT },
+    layers.push(new PathLayer({
+      id: 'cmp-ground', data: [{ path: groundPath }], getPath: d => d.path,
+      getColor: [80, 220, 160, 160], getWidth: 2, widthUnits: 'pixels', pickable: false,
     }));
 
-    const groundTFrac = (s.scaledT % ground.duration) / ground.duration;
-
-    if (s.person1Pos) {
-      const ly = pathYaw(leg1Path, s.loopT / s.leg1Dur);
-      layers.push(new ScenegraphLayer({
-        id: 'cmp-person1',
-        scenegraph: GLTF_DRONE_AND_COURIER,
-        data: [{ pos: [s.person1Pos[0], s.person1Pos[1], 0] }],
-        getPosition: d => d.pos,
-        getOrientation: [0, ly + MODEL_YAW_OFFSET, 0],
-        getColor: [255, 140, 70, 255],
-        sizeScale: 42,
-        pickable: false,
+    // 移动图标
+    if (person1Pos) {
+      layers.push(new SimpleMeshLayer({
+        id: 'cmp-person1', data: [{ pos: [person1Pos[0], person1Pos[1], 0] }],
+        mesh: personMesh, getPosition: d => d.pos,
+        getOrientation: [0, pathYaw(leg1Path, loopT / leg1Dur), 0],
+        getColor: [255, 160, 60, 255], sizeScale: 120, material: false, pickable: false,
+        updateTriggers: { getPosition: animT },
+      }));
+    }
+    if (dronePos) {
+      layers.push(new SimpleMeshLayer({
+        id: 'cmp-drone', data: [{ pos: dronePos }],
+        mesh: droneMesh, getPosition: d => d.pos,
+        getOrientation: [0, (animT * 60) % 360, 0],
+        getColor: [255, 220, 0, 255], sizeScale: 120, material: false, pickable: false,
         updateTriggers: { getPosition: animT, getOrientation: animT },
       }));
     }
-    if (s.dronePos) {
-      const arcTFrac = (s.loopT - s.leg1Dur) / s.arcSec;
-      const ky = pathYaw(arcPath, arcTFrac);
-      layers.push(new ScenegraphLayer({
-        id: 'cmp-drone',
-        scenegraph: GLTF_DRONE_AND_COURIER,
-        data: [{ pos: s.dronePos }],
-        getPosition: d => d.pos,
-        getOrientation: [0, ky + MODEL_YAW_OFFSET, 0],
-        getColor: [255, 228, 60, 255],
-        sizeScale: 52,
-        pickable: false,
-        updateTriggers: { getPosition: animT, getOrientation: animT },
-      }));
-      layers.push(new ScatterplotLayer({
-        id: 'cmp-drone-spot',
-        data: [{ position: [s.dronePos[0], s.dronePos[1], 0] }],
-        getPosition: d => d.position,
-        getFillColor: [255, 230, 120, Math.floor(40 + Math.min((s.droneAlt / 140), 1) * 65)],
-        getRadius: Math.max(s.spotlightRadius, 42),
-        radiusUnits: 'meters',
-        stroked: true,
-        getLineWidth: 1,
-        lineWidthUnits: 'pixels',
-        getLineColor: [255, 255, 255, Math.floor(50 + Math.min((s.droneAlt / 120), 1) * 70)],
-        pickable: false,
-        updateTriggers: { getFillColor: animT, getRadius: animT },
-      }));
-    }
-    if (s.person2Pos) {
-      const t2 = (s.loopT - s.leg1Dur - drone.arcSec) / s.leg2Dur;
-      const ry = pathYaw(leg2Path, t2);
-      layers.push(new ScenegraphLayer({
-        id: 'cmp-person2',
-        scenegraph: GLTF_DRONE_AND_COURIER,
-        data: [{ pos: [s.person2Pos[0], s.person2Pos[1], 0] }],
-        getPosition: d => d.pos,
-        getOrientation: [0, ry + MODEL_YAW_OFFSET, 0],
-        getColor: [255, 140, 70, 255],
-        sizeScale: 42,
-        pickable: false,
-        updateTriggers: { getPosition: animT, getOrientation: animT },
+    if (person2Pos) {
+      layers.push(new SimpleMeshLayer({
+        id: 'cmp-person2', data: [{ pos: [person2Pos[0], person2Pos[1], 0] }],
+        mesh: personMesh, getPosition: d => d.pos,
+        getOrientation: [0, pathYaw(leg2Path, (loopT - leg1Dur - drone.arcSec) / leg2Dur), 0],
+        getColor: [255, 160, 60, 255], sizeScale: 120, material: false, pickable: false,
+        updateTriggers: { getPosition: animT },
       }));
     }
 
-    layers.push(new ScenegraphLayer({
-      id: 'cmp-ground-person',
-      scenegraph: GLTF_CYCLIST,
-      data: [{ pos: [s.groundPos[0], s.groundPos[1], 0] }],
-      getPosition: d => d.pos,
-      getOrientation: [0, pathYaw(groundPath, groundTFrac) + MODEL_YAW_OFFSET, 0],
-      getColor: [80, 255, 160, 255],
-      sizeScale: 58,
-      pickable: false,
-      updateTriggers: { getPosition: animT, getOrientation: animT },
+    // Ground rider (full route, simultaneous) — shown as cyclist
+    layers.push(new SimpleMeshLayer({
+      id: 'cmp-ground-person', data: [{ pos: [groundPos[0], groundPos[1], 0] }],
+      mesh: riderMesh, getPosition: d => d.pos,
+      getOrientation: [0, pathYaw(groundPath, groundT), 0],
+      getColor: [80, 255, 160, 255], sizeScale: 120, material: false, pickable: false,
+      updateTriggers: { getPosition: animT },
     }));
 
-    const sparkData = [
-      ...buildSparkBurst(hub1[0], hub1[1], s.sparkPhase, 0),
-      ...buildSparkBurst(hub2[0], hub2[1], s.sparkPhase + 1.1, 1),
-    ];
-    layers.push(new ScatterplotLayer({
-      id: 'cmp-hub-sparks',
-      data: sparkData,
-      pickable: false,
-      stroked: false,
-      radiusUnits: 'meters',
-      getPosition: d => d.position,
-      getFillColor: d => d.fill,
-      getRadius: d => d.r,
-      updateTriggers: { getFillColor: animT },
-    }));
-
+    // Origin / destination labels
     layers.push(new TextLayer({
       id: 'cmp-labels',
       data: [
-        { pos: [...origin, 30], text: 'Origin', color: [255, 120, 120, 255] },
-        { pos: [...destination, 30], text: 'Destination', color: [80, 220, 160, 255] },
+        { pos: [...origin,      100], text: 'Origin',      color: [255, 120, 120, 255] },
+        { pos: [...destination, 100], text: 'Destination', color: [80,  220, 160, 255] },
       ],
       getPosition: d => d.pos,
-      getText: d => d.text,
-      getColor: d => d.color,
+      getText:     d => d.text,
+      getColor:    d => d.color,
       getSize: 14,
       fontWeight: 'bold',
       getTextAnchor: 'middle',
@@ -526,6 +294,7 @@ export default function Page5Map({
       pickable: false,
     }));
 
+    // Origin / destination: 3-D map pins
     layers.push(new SimpleMeshLayer({
       id: 'pin-origin',
       data: [{ pos: [...origin, 0] }],
@@ -549,108 +318,75 @@ export default function Page5Map({
       pickable: false,
     }));
 
-    layers.push(...hubPulseScatter({ idPrefix: 'h1', lng: hub1[0], lat: hub1[1], color: [60, 210, 255], animT }));
-    layers.push(...hubPulseScatter({ idPrefix: 'h2', lng: hub2[0], lat: hub2[1], color: [190, 90, 255], animT }));
-  }
-
-  /* ── Optimization layers (from Page6) ── */
-  const OPT_CLASS_COLORS = {
-    hub: [255, 50, 50, 220],
-    station: [255, 180, 0, 200],
-    endpoint: [100, 200, 255, 180],
-  };
-
-  if (optH3Demand && optShowBeforeAfter === 'before') {
-    layers.push(new H3HexagonLayer({
-      id: 'opt-demand-before',
-      data: optH3Demand,
-      getHexagon: d => d.h3,
-      getFillColor: d => {
-        const dp = d.dp || 0;
-        const v = Math.min(dp / 200, 1);
-        return [255, 160 * (1 - v), 0, 25 + 120 * v];
-      },
-      extruded: false, stroked: true,
-      getLineColor: [255, 255, 255, 8], getLineWidth: 1, lineWidthMinPixels: 0,
-    }));
-  }
-
-  if (optH3Demand && optShowBeforeAfter === 'after') {
-    layers.push(new H3HexagonLayer({
-      id: 'opt-demand-after',
-      data: optH3Demand,
-      getHexagon: d => d.h3,
-      getFillColor: d => {
-        const dp = d.dp || 0;
-        const v = Math.min(dp / 200, 1);
-        return [255, 140 * (1 - v), 30, 10 + 45 * v];
-      },
-      extruded: false, stroked: true,
-      getLineColor: [255, 255, 255, 5], getLineWidth: 1, lineWidthMinPixels: 0,
-    }));
-  }
-
-  if (optShowCoverage && optShowBeforeAfter === 'after' && optSites?.length) {
+    // Hub markers: takeoff (cyan) vs landing (purple)
+    const hubData = [
+      { pos: [...hub1, 0], labelPos: [...hub1, 200], color: [60, 210, 255, 230], label: 'Departure' },
+      { pos: [...hub2, 0], labelPos: [...hub2, 200], color: [190, 90, 255, 230], label: 'Landing'   },
+    ];
     layers.push(new ScatterplotLayer({
-      id: 'opt-coverage-fill',
-      data: optSites,
-      getPosition: d => [d.lon, d.lat],
-      getRadius: 3000,
-      getFillColor: [100, 200, 255, 20],
-      getLineColor: [100, 200, 255, 50],
-      lineWidthMinPixels: 1, stroked: true, filled: true,
+      id: 'cmp-hubs', data: hubData,
+      getPosition: d => d.pos,
+      getFillColor: d => d.color,
+      getLineColor: [255, 255, 255, 180],
+      stroked: true,
+      lineWidthUnits: 'pixels',
+      getLineWidth: 2,
+      getRadius: 40,
+      pickable: false,
     }));
-    if (optH3Demand) {
-      layers.push(new H3HexagonLayer({
-        id: 'opt-newly-covered',
-        data: optH3Demand,
-        getHexagon: d => d.h3,
-        getFillColor: d => {
-          const dp = d.dp || 0;
-          return [0, 232, 150, 40 + Math.min(dp / 100, 1) * 100];
-        },
-        extruded: false, stroked: false,
-        updateTriggers: { getFillColor: [optSites] },
+    layers.push(new TextLayer({
+      id: 'cmp-hub-labels', data: hubData,
+      getPosition: d => d.labelPos,
+      getText:     d => d.label,
+      getColor:    d => d.color,
+      getSize: 13,
+      fontWeight: 'bold',
+      getTextAnchor: 'middle',
+      getAlignmentBaseline: 'bottom',
+      background: true,
+      getBackgroundColor: [10, 12, 30, 190],
+      backgroundPadding: [5, 3, 5, 3],
+      pickable: false,
+    }));
+  }
+
+  // ── pre-search picked point labels ──
+  if (!comparisonRoute) {
+    const prePickData = [
+      pickedOrigin && { pos: [...pickedOrigin, 100], text: 'Origin',      color: [255, 90,  90,  255] },
+      pickedDest   && { pos: [...pickedDest,   100], text: 'Destination', color: [60,  220, 140, 255] },
+    ].filter(Boolean);
+
+    if (prePickData.length) {
+      layers.push(new SimpleMeshLayer({
+        id: 'pre-pick-pins', data: prePickData, mesh: pinMesh,
+        getPosition: d => d.pos,
+        getOrientation: [0, 0, 0],
+        getColor: d => d.color,
+        sizeScale: 80,
+        material: { ambient: 0.6, diffuse: 0.8, shininess: 60 },
+        pickable: false,
+      }));
+      layers.push(new TextLayer({
+        id: 'pre-pick-labels', data: prePickData,
+        getPosition: d => d.pos,
+        getText:     d => d.text,
+        getColor:    d => d.color,
+        getSize: 14,
+        fontWeight: 'bold',
+        getTextAnchor: 'middle',
+        getAlignmentBaseline: 'bottom',
+        background: true,
+        getBackgroundColor: [10, 12, 30, 200],
+        backgroundPadding: [5, 3, 5, 3],
+        pickable: false,
       }));
     }
   }
 
-  if (optAllSites?.length) {
-    const unselected = optAllSites.filter(s => !optSites?.some(sel => sel.lon === s.lon && sel.lat === s.lat));
-    layers.push(new ScatterplotLayer({
-      id: 'opt-ghost-sites',
-      data: unselected,
-      getPosition: d => [d.lon, d.lat],
-      getRadius: 100,
-      getFillColor: [80, 80, 100, 60],
-      radiusMinPixels: 2, radiusMaxPixels: 6,
-    }));
-  }
-
-  if (optSites?.length) {
-    layers.push(new ScatterplotLayer({
-      id: 'opt-site-glow',
-      data: optSites,
-      getPosition: d => [d.lon, d.lat],
-      getRadius: 600,
-      getFillColor: d => [...(OPT_CLASS_COLORS[d.site_class] || [200, 200, 200]).slice(0, 3), 40],
-      radiusMinPixels: 10, radiusMaxPixels: 35,
-    }));
-    layers.push(new ScatterplotLayer({
-      id: 'opt-selected-sites',
-      data: optSites,
-      getPosition: d => [d.lon, d.lat],
-      getRadius: 200,
-      getFillColor: d => OPT_CLASS_COLORS[d.site_class] || [200, 200, 200, 200],
-      radiusMinPixels: 5, radiusMaxPixels: 16,
-      pickable: true,
-      onHover: info => onOptHoverSite?.(info.object || null),
-    }));
-  }
-
   if (buildingData) {
     const normalFeatures = { ...buildingData, features: buildingData.features.filter(f => (f.properties?.height ?? 0) <= 110) };
-    const tallFeatures = { ...buildingData, features: buildingData.features.filter(f => (f.properties?.height ?? 0) > 110) };
+    const tallFeatures   = { ...buildingData, features: buildingData.features.filter(f => (f.properties?.height ?? 0) >  110) };
 
     layers.push(new GeoJsonLayer({
       id: 'buildings-normal', data: normalFeatures,
@@ -659,6 +395,7 @@ export default function Page5Map({
       getFillColor: [255, 255, 255, 210],
       material: { ambient: 0.4, diffuse: 0.6, shininess: 40 }, pickable: false,
     }));
+    // Buildings > 110 m rendered in orange — drone must avoid these
     layers.push(new GeoJsonLayer({
       id: 'buildings-tall', data: tallFeatures,
       extruded: true, wireframe: false,
@@ -666,49 +403,23 @@ export default function Page5Map({
       getFillColor: [255, 130, 40, 230],
       material: { ambient: 0.5, diffuse: 0.7, shininess: 60 }, pickable: false,
     }));
-    layers.push(new GeoJsonLayer({
-      id: 'buildings-tall-wireframe',
-      data: tallFeatures,
-      extruded: true,
-      wireframe: true,
-      filled: true,
-      stroked: true,
-      getElevation: f => f.properties.height ?? 0,
-      getFillColor: [0, 0, 0, 0],
-      lineWidthUnits: 'pixels',
-      getLineWidth: 2,
-      getLineColor: [255, 110, 30, 200],
-      material: false,
-      pickable: false,
-    }));
   }
 
-  const handleClick = info => {
+  const handleClick = (info) => {
     if (pickMode && info.coordinate) {
       onMapClick([info.coordinate[0], info.coordinate[1]]);
     }
   };
 
   return (
-    <div style={{ position: 'absolute', inset: 0, cursor: pickMode ? 'crosshair' : 'grab' }}>
-      <DeckGL viewState={mergedViewState}
-        onInteractionStateChange={handleInteractionStateChange}
+    <div style={{ position: 'relative', width: '100%', height: '100%', cursor: pickMode ? 'crosshair' : 'grab' }}>
+      <DeckGL viewState={viewState}
         onViewStateChange={({ viewState: vs }) => setViewState(vs)}
-        controller
-        layers={layers}
-        effects={[lightingEffect]}
-        style={{ width: '100%', height: '100%' }}
+        controller={true} layers={layers} style={{ width: '100%', height: '100%' }}
         onClick={handleClick}
         getCursor={() => pickMode ? 'crosshair' : 'grab'}>
         <Map mapboxAccessToken={MAPBOX_TOKEN} mapStyle={MAP_STYLE} onLoad={onMapLoad} />
       </DeckGL>
-      <MapControls
-        viewState={viewState}
-        onResetView={resetViewCentered}
-        onResetBearing={resetBearingOnly}
-        cameraFollow={cameraFollow}
-        onToggleCameraFollow={() => setCameraFollow(v => !v)}
-      />
     </div>
   );
 }

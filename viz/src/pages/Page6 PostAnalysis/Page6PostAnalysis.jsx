@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { cellToLatLng } from 'h3-js';
 import Map from 'react-map-gl/mapbox';
 import DeckGL from '@deck.gl/react';
@@ -152,13 +152,26 @@ export default function Page7PostAnalysis() {
 
   const [viewState, setViewState]         = useState(VIEW);
   const [activeMode, setActiveMode]       = useState('supply');
-  const [viewMode, setViewMode]           = useState('after');
   const [budget, setBudget]               = useState(50);
-  const [activeBarriers, setActiveBarriers] = useState(new Set(['water', 'railway', 'highway_major']));
-  const [showBarriers, setShowBarriers]   = useState(true);
-  const [showRoutes, setShowRoutes]       = useState(false);
   const [showCoverage, setShowCoverage]   = useState(true);
   const [hoveredHex, setHoveredHex]       = useState(null);
+  const [sliderPct, setSliderPct]         = useState(15);
+  const mapCardRef = useRef(null);
+  const dragging   = useRef(false);
+
+  const onSliderDown = useCallback((e) => {
+    dragging.current = true;
+    e.target.setPointerCapture(e.pointerId);
+  }, []);
+
+  const onSliderMove = useCallback((e) => {
+    if (!dragging.current || !mapCardRef.current) return;
+    const rect = mapCardRef.current.getBoundingClientRect();
+    const pct = ((e.clientX - rect.left) / rect.width) * 100;
+    setSliderPct(Math.max(2, Math.min(98, pct)));
+  }, []);
+
+  const onSliderUp = useCallback(() => { dragging.current = false; }, []);
 
   useEffect(() => {
     ['water', 'waterway', 'railway', 'highway_major'].forEach(t => {
@@ -207,11 +220,14 @@ export default function Page7PostAnalysis() {
     return h3Demand.map(d => {
       const gap = gapMap.get(d.h3);
       const tk  = takeoutMap.get(d.h3);
-      const isCovered   = viewMode === 'after' && coverageSet.has(d.h3);
+      const isCovered   = coverageSet.has(d.h3);
       const frictionMul = isCovered ? (1 - FRICTION_REDUCTION) : 1;
+      let lon = 0;
+      try { [, lon] = cellToLatLng(d.h3); } catch { /* skip */ }
 
       return {
         ...d,
+        _lon: lon,
         dp:                  d.dp || 0,
         avg_friction:        (gap?.avg_friction || 0) * frictionMul,
         avg_friction_before: gap?.avg_friction || 0,
@@ -229,7 +245,7 @@ export default function Page7PostAnalysis() {
         covered: isCovered,
       };
     });
-  }, [h3Demand, h3Gap, h3Takeout, viewMode, coverageSet]);
+  }, [h3Demand, h3Gap, h3Takeout, coverageSet]);
 
   const metrics = useMemo(() => {
     if (!h3Gap?.length || !mergedHex?.length) return null;
@@ -395,6 +411,12 @@ export default function Page7PostAnalysis() {
     return [Math.min(...vals), Math.max(...vals)];
   }, [mergedHex]);
 
+  const splitLon = useMemo(() => {
+    const w = mapCardRef.current?.clientWidth || 800;
+    const degPerPx = 360 / (Math.pow(2, viewState.zoom) * 512);
+    return viewState.longitude + (w * sliderPct / 100 - w / 2) * degPerPx;
+  }, [viewState.longitude, viewState.zoom, sliderPct]);
+
   const layers = useMemo(() => {
     const result = [];
 
@@ -403,50 +425,61 @@ export default function Page7PostAnalysis() {
         id: 'analysis-hex',
         data: mergedHex,
         getHexagon: d => d.h3,
-        getFillColor: d => hexColor(activeMode, d, dpBounds),
+        getFillColor: d => {
+          if (d._lon < splitLon) {
+            const beforeD = { ...d, avg_friction: d.avg_friction_before, gap_index: d.gap_index_before };
+            return hexColor(activeMode, beforeD, dpBounds);
+          }
+          return hexColor(activeMode, d, dpBounds);
+        },
         extruded: false,
         pickable: true,
         stroked: false,
-        updateTriggers: { getFillColor: [activeMode, viewMode, coverageSet, dpBounds] },
+        updateTriggers: { getFillColor: [activeMode, coverageSet, dpBounds, splitLon] },
         onHover: info => setHoveredHex(info.object || null),
       }));
     }
 
-    if (viewMode === 'after' && showCoverage && selectedSites.length) {
+    if (showCoverage && selectedSites.length) {
+      const afterSites = selectedSites.filter(s => s.lon >= splitLon);
       result.push(new ScatterplotLayer({
         id: 'drone-coverage',
-        data: selectedSites,
+        data: afterSites,
         getPosition: d => [d.lon, d.lat],
         getRadius: COVERAGE_RADIUS_KM * 1000,
         getFillColor: [0, 232, 150, 15],
         getLineColor: [0, 232, 150, 60],
         lineWidthMinPixels: 1,
         stroked: true, filled: true,
+        updateTriggers: { data: [splitLon] },
       }));
     }
 
-    if (viewMode === 'after' && selectedSites.length) {
+    if (selectedSites.length) {
+      const afterSites = selectedSites.filter(s => s.lon >= splitLon);
       result.push(new ScatterplotLayer({
         id: 'drone-glow',
-        data: selectedSites,
+        data: afterSites,
         getPosition: d => [d.lon, d.lat],
         getRadius: 600,
         getFillColor: [0, 232, 150, 50],
         radiusMinPixels: 10, radiusMaxPixels: 30,
+        updateTriggers: { data: [splitLon] },
       }));
       result.push(new ScatterplotLayer({
         id: 'drone-sites',
-        data: selectedSites,
+        data: afterSites,
         getPosition: d => [d.lon, d.lat],
         getRadius: 150,
         getFillColor: [0, 232, 150, 220],
         radiusMinPixels: 4, radiusMaxPixels: 12,
         pickable: true,
+        updateTriggers: { data: [splitLon] },
       }));
     }
 
     return result;
-  }, [activeMode, mergedHex, viewMode, showCoverage, selectedSites, coverageSet, dpBounds]);
+  }, [activeMode, mergedHex, showCoverage, selectedSites, coverageSet, dpBounds, splitLon]);
 
   return (
     <section id="page-7" className="page page-7-post">
@@ -466,36 +499,24 @@ export default function Page7PostAnalysis() {
           ))}
         </div>
 
-        <div className="p6-view-toggle">
-          <button
-            className={`p6-vt-btn ${viewMode === 'before' ? 'active' : ''}`}
-            onClick={() => setViewMode('before')}
-          >Before</button>
-          <button
-            className={`p6-vt-btn ${viewMode === 'after' ? 'active' : ''}`}
-            onClick={() => setViewMode('after')}
-          >After Drones</button>
+        <div className="p6-budget-group">
+          <span className="p6-budget-label">Sites:</span>
+          {BUDGETS.map(b => (
+            <button
+              key={b}
+              className={`p6-budget-btn ${budget === b ? 'active' : ''}`}
+              onClick={() => setBudget(b)}
+            >+{b}</button>
+          ))}
         </div>
-
-        {viewMode === 'after' && (
-          <div className="p6-budget-group">
-            <span className="p6-budget-label">Sites:</span>
-            {BUDGETS.map(b => (
-              <button
-                key={b}
-                className={`p6-budget-btn ${budget === b ? 'active' : ''}`}
-                onClick={() => setBudget(b)}
-              >+{b}</button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* ═══ MAIN ═══ */}
       <div className="p6-main">
         {/* ─── LEFT: map (66.67%) ─── */}
         <div className="p6-map-half">
-        <div className="p6-map-card">
+        <div className="p6-map-card" ref={mapCardRef}
+          onPointerMove={onSliderMove} onPointerUp={onSliderUp} onPointerLeave={onSliderUp}>
           <DeckGL
             viewState={viewState}
             onViewStateChange={({ viewState: vs }) => setViewState(vs)}
@@ -526,7 +547,7 @@ export default function Page7PostAnalysis() {
               {activeMode === 'friction' && (
                 <div className="p6-hv-row">
                   <div className="p6-hv"><span>Burden</span> {hoveredHex.avg_friction?.toFixed(3) ?? '—'}</div>
-                  {viewMode === 'after' && hoveredHex.covered && (
+                  {hoveredHex.covered && (
                     <div className="p6-hv p6-hv-strike"><span>Before</span> {hoveredHex.avg_friction_before?.toFixed(3) ?? '—'}</div>
                   )}
                   {hoveredHex.covered && <div className="p6-hv-badge">Drone covered</div>}
@@ -535,7 +556,7 @@ export default function Page7PostAnalysis() {
               {activeMode === 'composite' && (
                 <div className="p6-hv-row">
                   <div className="p6-hv"><span>Gap</span> {hoveredHex.gap_index?.toFixed(4) ?? '—'}</div>
-                  {viewMode === 'after' && hoveredHex.covered && (
+                  {hoveredHex.covered && (
                     <div className="p6-hv p6-hv-strike"><span>Before</span> {hoveredHex.gap_index_before?.toFixed(4) ?? '—'}</div>
                   )}
                   {hoveredHex.covered && <div className="p6-hv-badge">Drone covered</div>}
@@ -544,21 +565,19 @@ export default function Page7PostAnalysis() {
             </div>
           )}
 
-          {viewMode === 'after' && (
-            <div className="p6-barrier-float">
-              <div className="p6-bf-title">
-                <label>
-                  <input type="checkbox" checked={showCoverage} onChange={e => setShowCoverage(e.target.checked)} />
-                  Coverage Circles
-                </label>
-              </div>
+          {/* ── Before / After slider ── */}
+          <div className="p6-slider-line" style={{ left: `${sliderPct}%` }}>
+            <div className="p6-slider-handle" onPointerDown={onSliderDown}>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="#fff">
+                <path d="M8 5l-5 7 5 7M16 5l5 7-5 7" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </div>
-          )}
+          </div>
+          <div className="p6-slider-label p6-slider-before" style={{ right: `${100 - sliderPct + 2}%` }}>BEFORE</div>
+          <div className="p6-slider-label p6-slider-after" style={{ left: `${sliderPct + 2}%` }}>AFTER</div>
 
           <div className="p6-summary-bar">
-            {viewMode === 'before'
-              ? 'Ground burden before drone deployment — same as original analysis'
-              : `After +${selectedSites.length} drone sites: burden reduced by ${metrics?.frictionReduction ?? '—'}% in covered areas`}
+            +{selectedSites.length} drone sites: burden reduced by {metrics?.frictionReduction ?? '—'}% in covered areas
           </div>
         </div>
         </div>
@@ -566,21 +585,18 @@ export default function Page7PostAnalysis() {
         {/* ─── RIGHT: panel (33.33%) ─── */}
         <div className="p6-panel-half">
         <div className="p6-panel">
-          <h3 className="p6-panel-title">
-            {viewMode === 'before' ? 'Before Drones' : 'After Drone Deployment'}
-          </h3>
+          <h3 className="p6-panel-title">Before vs After Drone Deployment</h3>
 
           {metrics && (
             <div className="p6-metrics">
               <div className="p6-metric-card">
                 <div className="p6m-val" style={{ color: '#ff3264' }}>
-                  {viewMode === 'before' ? metrics.avgFrictionBefore : metrics.avgFrictionAfter}
+                  {metrics.avgFrictionAfter}
                 </div>
                 <div className="p6m-lab">Avg Burden</div>
               </div>
 
-              {viewMode === 'after' && (
-                <>
+              <>
                   <div className="p6-metric-card">
                     <div className="p6m-val" style={{ color: '#00e896' }}>
                       -{metrics.frictionReduction}%
@@ -600,11 +616,10 @@ export default function Page7PostAnalysis() {
                     <div className="p6m-lab">Drone Sites</div>
                   </div>
                 </>
-              )}
             </div>
           )}
 
-          {viewMode === 'after' && metrics && (
+          {metrics && (
             <div className="p6-comparison">
               <h4>Burden Comparison</h4>
               <div className="p6-comp-row">
@@ -655,22 +670,18 @@ export default function Page7PostAnalysis() {
                     formatter={(v, name) => [v, name === 'before' ? 'Before' : 'After']} />
                   <Area type="monotone" dataKey="before" stroke="#ff3264" fill="#ff3264"
                     fillOpacity={0.2} strokeWidth={1.5} name="before" />
-                  {viewMode === 'after' && (
-                    <Area type="monotone" dataKey="after" stroke="#00e896" fill="#00e896"
-                      fillOpacity={0.2} strokeWidth={1.5} name="after" />
-                  )}
+                  <Area type="monotone" dataKey="after" stroke="#00e896" fill="#00e896"
+                    fillOpacity={0.2} strokeWidth={1.5} name="after" />
                   <Legend formatter={v => v === 'before' ? 'Before' : 'After'} />
                 </AreaChart>
               </ResponsiveContainer>
               <p className="p6-chart-note">
-                {viewMode === 'after'
-                  ? 'Green curve shifts left — burden reduced in covered hexagons.'
-                  : 'Original burden distribution across all hexagons.'}
+Green curve shifts left — burden reduced in covered hexagons.
               </p>
             </div>
           )}
 
-          {viewMode === 'after' && efficiencyCurve.length > 1 && (
+          {efficiencyCurve.length > 1 && (
             <div className="p6-chart-section">
               <h4>Budget Efficiency</h4>
               <ResponsiveContainer width="100%" height={150}>
@@ -693,7 +704,7 @@ export default function Page7PostAnalysis() {
             </div>
           )}
 
-          {viewMode === 'after' && barrierComparison && (
+          {barrierComparison && (
             <div className="p6-chart-section">
               <h4>Barrier Crossings / Trip</h4>
               <ResponsiveContainer width="100%" height={140}>
@@ -710,7 +721,7 @@ export default function Page7PostAnalysis() {
             </div>
           )}
 
-          {viewMode === 'after' && topImproved.length > 0 && (
+          {topImproved.length > 0 && (
             <div className="p6-chart-section">
               <h4>Most Improved Hexagons</h4>
               <div className="p6-improved-list">
@@ -731,7 +742,7 @@ export default function Page7PostAnalysis() {
             </div>
           )}
 
-          {viewMode === 'after' && demandCoverage && (
+          {demandCoverage && (
             <div className="p6-chart-section">
               <h4>High-Demand Area Coverage</h4>
               <div className="p6-donut-wrap">
@@ -756,7 +767,7 @@ export default function Page7PostAnalysis() {
             </div>
           )}
 
-          {viewMode === 'after' && giniData && (
+          {giniData && (
             <div className="p6-chart-section">
               <h4>Spatial Equity (Gini)</h4>
               <div className="p6-gini">
@@ -784,7 +795,7 @@ export default function Page7PostAnalysis() {
             </div>
           )}
 
-          {viewMode === 'after' && siteRoi.length > 0 && (
+          {siteRoi.length > 0 && (
             <div className="p6-chart-section">
               <h4>Site ROI (Score vs Coverage)</h4>
               <ResponsiveContainer width="100%" height={150}>
@@ -806,7 +817,7 @@ export default function Page7PostAnalysis() {
             </div>
           )}
 
-          {viewMode === 'after' && (
+          {(
             <div className="p6-budget-info">
               <h4>Drone Site Budget</h4>
               <p className="p6-budget-desc">
@@ -830,23 +841,13 @@ export default function Page7PostAnalysis() {
           )}
 
           <div className="p6-insight">
-            {viewMode === 'before' ? (
-              <p>
-                This map shows the original ground burden landscape across Shenzhen.
-                Water bodies, railways, and expressways create systematic delivery barriers,
-                forcing detours that compound into measurable burden. Toggle to
-                <strong> After Drones</strong> to see how strategic drone placement transforms
-                this landscape.
-              </p>
-            ) : (
-              <p>
-                With <strong>{selectedSites.length}</strong> strategically placed drone sites,
-                {metrics ? ` ${metrics.coveragePct}% of high-burden areas are now covered. ` : ' '}
-                Hexagons within the 3 km coverage radius show dramatically reduced burden
-                as drones bypass ground barriers entirely — flying straight where vehicles
-                must detour around water, railways, and expressways.
-              </p>
-            )}
+            <p>
+              Drag the slider to compare. With <strong>{selectedSites.length}</strong> strategically
+              placed drone sites,
+              {metrics ? ` ${metrics.coveragePct}% of high-burden areas are now covered. ` : ' '}
+              Hexagons within the 3 km coverage radius show dramatically reduced burden
+              as drones bypass ground barriers entirely.
+            </p>
           </div>
         </div>
         </div>
