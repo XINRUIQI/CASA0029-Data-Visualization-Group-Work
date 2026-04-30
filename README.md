@@ -14,15 +14,17 @@ The project integrates multiple spatial and non-spatial datasets, unified on an 
 
 | Dataset | Source | Purpose |
 |---|---|---|
-| Administrative boundaries | Tianditu (National Geomatics Centre of China) | Study area definition |
-| POI (490k+ records, 8 types) | Baidu Maps Place API | Delivery demand proxy |
-| Population (100 m grid) | WorldPop | Residential demand density |
-| Building footprints & morphology | Shenzhen Open Data Platform | Urban morphology indicators |
-| Road network, barriers (water, rail, highway) | OpenStreetMap via Geofabrik | Ground friction & detour modelling |
-| Metro & bus stops/routes | Shenzhen Open Data Platform | Public transport accessibility |
-| Traffic congestion | Shenzhen Transport Management Plan 2023–2024 | Congestion amplifier |
-| Parks, compounds & land use | OpenStreetMap | Access constraints & land-use context |
-| Vertiport sites (206: 34 existing + 172 planned) | Shenzhen Low-Altitude Facilities Plan 2026–2035; Meituan | Site evaluation & optimisation |
+| Administrative boundaries | [Tianditu (National Geomatics Centre of China)](https://cloudcenter.tianditu.gov.cn/dataSource) | Study area definition |
+| [H3 hexagonal grid](https://h3geo.org/docs/) (resolution 8) | Uber H3 | Unified spatial unit for all analytical layers |
+| POI (490k+ records, 8 types) | [Baidu Maps Place API](https://lbsyun.baidu.com/faq/api?title=webapi/guide/webservice-placeapi) | Delivery demand proxy |
+| Population (100 m grid) | [WorldPop](https://hub.worldpop.org/geodata/summary?id=49919) | Residential demand density |
+| Building footprints & morphology | [Shenzhen Open Data Platform](https://opendata.sz.gov.cn/data/dataSet/toDataDetails/29200_00300237) | Urban morphology indicators |
+| Road network, barriers (water, rail, highway) | [OpenStreetMap via Geofabrik (Guangdong)](https://download.geofabrik.de/asia/china/guangdong.html) | Ground friction & detour modelling |
+| Metro stations | [Shenzhen Open Data Platform](https://opendata.sz.gov.cn/data/dataSet/toDataDetails/29200_00403624) | Public transport accessibility |
+| Bus stops / routes | [Bus stops](https://opendata.sz.gov.cn/data/dataSet/toDataDetails/29200_00403628); [Route-station relationship](https://opendata.sz.gov.cn/data/dataSet/toDataDetails/29200_00403599) | Public transport accessibility |
+| Traffic congestion | *Shenzhen Comprehensive Transport Management Work Plan 2023–2024* | Congestion amplifier |
+| Parks, compounds & land use | [OpenStreetMap via Geofabrik (Guangdong)](https://download.geofabrik.de/asia/china/guangdong.html) | Access constraints & land-use context |
+| Vertiport sites (206: 34 existing + 172 planned) | [Shenzhen Low-Altitude Facilities Plan 2026–2035](http://pnr.sz.gov.cn/xxgk/gggs/content/post_12469261.html); Meituan | Site evaluation & optimisation |
 | OD routes (1,818 pairs) | OSM road network + routing API | Detour ratio & barrier crossing analysis |
 | Real delivery orders | RL-Dispatch dataset; Meituan platform | Demand validation & takeout index |
 | Policy timeline & case studies | Official planning documents; Xinhua (2024) | Narrative context |
@@ -117,12 +119,15 @@ Some raw/intermediate datasets exceed file-transfer limits. Notebooks in `Data/`
 
 | Folder | Size | Source |
 |---|---|---|
-| `Data/04 Transport/` | ~680 MB | [Geofabrik](https://download.geofabrik.de/asia/china.html) (Guangdong OSM extract) |
-| `Data/05–07 Barriers, Buildings, Parks` | ~860 MB | OSM; [Shenzhen Open Data Platform](https://opendata.sz.gov.cn/) |
+| `Data/04 Transport/` | ~680 MB | [Geofabrik Guangdong OSM extract](https://download.geofabrik.de/asia/china/guangdong.html) |
+| `Data/05 Barrier Layers/` | ~23 MB | [Geofabrik Guangdong OSM extract](https://download.geofabrik.de/asia/china/guangdong.html) |
+| `Data/06 Buildings/` | ~824 MB | [Shenzhen Open Data Platform — Building footprints](https://opendata.sz.gov.cn/data/dataSet/toDataDetails/29200_00300237) |
+| `Data/07 Parks & Compounds/` | ~13 MB | [Geofabrik Guangdong OSM extract](https://download.geofabrik.de/asia/china/guangdong.html) |
 | `Data/08 POI Demand/` | ~113 MB | [Baidu Maps Place API](https://lbsyun.baidu.com/faq/api?title=webapi/guide/webservice-placeapi) |
-| `Data/09 Population/` | ~661 MB | [WorldPop](https://www.worldpop.org/) |
-| `Data/10 OD & Ground Friction/` | ~786 MB | Computed from OSM network |
-| `Data/12–13 Delivery orders` | ~246 MB | [RL-Dispatch](https://github.com/RL-Dispatch); Meituan TSL |
+| `Data/09 Population/` | ~661 MB | [WorldPop — China constrained 2020](https://hub.worldpop.org/geodata/summary?id=49919) |
+| `Data/10 OD & Ground Friction/` | ~786 MB | Computed from OSM road network + barrier analysis |
+| `Data/12 RL-Dispatch/` | ~71 MB | RL-Dispatch dataset (Shenzhen subset) |
+| `Data/13 Meituan-TSL/` | ~175 MB | Meituan TSL research dataset |
 
 ### 8. Online Libraries & Dependencies
 
