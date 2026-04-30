@@ -72,7 +72,10 @@
 .p0-hero-title-group {
   flex: 1;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
   padding-top: 8vh;
 }
 
@@ -86,6 +89,7 @@
 
 .p0-title {
   margin: 0;
+  width: 100%;
   display: flex;
   align-items: baseline;
   gap: 20px;
@@ -170,6 +174,8 @@
   color: #ffffff;
   line-height: 1.75;
   margin: 0;
+  padding: 0;
+  width: 100%;
   text-transform: uppercase;
   letter-spacing: 2px;
   display: flex;

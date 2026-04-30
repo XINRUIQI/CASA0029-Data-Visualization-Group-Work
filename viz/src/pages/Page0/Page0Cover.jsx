@@ -151,24 +151,16 @@ export default function Page0Cover() {
               <span className="p0-word-bold p0-glitch" data-text="elevated!">elevated!</span>
             </span>
           </h1>
-        </div>
-
-        <div className="p0-hero-bottom-group">
           <p className="p0-subtitle">
-            <span className="p0-sub-light">Drone Delivery and the Rise of a New Urban Mobility System</span>
-            {' '}
-            <span className="p0-sub-shenzhen-wrap">
-              <span className="p0-sub-in">in</span>
-              {' '}
-              <span className="p0-sub-boxed">ShenZhen</span>
-            </span>
+            <span className="p0-sub-light">We are exploring how drone take-off and landing sites can be optimally located in Shenzhen through multi-objective spatial optimisation, balancing delivery demand, service coverage, operational efficiency, and urban constraints. So, where should drone delivery hubs be located?</span>
           </p>
-
           <button className={`p0-enter-btn ${transitioning ? 'p0-enter-hide' : ''}`} onClick={handleEnter}>
             <span className="p0-enter-text">Enter</span>
             <span className="p0-enter-ring" />
           </button>
         </div>
+
+        <div className="p0-hero-bottom-group" />
       </div>
 
       <EnterTransition active={transitioning} spawnPoints={spawnPoints} onComplete={handleTransitionComplete} />

@@ -65,9 +65,28 @@ const RADAR_DATA = [
   { metric: 'Drone Fit',    food: 8, express: 6, medical: 10, park: 7, cross: 9 },
 ];
 
+const TAB_HERO = {
+  1: {
+    title: 'What Drone Delivery Infrastructure Already Exists?',
+    desc: 'Shenzhen has developed an initial drone delivery infrastructure network, including commercial-area hubs and last-mile delivery points. Existing and planned sites are distributed across different districts, providing a baseline for understanding current service capacity and identifying where additional hubs may be needed.',
+  },
+  2: {
+    title: 'What Surrounds Existing Drone Sites?',
+    desc: 'We analysed POIs within an X-metre catchment around each take-off and landing hubs. For each site, the dominant POI category is used to describe its surrounding urban function.',
+  },
+  3: {
+    title: 'Which Landing Points Can Each Departure Hub Reach?',
+    desc: 'This map simulates potential aerial connections from each departure hub to landing hub within a 3 km flight range.',
+  },
+  4: {
+    title: 'How Many People Does Each Drone Site Serve?',
+    desc: 'This map evaluates drone site availability by calculating the number of existing drone take-off and landing sites relative to the resident population within each grid. Higher values indicate more drone sites available per resident, while lower values suggest potential under-provision and higher service pressure.',
+  },
+};
+
 const TABS = [
   {
-    id: 3, label: 'Routes',
+    id: 3, label: 'ROUTES',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 17c3-3 6-5 9-5s6 2 9-2"/>
@@ -78,7 +97,7 @@ const TABS = [
     ),
   },
   {
-    id: 1, label: 'Sites',
+    id: 1, label: 'SITES',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
@@ -87,7 +106,7 @@ const TABS = [
     ),
   },
   {
-    id: 2, label: 'Context',
+    id: 2, label: 'CONTEXT',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="7" rx="1"/>
@@ -98,7 +117,7 @@ const TABS = [
     ),
   },
   {
-    id: 4, label: 'Coverage',
+    id: 4, label: 'COVERAGE',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="9"/>
@@ -117,9 +136,10 @@ export default function Page3Friction() {
   const [hexGrid, setHexGrid]       = useState(null);
   const [loadError, setLoadError]   = useState(null);
   const [activeTab, setActiveTab]   = useState(3);
+  const [viewResetKey, setViewResetKey] = useState(0);
   const [showCommercial, setShowCommercial] = useState(true);
   const [showLastMile, setShowLastMile]     = useState(true);
-  const [compoundFilter, setCompoundFilter] = useState('all');
+  const [compoundFilter, setCompoundFilter] = useState('retail');
   const [contextChartType, setContextChartType] = useState('retail');
   const [focusDistrict, setFocusDistrict] = useState(null);
 
@@ -360,26 +380,21 @@ export default function Page3Friction() {
   }, [sites, boundary]);
 
   return (
-    <section id="page-3" className="page page-3" style={{ position: 'relative' }}>
-      <div className="p3-hero-text">
-        <h2 className="p3-hero-title">What Drone Delivery Infrastructure Already Exists?</h2>
-        <p className="p3-hero-desc">
-          Shenzhen has developed an initial drone delivery infrastructure network, including
-          commercial-area hubs and last-mile delivery points. Existing and planned sites are
-          distributed across different districts, providing a baseline for understanding current
-          service capacity and identifying where additional hubs may be needed.
-        </p>
+    <section id="page-3" className="page page-3">
+      <div className="p3-section-header">
+        <h2 className="p3-section-title">How Does the Existing Drone Network Perform?</h2>
+        <p className="p3-section-subtitle">Four diagnostic views examine current drone infrastructure from routes, site distribution, surrounding urban context, and population-based availability.</p>
       </div>
-      <div className="p3-layout" style={{ position: 'relative', zIndex: 1 }}>
+      <div className="p3-layout">
 
-        <div className="p3-map-body">
-          {/* 左侧 tab，与地图垂直居中 */}
+        {/* LEFT: tabs + legend + map */}
+        <div className="p3-left">
           <div className="p3-tab-sidebar">
             {TABS.map(tab => (
               <button
                 key={tab.id}
                 className={`p3-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
-                onClick={() => { setActiveTab(tab.id); setCompoundFilter('all'); }}
+                onClick={() => { setActiveTab(tab.id); setCompoundFilter(tab.id === 2 ? 'retail' : 'all'); setContextChartType('retail'); setFocusDistrict(null); setViewResetKey(k => k + 1); }}
               >
                 <span className="p3-tab-icon">{tab.icon}</span>
                 <span className="p3-tab-label">{tab.label}</span>
@@ -387,8 +402,7 @@ export default function Page3Friction() {
             ))}
           </div>
 
-          {/* 右侧：图例 + 地图 + 图表（同宽） */}
-          <div className="p3-map-col">
+          <div className="p3-map-wrap">
             {activeTab === 1 && (
               <div className="p3-inline-legend">
                 <span className="p3-mil-item" role="button" tabIndex={0}
@@ -415,36 +429,46 @@ export default function Page3Friction() {
             )}
 
             {(activeTab === 2 || activeTab === 4) && (
-              <div className="p3-inline-legend">
-                {activeTab === 4 && [
-                  { color: '#111118', label: '0' },
-                  { color: '#0d3060', label: '< 50' },
-                  { color: '#0a5a8a', label: '50–100' },
-                  { color: '#0b7a6a', label: '100–200' },
-                  { color: '#1a9640', label: '200–400' },
-                  { color: '#c8a200', label: '400–800' },
-                  { color: '#d04800', label: '800–1500' },
-                  { color: '#b50000', label: '> 1500' },
-                ].map(({ color, label }) => (
-                  <div key={label} className="p3-il-btn" style={{ cursor: 'default', gap: 6 }}>
-                    <span style={{ width: 14, height: 14, borderRadius: 3, background: color, display: 'inline-block', flexShrink: 0, border: '1px solid rgba(255,255,255,0.2)' }} />
-                    <span style={{ fontSize: 11, color: '#ccc', whiteSpace: 'nowrap' }}>{label}</span>
-                  </div>
-                ))}
-                {activeTab === 2 && Object.entries(POI_COLORS).map(([k, v]) => (
-                  <button key={k}
-                    className={`p3-il-btn ${compoundFilter === k ? 'active' : compoundFilter === 'all' ? '' : 'dim'}`}
-                    style={{ '--ilc': v.hex, color: '#fff' }}
-                    onClick={() => {
-                      const next = compoundFilter === k ? 'all' : k;
-                      setCompoundFilter(next);
-                      setContextChartType(next === 'all' ? 'retail' : next);
-                    }}>
-                    <PoiPinIcon type={k} size={16} />
-                    {v.label}
-                  </button>
-                ))}
-              </div>
+                <div className="p3-inline-legend">
+                  {activeTab === 2 && (
+                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 6 }}>
+                      <span style={{ fontSize: 11, color: 'rgba(240,235,224,0.75)', fontWeight: 500 }}>
+                        Dominant POI type — Based on POIs within X metres of each drone site
+                      </span>
+                      <span style={{ fontSize: 10, color: 'rgba(240,235,224,0.4)' }}>
+                        Click a category to filter drone hubs and update the district chart.
+                      </span>
+                    </div>
+                  )}
+                  {activeTab === 4 && [
+                    { color: '#111118', label: '0' },
+                    { color: '#0d3060', label: '< 50' },
+                    { color: '#0a5a8a', label: '50–100' },
+                    { color: '#0b7a6a', label: '100–200' },
+                    { color: '#1a9640', label: '200–400' },
+                    { color: '#c8a200', label: '400–800' },
+                    { color: '#d04800', label: '800–1500' },
+                    { color: '#b50000', label: '> 1500' },
+                  ].map(({ color, label }) => (
+                    <div key={label} className="p3-il-btn" style={{ cursor: 'default', gap: 6 }}>
+                      <span style={{ width: 14, height: 14, borderRadius: 3, background: color, display: 'inline-block', flexShrink: 0, border: '1px solid rgba(255,255,255,0.2)' }} />
+                      <span style={{ fontSize: 11, color: '#ccc', whiteSpace: 'nowrap' }}>{label}</span>
+                    </div>
+                  ))}
+                  {activeTab === 2 && Object.entries(POI_COLORS).filter(([k]) => k !== 'medical').map(([k, v]) => (
+                    <button key={k}
+                      className={`p3-il-btn ${compoundFilter === k ? 'active' : compoundFilter === 'all' ? '' : 'dim'}`}
+                      style={{ '--ilc': v.hex, color: '#fff' }}
+                      onClick={() => {
+                        const next = compoundFilter === k ? 'all' : k;
+                        setCompoundFilter(next);
+                        setContextChartType(next === 'all' ? 'retail' : next);
+                      }}>
+                      <PoiPinIcon type={k} size={16} />
+                      {v.label}
+                    </button>
+                  ))}
+                </div>
             )}
 
             <div className="p3-map-card">
@@ -458,40 +482,74 @@ export default function Page3Friction() {
                 focusDistrict={focusDistrict}
                 districtStats={districtStats}
                 onDistrictFocus={handleDistrictFocus}
+                viewResetKey={viewResetKey}
               />
             </div>
+          </div>
+        </div>
 
-            {/* 图表区（与地图同宽） */}
-            <div className="p3-chart-section">
+        {/* RIGHT: hero text + chart */}
+        <div className="p3-right">
+          <div className="p3-hero-header">
+            <h2 className="p3-hero-title">{TAB_HERO[activeTab]?.title}</h2>
+            {TAB_HERO[activeTab]?.desc && (
+              <p className="p3-hero-desc">{TAB_HERO[activeTab].desc}</p>
+            )}
+          </div>
+          <div className="p3-chart-section">
               {activeTab === 1 && districtStats.length > 0 && (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={districtStats} margin={{ left: 4, right: 8, top: 16, bottom: 4 }} barCategoryGap="28%" barGap={3}>
-                    <CartesianGrid vertical={false} horizontal stroke="rgba(200,200,210,0.12)" strokeDasharray="3 3" />
-                    <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
-                    <YAxis type="number" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
-                      label={{ value: 'Sites', angle: 0, position: 'top', fill: '#888', fontSize: 10, dy: -6, dx: 14 }} />
-                    <Tooltip contentStyle={{ background: '#2E5E7E', border: '1px solid rgba(168,196,212,0.2)', borderRadius: 8, fontSize: 12 }}
-                      labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                      formatter={(v, name) => [v, name === 'commercial' ? 'Departure Hubs' : 'Landing Hubs']} />
-                    <Bar dataKey="commercial" fill="#ffa028" fillOpacity={0.85} maxBarSize={18} cursor="pointer"
-                      onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
-                      <LabelList dataKey="commercial" position="top" style={{ fill: '#ccc', fontSize: 9 }} formatter={v => v > 0 ? v : ''} />
-                    </Bar>
-                    <Bar dataKey="last_mile" fill="#c864ff" fillOpacity={0.85} maxBarSize={18} cursor="pointer"
-                      onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
-                      <LabelList dataKey="last_mile" position="top" style={{ fill: '#ccc', fontSize: 9 }} formatter={v => v > 0 ? v : ''} />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                  <div style={{ textAlign: 'center', fontSize: 11, color: '#bbb', fontWeight: 600, letterSpacing: 0.3, padding: '6px 0 2px' }}>
+                    Distribution of Departure Hubs and Landing Hubs by District
+                  </div>
+                  <div style={{ flex: 1, minHeight: 0 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={districtStats} margin={{ left: 4, right: 8, top: 32, bottom: 4 }} barCategoryGap="28%" barGap={3}>
+                        <CartesianGrid vertical={false} horizontal stroke="rgba(200,200,210,0.12)" strokeDasharray="3 3" />
+                        <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
+                        <YAxis type="number" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
+                          label={{ value: 'Sites', angle: 0, position: 'top', fill: '#aaa', fontSize: 10, dy: -6, dx: 14 }} />
+                        <Tooltip contentStyle={{ background: '#2E5E7E', border: '1px solid rgba(168,196,212,0.2)', borderRadius: 8, fontSize: 12 }}
+                          labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                          formatter={(v, name) => [v, name === 'commercial' ? 'Departure Hubs' : 'Landing Hubs']} />
+                        <Bar dataKey="commercial" fill="#ffa028" fillOpacity={0.85} maxBarSize={18} cursor="pointer"
+                          onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
+                          <LabelList dataKey="commercial" position="top" style={{ fill: '#ccc', fontSize: 9 }} formatter={v => v > 0 ? v : ''} />
+                        </Bar>
+                        <Bar dataKey="last_mile" fill="#c864ff" fillOpacity={0.85} maxBarSize={18} cursor="pointer"
+                          onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
+                          <LabelList dataKey="last_mile" position="top" style={{ fill: '#ccc', fontSize: 9 }} formatter={v => v > 0 ? v : ''} />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 20, padding: '4px 0 6px', fontSize: 11, color: '#aaa' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <span style={{ width: 10, height: 10, borderRadius: 2, background: '#ffa028', display: 'inline-block' }} />
+                      Departure Hubs
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <span style={{ width: 10, height: 10, borderRadius: 2, background: '#c864ff', display: 'inline-block' }} />
+                      Landing Hubs
+                    </span>
+                  </div>
+                </div>
               )}
 
               {activeTab === 2 && districtContextStats.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                  <div style={{ textAlign: 'center', fontSize: 11, color: '#bbb', fontWeight: 600, letterSpacing: 0.3, padding: '6px 0 2px' }}>
+                    {compoundFilter === 'all'
+                      ? 'Drone Hubs with Surrounding POI Context by District'
+                      : `${POI_COLORS[contextChartType]?.label ?? contextChartType}-dominant Drone Sites by District`}
+                  </div>
+                  <div style={{ flex: 1, minHeight: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={districtContextStats} margin={{ left: 4, right: 8, top: 16, bottom: 4 }} barCategoryGap="35%">
+                  <BarChart data={districtContextStats} margin={{ left: 4, right: 8, top: 32, bottom: 4 }} barCategoryGap="35%">
                     <CartesianGrid vertical={false} horizontal stroke="rgba(200,200,210,0.12)" strokeDasharray="3 3" />
                     <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
-                    <YAxis type="number" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
-                      label={{ value: 'Sites', angle: 0, position: 'top', fill: '#888', fontSize: 10, dy: -6, dx: 14 }} />
+                    <YAxis type="number" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
+                      label={{ value: 'Sites', angle: 0, position: 'top', fill: '#aaa', fontSize: 10, dy: -6, dx: 14 }} />
                     <Tooltip contentStyle={{ background: '#2E5E7E', border: '1px solid rgba(168,196,212,0.2)', borderRadius: 8, fontSize: 12 }}
                       labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                       formatter={v => [v, POI_COLORS[contextChartType]?.label]} />
@@ -501,6 +559,8 @@ export default function Page3Friction() {
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
+                  </div>
+                </div>
               )}
 
               {activeTab === 3 && odMatrix && (
@@ -551,23 +611,29 @@ export default function Page3Friction() {
               )}
 
               {activeTab === 4 && districtCoverageStats.length > 0 && (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={districtCoverageStats} margin={{ left: 4, right: 8, top: 16, bottom: 4 }} barCategoryGap="35%">
-                    <CartesianGrid vertical={false} horizontal stroke="rgba(200,200,210,0.12)" strokeDasharray="3 3" />
-                    <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
-                    <YAxis type="number" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
-                      label={{ value: 'per 10k', angle: 0, position: 'top', fill: '#888', fontSize: 10, dy: -6, dx: 18 }} />
-                    <Tooltip contentStyle={{ background: '#2E5E7E', border: '1px solid rgba(168,196,212,0.2)', borderRadius: 8, fontSize: 12 }}
-                      labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                      formatter={(v, name) => [name === 'ratio' ? `${v} sites/万人` : v, 'Coverage Rate']} />
-                    <Bar dataKey="ratio" fill="#e03030" fillOpacity={0.85} maxBarSize={22} cursor="pointer"
-                      onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
-                      <LabelList dataKey="ratio" position="top" style={{ fill: '#ccc', fontSize: 9 }} formatter={v => v > 0 ? v : ''} />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                  <div style={{ textAlign: 'center', fontSize: 11, color: '#bbb', fontWeight: 600, letterSpacing: 0.3, padding: '6px 0 2px' }}>
+                    Drone Site Availability by District
+                  </div>
+                  <div style={{ flex: 1, minHeight: 0 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={districtCoverageStats} margin={{ left: 4, right: 8, top: 32, bottom: 4 }} barCategoryGap="35%">
+                        <CartesianGrid vertical={false} horizontal stroke="rgba(200,200,210,0.12)" strokeDasharray="3 3" />
+                        <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
+                        <YAxis type="number" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
+                          label={{ value: 'per 10k', angle: 0, position: 'top', fill: '#aaa', fontSize: 10, dy: -6, dx: 18 }} />
+                        <Tooltip contentStyle={{ background: '#2E5E7E', border: '1px solid rgba(168,196,212,0.2)', borderRadius: 8, fontSize: 12 }}
+                          labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                          formatter={(v, name) => [name === 'ratio' ? `${v} sites/10k pop` : v, 'Coverage Rate']} />
+                        <Bar dataKey="ratio" fill="#e03030" fillOpacity={0.85} maxBarSize={22} cursor="pointer"
+                          onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
+                          <LabelList dataKey="ratio" position="top" style={{ fill: '#ccc', fontSize: 9 }} formatter={v => v > 0 ? v : ''} />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
               )}
-            </div>
           </div>
         </div>
 

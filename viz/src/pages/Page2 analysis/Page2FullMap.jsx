@@ -143,47 +143,12 @@ export default function Page2FullMap() {
   return (
     <div className="p2f p2f--light">
       <div className="p2f-hero-bar">
-        <button
-          className="p2f-back"
-          onClick={() => {
-            navigate('/', { state: { scrollTo: 'page-2' } });
-          }}
-        >
-          ← Back
-        </button>
         <div className="p2f-hero-text">
-          <h2 className="p2f-hero-title">Where is delivery demand concentrated?</h2>
+          <h2 className="p2f-hero-title">Where Should Drone Delivery Be Prioritised?</h2>
           <p className="p2f-hero-desc">
-            This map identifies potential drone delivery demand hotspots by combining real orders, population, food POIs, residential areas, and land use.
+            An interactive spatial diagnosis combining delivery demand, urban supply, ground burden, and composite gap scores to identify priority areas for future drone sites.
           </p>
         </div>
-      </div>
-
-      <div className="p2f-topbar">
-        <div className="p2f-tab-group">
-          {LAYER_MODES.map(m => (
-            <button
-              key={m.id}
-              className={`p2f-tab ${activeMode === m.id ? 'active' : ''}`}
-              onClick={() => { setActiveMode(m.id); setHighlightFilter(null); }}
-              style={{ '--tab-color': m.color }}
-            >
-              <span className="p2f-tab-dot" />
-              {m.label}
-            </button>
-          ))}
-        </div>
-        {(highlightFilter || selectedH3) && (
-          <button
-            className="p2f-clear-hl"
-            onClick={() => {
-              setHighlightFilter(null);
-              setSelectedH3(null);
-            }}
-          >
-            Clear highlight ×
-          </button>
-        )}
       </div>
 
       <div className="p2f-main">
@@ -197,6 +162,33 @@ export default function Page2FullMap() {
               : '')
           }
         >
+          <div className="p2f-tab-group p2f-tab-group--map">
+            <button
+              className="p2f-back"
+              onClick={() => navigate('/', { state: { scrollTo: 'page-2' } })}
+            >
+              ← Back
+            </button>
+            {LAYER_MODES.map(m => (
+              <button
+                key={m.id}
+                className={`p2f-tab ${activeMode === m.id ? 'active' : ''}`}
+                onClick={() => { setActiveMode(m.id); setHighlightFilter(null); }}
+                style={{ '--tab-color': m.color }}
+              >
+                <span className="p2f-tab-dot" />
+                {m.label}
+              </button>
+            ))}
+            {(highlightFilter || selectedH3) && (
+              <button
+                className="p2f-clear-hl"
+                onClick={() => { setHighlightFilter(null); setSelectedH3(null); }}
+              >
+                Clear highlight ×
+              </button>
+            )}
+          </div>
           <Page2FrictionMap
             barriers={barriers}
             activeBarriers={activeBarriers}
@@ -413,8 +405,24 @@ export default function Page2FullMap() {
 
         <div className="p2f-panel">
           <div className="p2f-panel-header">
-            <h3 className="p2f-panel-title">Where is delivery demand concentrated?</h3>
-            <p className="p2f-panel-subtitle">This map identifies potential drone delivery demand hotspots by combining real orders, population, food POIs, residential areas, and land use.</p>
+            <h3 className="p2f-panel-title">
+              {activeMode === 'supply'
+                ? 'Where Is Urban Delivery Supply Concentrated?'
+                : activeMode === 'friction'
+                ? 'Where Is Ground Delivery Most Burdened?'
+                : activeMode === 'priority'
+                ? 'Where Are the Priority Areas for Drone Delivery?'
+                : 'Where Is Delivery Demand Concentrated?'}
+            </h3>
+            <p className="p2f-panel-subtitle">
+              {activeMode === 'supply'
+                ? 'Mapping POI-based supply intensity and functional structure to identify which areas already support delivery activity.'
+                : activeMode === 'friction'
+                ? 'Mapping detours, congestion, and barrier crossings to identify areas where road-based delivery faces the greatest friction.'
+                : activeMode === 'priority'
+                ? 'Combining delivery demand, urban supply, and ground burden to identify areas with the highest gap index.'
+                : 'Mapping real orders, population, and residential intensity to identify demand hotspots for drone delivery.'}
+            </p>
             {activeMode === 'demand' && (
               <div className="p2f-panel-formula">
                 <p><strong>Demand Index</strong> is a weighted composite indicator measuring delivery demand intensity per hexagon:</p>

@@ -77,14 +77,16 @@ export default function Page4Placeholder() {
 
       {/* ── Section 1: Headline KPIs ── */}
       <div className="p4-text">
-        <div className="p4-eyebrow">From Status Quo to Strategy</div>
+        <div className="p4-eyebrow">From Current Network to Optimisation Need</div>
 
         <div className="p4-section">
           <h3 className="p4-col-title">The Gap at a Glance</h3>
           <div className="p4-col-body">
             <p>
-              Four numbers that bridge the findings from demand analysis and
-              infrastructure mapping — quantifying the gap that optimisation must close.
+              The existing drone network does not fully match Shenzhen's delivery demand.
+              Many residents and high-demand areas remain outside the 3 km service range,
+              while some locations combine strong demand, high ground friction, and no nearby
+              drone site. These gaps define where optimisation is needed most.
             </p>
           </div>
           <EnhancedKpiCards coverage={coverage} gapZones={gapZones}

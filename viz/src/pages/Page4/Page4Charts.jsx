@@ -619,7 +619,7 @@ export function EnhancedKpiCards({ coverage, gapZones, h3Gap }) {
       const r3 = coverage.radii['3km'];
       items.push({
         val: `${(100 - r3.population_coverage_pct).toFixed(0)}%`,
-        lab: 'Population beyond 3 km',
+        lab: 'Population outside 3 km range',
         accent: true,
       });
     }
@@ -629,7 +629,7 @@ export function EnhancedKpiCards({ coverage, gapZones, h3Gap }) {
       const avg = distances.reduce((a, b) => a + b, 0) / distances.length;
       items.push({
         val: `${avg.toFixed(1)} km`,
-        lab: 'Avg. gap distance',
+        lab: 'Average distance to nearest site',
         accent: true,
       });
     }
@@ -640,7 +640,7 @@ export function EnhancedKpiCards({ coverage, gapZones, h3Gap }) {
       const pct = highDemand.length ? ((uncoveredHigh.length / highDemand.length) * 100).toFixed(0) : 0;
       items.push({
         val: `${pct}%`,
-        lab: 'High-demand hexes uncovered',
+        lab: 'High-demand hexagons uncovered',
         accent: true,
       });
     }
@@ -653,7 +653,7 @@ export function EnhancedKpiCards({ coverage, gapZones, h3Gap }) {
       );
       items.push({
         val: critical.length,
-        lab: 'Critical zones',
+        lab: 'Critical uncovered zones',
         accent: true,
       });
     }
@@ -676,8 +676,8 @@ export function EnhancedKpiCards({ coverage, gapZones, h3Gap }) {
         ))}
       </div>
       <p className="p4-chart-note">
-        Four numbers that bridge the findings from demand analysis and infrastructure mapping —
-        quantifying the gap that optimisation must close.
+        Together, these indicators show that the next step is not simply to add more drone sites,
+        but to place them where demand, friction, and coverage gaps overlap.
       </p>
     </div>
   );

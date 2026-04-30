@@ -71,27 +71,29 @@ function PinIcon({ color, size = 18 }) {
   );
 }
 
-export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundFilter, focusDistrict, districtStats, onDistrictFocus }) {
+export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundFilter, focusDistrict, districtStats, onDistrictFocus, viewResetKey }) {
   const [viewState, setViewState]           = useState(INITIAL_VIEW);
   const [tooltip, setTooltip]               = useState(null);
   const [districtPanel, setDistrictPanel]   = useState(null);
   const [selectedHubIdx, setSelectedHubIdx] = useState(null);
   const [hoverDistrict, setHoverDistrict]   = useState(null);
   const [autoPlaying, setAutoPlaying]       = useState(false);
-  const containerRef   = useRef(null);
-  const mapRef         = useRef(null);
-  const viewStateRef   = useRef(INITIAL_VIEW);
-  const autoTimerRef   = useRef(null);
-  const autoIdxRef     = useRef(0);
+  const containerRef    = useRef(null);
+  const mapRef          = useRef(null);
+  const viewStateRef    = useRef(INITIAL_VIEW);
+  const autoTimerRef    = useRef(null);
+  const autoIdxRef      = useRef(0);
+  const pendingResetRef = useRef(null); // { target, until } — overrides handleViewStateChange during tab reset
 
   useEffect(() => {
+    clearTimeout(autoTimerRef.current);
+    setAutoPlaying(false);
     setSelectedHubIdx(null);
+    setDistrictPanel(null);
     if (activeTab === 3) {
-      setViewState(vs => ({ ...vs, pitch: 55, bearing: -20, transitionDuration: 1000 }));
-    } else {
-      setViewState(vs => ({ ...vs, pitch: 0, bearing: 0, transitionDuration: 600 }));
-    }
-    if (activeTab === 4 && hexGrid && containerRef.current) {
+      // Routes: auto-play effect will take over immediately; no pendingReset needed
+      setViewState({ ...INITIAL_VIEW, pitch: 55, bearing: -20, transitionDuration: 900 });
+    } else if (activeTab === 4 && hexGrid && containerRef.current) {
       let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
       hexGrid.features.forEach(f => {
         f.geometry.coordinates[0].forEach(([lon, lat]) => {
@@ -107,9 +109,15 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
       const { longitude, latitude, zoom } = vp.fitBounds(
         [[bbox[0], bbox[1]], [bbox[2], bbox[3]]], { padding: 40 }
       );
-      setViewState(vs => ({ ...vs, longitude, latitude, zoom, transitionDuration: 800 }));
+      const target = { ...INITIAL_VIEW, longitude, latitude, zoom, pitch: 0, bearing: 0, transitionDuration: 800 };
+      pendingResetRef.current = { target, until: Date.now() + 1200 };
+      setViewState(target);
+    } else {
+      const target = { ...INITIAL_VIEW, pitch: 0, bearing: 0, transitionDuration: 700 };
+      pendingResetRef.current = { target, until: Date.now() + 1200 };
+      setViewState(target);
     }
-  }, [activeTab, hexGrid]);
+  }, [activeTab, hexGrid, viewResetKey]);
 
   // ── Tab 3 data (must be declared before handleDeckClick) ──
   const tab3Data = useMemo(() => {
@@ -135,7 +143,7 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
     setSelectedHubIdx(null);
 
     // zoom back to full view first
-    setViewState(vs => ({ ...vs, ...INITIAL_VIEW, pitch: 45, bearing: -15, transitionDuration: 900 }));
+    setViewState(vs => ({ ...vs, ...INITIAL_VIEW, pitch: 45, bearing: -15, transitionDuration: 700 }));
 
     const zoomToHub = (idx) => {
       if (!containerRef.current || !tab3Data) return;
@@ -158,7 +166,7 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
       if (idx >= tab3Data.hubs.length) {
         // loop done, zoom back to full view
         setSelectedHubIdx(null);
-        setViewState(vs => ({ ...vs, ...INITIAL_VIEW, pitch: 45, bearing: -15, transitionDuration: 900 }));
+        setViewState(vs => ({ ...vs, ...INITIAL_VIEW, pitch: 45, bearing: -15, transitionDuration: 700 }));
         setAutoPlaying(false);
         return;
       }
@@ -167,7 +175,7 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
       autoTimerRef.current = setTimeout(step, 2800);
     };
 
-    autoTimerRef.current = setTimeout(step, 1200);
+    autoTimerRef.current = setTimeout(step, 800);
 
     return () => clearTimeout(autoTimerRef.current);
   }, [activeTab, tab3Data]);
@@ -191,11 +199,27 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
 
   // ── Event handlers ──
   const handleViewStateChange = useCallback(({ viewState: vs, interactionState }) => {
+    const isUserInteracting = interactionState && !interactionState.inTransition &&
+      (interactionState.isPanning || interactionState.isZooming ||
+       interactionState.isRotating || interactionState.isDragging);
+
+    if (pendingResetRef.current) {
+      if (isUserInteracting) {
+        // User grabbed the map — let them take over, cancel the pending reset
+        pendingResetRef.current = null;
+      } else if (Date.now() < pendingResetRef.current.until) {
+        // Keep applying the reset target so deck.gl can't ignore it mid-transition
+        setViewState(pendingResetRef.current.target);
+        viewStateRef.current = pendingResetRef.current.target;
+        return;
+      } else {
+        pendingResetRef.current = null;
+      }
+    }
+
     setViewState(vs);
     viewStateRef.current = vs;
-    if (interactionState && !interactionState.inTransition &&
-        (interactionState.isPanning || interactionState.isZooming ||
-         interactionState.isRotating || interactionState.isDragging)) {
+    if (isUserInteracting) {
       setDistrictPanel(null);
       onDistrictFocus?.(null);
     }
@@ -349,11 +373,11 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
   }, [hoverDistrict, focusDistrict, boundary]);
 
   return (
-    <div ref={containerRef} style={{ position: 'absolute', inset: 0 }}>
+    <div ref={containerRef} className="p3-map-root" style={{ position: 'absolute', inset: 0 }}>
       <DeckGL
         viewState={viewState}
         onViewStateChange={handleViewStateChange}
-        controller={true}
+        controller={{ doubleClickZoom: false }}
         layers={deckLayers}
         style={{ position: 'absolute', inset: 0 }}
         onClick={handleDeckClick}
@@ -518,7 +542,7 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
       )}
 
       {/* auto-play hint */}
-      {autoPlaying && (
+      {autoPlaying && activeTab === 3 && (
         <div style={{
           position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)',
           background: 'rgba(10,10,30,0.75)', backdropFilter: 'blur(8px)',
@@ -568,6 +592,22 @@ export default function Page3Map({ data, boundary, hexGrid, activeTab, compoundF
             <span className="p3-dp-label" style={{ color: '#c864ff' }}>Last-mile</span>
             <span className="p3-dp-val">{districtPanel.last_mile}</span>
           </div>
+        </div>
+      )}
+
+      {/* Hub type legend — Routes tab only */}
+      {activeTab === 3 && (
+        <div className="p3-hub-legend">
+          {[
+            { color: '#ffa028', label: 'Departure Hub' },
+            { color: '#606070', label: 'All Landing Hub' },
+            { color: '#c864ff', label: 'Reachable Hub' },
+          ].map(({ color, label }) => (
+            <div key={label} className="p3-hub-legend-row">
+              <PinIcon color={color} size={12} />
+              <span className="p3-hub-legend-label">{label}</span>
+            </div>
+          ))}
         </div>
       )}
 

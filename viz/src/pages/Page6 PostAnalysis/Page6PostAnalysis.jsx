@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { cellToLatLng } from 'h3-js';
+import { cellToLatLng, latLngToCell } from 'h3-js';
 import Map from 'react-map-gl/mapbox';
 import DeckGL from '@deck.gl/react';
 import { GeoJsonLayer, ScatterplotLayer } from '@deck.gl/layers';
@@ -17,9 +17,9 @@ const COVERAGE_RADIUS_KM = 3;
 const FRICTION_REDUCTION = 0.7;
 
 const LAYER_MODES = [
-  { id: 'supply',    label: 'Gap',       color: '#5A89A6' },
-  { id: 'friction',  label: 'Burden',    color: '#ff3264' },
-  { id: 'composite', label: 'Composite', color: '#c864ff' },
+  { id: 'acc_demand', label: 'A − D',     color: '#5A89A6' },
+  { id: 'friction',   label: 'Burden',    color: '#ff3264' },
+  { id: 'composite',  label: 'Composite', color: '#c864ff' },
 ];
 
 const BARRIER_TYPES = [
@@ -107,20 +107,23 @@ function computeGini(values) {
   return sum / (n * n * mean);
 }
 
-function hexColor(mode, d, dpBounds) {
+function hexColor(mode, d) {
   if (!d) return [80, 80, 80, 40];
 
-  const dp = d.dp || 0;
-  const fr = d.avg_friction || 0;
-
-  if (mode === 'supply') {
-    if (dp <= 0) return [0, 0, 0, 0];
-    const lo = dpBounds?.[0] ?? 0;
-    const hi = dpBounds?.[1] ?? 200;
-    const v = Math.max(0, Math.min(1, (dp - lo) / (hi - lo)));
+  if (mode === 'acc_demand') {
+    const ad = d._ad ?? 0;
+    if (ad === 0 && (d.demand_norm ?? 0) === 0) return [0, 0, 0, 0];
+    // diverging: negative (demand > accessibility) = red, positive = blue
+    if (ad < 0) {
+      const v = Math.min(Math.abs(ad), 1);
+      return [Math.round(180 + 75 * v), Math.round(80 * (1 - v)), Math.round(60 * (1 - v)), Math.round(50 + 200 * v)];
+    }
+    const v = Math.min(ad, 1);
     const rgb = rampLerp(SUPPLY_RAMP, v);
-    return [...rgb, Math.round(90 + 165 * v)];
+    return [...rgb, Math.round(70 + 180 * v)];
   }
+
+  const fr = d.avg_friction || 0;
 
   if (mode === 'friction' && !(fr > 0))
     return [0, 0, 0, 0];
@@ -149,9 +152,10 @@ export default function Page7PostAnalysis() {
   const [candidateSites, setCandidateSites] = useState(null);
   const [routes, setRoutes]               = useState(null);
   const [odAnalysis, setOdAnalysis]       = useState(null);
+  const [accData, setAccData]             = useState(null);
 
   const [viewState, setViewState]         = useState(VIEW);
-  const [activeMode, setActiveMode]       = useState('supply');
+  const [activeMode, setActiveMode]       = useState('acc_demand');
   const [budget, setBudget]               = useState(50);
   const [showCoverage, setShowCoverage]   = useState(true);
   const [hoveredHex, setHoveredHex]       = useState(null);
@@ -184,6 +188,7 @@ export default function Page7PostAnalysis() {
     fetch(publicDataUrl('data/page2_h3_gap.json')).then(r => r.json()).then(setH3Gap).catch(() => {});
     fetch(publicDataUrl('data/h3_takeout.json')).then(r => r.json()).then(setH3Takeout).catch(() => {});
     fetch(publicDataUrl('data/page6_candidate_sites.json')).then(r => r.json()).then(setCandidateSites).catch(() => {});
+    fetch(publicDataUrl('data/page6_accessibility.json')).then(r => r.json()).then(setAccData).catch(() => {});
     fetch(publicDataUrl('data/page2_routes.json')).then(r => r.json()).then(setRoutes).catch(() => {});
     fetch(publicDataUrl('data/page2_od_analysis.json'))
       .then(r => r.json())
@@ -212,6 +217,55 @@ export default function Page7PostAnalysis() {
     return set;
   }, [h3Gap, selectedSites]);
 
+  const accIndex = useMemo(() => {
+    if (!accData?.length) return null;
+    const accMap = new window.Map(accData.map(a => [a.h3, a]));
+
+    const droneHexes = [];
+    const droneHexIds = new Set();
+    for (const s of selectedSites) {
+      try {
+        const hid = latLngToCell(s.lat, s.lon, 8);
+        if (!droneHexIds.has(hid)) {
+          droneHexIds.add(hid);
+          const acc = accMap.get(hid);
+          const [lat, lon] = cellToLatLng(hid);
+          droneHexes.push({ h3: hid, lat, lon, localAcc: acc?.local_acc_count ?? 0 });
+        }
+      } catch { /* skip */ }
+    }
+
+    const extraAcc = new window.Map();
+    for (const a of droneHexes) {
+      let extra = 0;
+      for (const b of droneHexes) {
+        if (a.h3 === b.h3) continue;
+        if (haversineKm(a.lat, a.lon, b.lat, b.lon) <= COVERAGE_RADIUS_KM) {
+          extra += b.localAcc;
+        }
+      }
+      extraAcc.set(a.h3, extra);
+    }
+
+    const finals = [];
+    for (const a of accData) {
+      const ex = extraAcc.get(a.h3) ?? 0;
+      finals.push(a.local_acc_count + ex);
+    }
+    const fMin = Math.min(...finals);
+    const fMax = Math.max(...finals);
+    const fSpan = fMax > fMin ? fMax - fMin : 1;
+
+    const result = new window.Map();
+    accData.forEach((a, i) => {
+      result.set(a.h3, {
+        local_acc_index: a.local_acc_index,
+        final_acc_index: (finals[i] - fMin) / fSpan,
+      });
+    });
+    return result;
+  }, [accData, selectedSites]);
+
   const mergedHex = useMemo(() => {
     if (!h3Demand) return null;
     const gapMap     = new window.Map((h3Gap || []).map(g => [g.h3, g]));
@@ -225,10 +279,18 @@ export default function Page7PostAnalysis() {
       let lon = 0;
       try { [, lon] = cellToLatLng(d.h3); } catch { /* skip */ }
 
+      const ai = accIndex?.get(d.h3);
+      const demandNorm = gap?.demand_norm ?? 0;
+      const localAccIdx  = ai?.local_acc_index ?? 0;
+      const finalAccIdx  = ai?.final_acc_index ?? localAccIdx;
+
       return {
         ...d,
         _lon: lon,
         dp:                  d.dp || 0,
+        demand_norm:         demandNorm,
+        acc_demand_before:   localAccIdx - demandNorm,
+        acc_demand_after:    finalAccIdx - demandNorm,
         avg_friction:        (gap?.avg_friction || 0) * frictionMul,
         avg_friction_before: gap?.avg_friction || 0,
         gap_index:           (gap?.gap_index || 0) * (isCovered ? 0.4 : 1),
@@ -245,7 +307,7 @@ export default function Page7PostAnalysis() {
         covered: isCovered,
       };
     });
-  }, [h3Demand, h3Gap, h3Takeout, coverageSet]);
+  }, [h3Demand, h3Gap, h3Takeout, coverageSet, accIndex]);
 
   const metrics = useMemo(() => {
     if (!h3Gap?.length || !mergedHex?.length) return null;
@@ -404,13 +466,6 @@ export default function Page7PostAnalysis() {
     });
   };
 
-  const dpBounds = useMemo(() => {
-    if (!mergedHex?.length) return [0, 200];
-    const vals = mergedHex.map(d => d.dp || 0).filter(v => v > 0);
-    if (!vals.length) return [0, 200];
-    return [Math.min(...vals), Math.max(...vals)];
-  }, [mergedHex]);
-
   const splitLon = useMemo(() => {
     const w = mapCardRef.current?.clientWidth || 800;
     const degPerPx = 360 / (Math.pow(2, viewState.zoom) * 512);
@@ -426,16 +481,16 @@ export default function Page7PostAnalysis() {
         data: mergedHex,
         getHexagon: d => d.h3,
         getFillColor: d => {
-          if (d._lon < splitLon) {
-            const beforeD = { ...d, avg_friction: d.avg_friction_before, gap_index: d.gap_index_before };
-            return hexColor(activeMode, beforeD, dpBounds);
-          }
-          return hexColor(activeMode, d, dpBounds);
+          const isBefore = d._lon < splitLon;
+          const viewD = isBefore
+            ? { ...d, avg_friction: d.avg_friction_before, gap_index: d.gap_index_before, _ad: d.acc_demand_before }
+            : { ...d, _ad: d.acc_demand_after };
+          return hexColor(activeMode, viewD);
         },
         extruded: false,
         pickable: true,
         stroked: false,
-        updateTriggers: { getFillColor: [activeMode, coverageSet, dpBounds, splitLon] },
+        updateTriggers: { getFillColor: [activeMode, coverageSet, splitLon, accIndex] },
         onHover: info => setHoveredHex(info.object || null),
       }));
     }
@@ -479,7 +534,7 @@ export default function Page7PostAnalysis() {
     }
 
     return result;
-  }, [activeMode, mergedHex, showCoverage, selectedSites, coverageSet, dpBounds, splitLon]);
+  }, [activeMode, mergedHex, showCoverage, selectedSites, coverageSet, splitLon, accIndex]);
 
   return (
     <section id="page-7" className="page page-7-post">
@@ -539,9 +594,13 @@ export default function Page7PostAnalysis() {
 
           {hoveredHex && (
             <div className="p6-hex-tooltip">
-              {activeMode === 'supply' && (
+              {activeMode === 'acc_demand' && (
                 <div className="p6-hv-row">
-                  <div className="p6-hv"><span>Gap</span> {hoveredHex.dp?.toFixed(1) ?? '—'}</div>
+                  <div className="p6-hv"><span>A − D</span> {hoveredHex.acc_demand_after?.toFixed(3) ?? '—'}</div>
+                  {hoveredHex.covered && (
+                    <div className="p6-hv p6-hv-strike"><span>Before</span> {hoveredHex.acc_demand_before?.toFixed(3) ?? '—'}</div>
+                  )}
+                  {hoveredHex.covered && <div className="p6-hv-badge">Drone covered</div>}
                 </div>
               )}
               {activeMode === 'friction' && (
@@ -586,6 +645,16 @@ export default function Page7PostAnalysis() {
         <div className="p6-panel-half">
         <div className="p6-panel">
           <h3 className="p6-panel-title">Before vs After Drone Deployment</h3>
+
+          <div className="p6-method-note">
+            <p>
+              <strong>Accessibility − Demand</strong> identifies spatial mismatch:
+              zones where delivery demand exceeds local service accessibility.
+              Accessibility is defined as the total POIs within a cell and all
+              neighbouring cells within a 3 km buffer. Negative A − D values
+              mark priority intervention zones for drone deployment.
+            </p>
+          </div>
 
           {metrics && (
             <div className="p6-metrics">
@@ -842,11 +911,12 @@ Green curve shifts left — burden reduced in covered hexagons.
 
           <div className="p6-insight">
             <p>
-              Drag the slider to compare. With <strong>{selectedSites.length}</strong> strategically
-              placed drone sites,
-              {metrics ? ` ${metrics.coveragePct}% of high-burden areas are now covered. ` : ' '}
-              Hexagons within the 3 km coverage radius show dramatically reduced burden
-              as drones bypass ground barriers entirely.
+              Drag the slider to compare before vs after.
+              With <strong>{selectedSites.length}</strong> drone sites,
+              {metrics ? ` ${metrics.coveragePct}% of high-burden areas are covered. ` : ' '}
+              Drone-connected grids share accessibility — two sites within 3 km
+              each gain access to the other's local supply pool, shifting the
+              A − D balance toward positive values.
             </p>
           </div>
         </div>
