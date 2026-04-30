@@ -11,16 +11,15 @@ import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
          ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid,
          Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import './Page7PostAnalysis.css';
+import './Page6PostAnalysis.css';
 
 const COVERAGE_RADIUS_KM = 3;
 const FRICTION_REDUCTION = 0.7;
 
 const LAYER_MODES = [
-  { id: 'friction', label: 'Friction', color: '#ff3264' },
-  { id: 'priority', label: 'Priority', color: '#c864ff' },
-  { id: 'relief',   label: 'Relief',   color: '#e05030' },
-  { id: 'demand',   label: 'Demand',   color: '#ff4500' },
+  { id: 'supply',   label: 'Supply',    color: '#5A89A6' },
+  { id: 'friction', label: 'Friction',  color: '#ff3264' },
+  { id: 'composite', label: 'Composite', color: '#c864ff' },
 ];
 
 const BARRIER_TYPES = [
@@ -40,9 +39,9 @@ const BARRIER_COLORS = {
 const BUDGETS = [20, 50, 100];
 
 const VIEW = {
-  longitude: SHENZHEN_CENTER[0],
-  latitude:  SHENZHEN_CENTER[1],
-  zoom: 11,
+  longitude: 114.15,
+  latitude:  22.62,
+  zoom: 10,
   pitch: 0,
   bearing: 0,
 };
@@ -65,6 +64,34 @@ function compositeScore(site) {
   return 0.4 * d * f + 0.3 * i * f + 0.3 * d * i;
 }
 
+const SUPPLY_RAMP = [
+  [216, 232, 242],
+  [184, 214, 230],
+  [148, 194, 216],
+  [116, 170, 198],
+  [90, 137, 166],
+  [66, 112, 148],
+  [44, 88, 126],
+  [26, 62, 100],
+  [10, 38, 72],
+];
+
+function rampLerp(ramp, v01) {
+  const t = Math.max(0, Math.min(1, v01));
+  const n = ramp.length - 1;
+  const idx = t * n;
+  const lo = Math.floor(idx);
+  const hi = Math.min(lo + 1, n);
+  const f = idx - lo;
+  const c0 = ramp[lo];
+  const c1 = ramp[hi];
+  return [
+    Math.round(c0[0] + (c1[0] - c0[0]) * f),
+    Math.round(c0[1] + (c1[1] - c0[1]) * f),
+    Math.round(c0[2] + (c1[2] - c0[2]) * f),
+  ];
+}
+
 const TT_STYLE = { background: '#1a1a2e', border: '1px solid #333', borderRadius: 8, fontSize: 11 };
 
 function computeGini(values) {
@@ -80,19 +107,23 @@ function computeGini(values) {
   return sum / (n * n * mean);
 }
 
-function hexColor(mode, d) {
+function hexColor(mode, d, dpBounds) {
   if (!d) return [80, 80, 80, 40];
 
-  const fr  = d.avg_friction || 0;
-  const tdi = d.takeout_demand_index || 0;
+  const dp = d.dp || 0;
+  const fr = d.avg_friction || 0;
 
-  if ((mode === 'friction' || mode === 'priority') && !(fr > 0))
-    return [0, 0, 0, 0];
-
-  if (mode === 'demand') {
-    const v = Math.min(tdi, 1);
-    return [255, Math.round(100 * (1 - v)), Math.round(50 * (1 - v)), Math.round(15 + 220 * v)];
+  if (mode === 'supply') {
+    if (dp <= 0) return [0, 0, 0, 0];
+    const lo = dpBounds?.[0] ?? 0;
+    const hi = dpBounds?.[1] ?? 200;
+    const v = Math.max(0, Math.min(1, (dp - lo) / (hi - lo)));
+    const rgb = rampLerp(SUPPLY_RAMP, v);
+    return [...rgb, Math.round(90 + 165 * v)];
   }
+
+  if (mode === 'friction' && !(fr > 0))
+    return [0, 0, 0, 0];
 
   if (mode === 'friction') {
     const t = Math.min(Math.max(fr, 0), 1);
@@ -100,24 +131,11 @@ function hexColor(mode, d) {
     return [255, Math.round(235 * (1 - v)), Math.round(175 * (1 - v)), Math.round(28 + 227 * v)];
   }
 
-  if (mode === 'priority') {
-    const dv  = Math.min(tdi, 1);
-    const fv  = Math.min(fr, 1);
-    const raw = Math.min(1, dv * fv);
-    const v   = Math.pow(Math.min(1, raw * 1.28), 0.34);
+  if (mode === 'composite') {
+    const gi = d.gap_index || 0;
+    if (gi <= 0) return [0, 0, 0, 0];
+    const v = Math.pow(Math.min(gi, 1), 0.45);
     return [Math.round(118 + 137 * v), Math.round(238 * (1 - v)), Math.round(168 + 87 * v), Math.round(26 + 229 * v)];
-  }
-
-  if (mode === 'relief') {
-    const rv = d.relief_vulnerability || 0;
-    if (rv <= 0) return [0, 0, 0, 0];
-    const v = Math.pow(Math.min(rv / 0.14, 1), 0.45);
-    return [
-      Math.round(255 * v),
-      Math.round(100 + 80 * (1 - v)),
-      Math.round(50 * (1 - v)),
-      Math.round(30 + 225 * v),
-    ];
   }
 
   return [80, 80, 80, 40];
@@ -133,7 +151,7 @@ export default function Page7PostAnalysis() {
   const [odAnalysis, setOdAnalysis]       = useState(null);
 
   const [viewState, setViewState]         = useState(VIEW);
-  const [activeMode, setActiveMode]       = useState('friction');
+  const [activeMode, setActiveMode]       = useState('supply');
   const [viewMode, setViewMode]           = useState('after');
   const [budget, setBudget]               = useState(50);
   const [activeBarriers, setActiveBarriers] = useState(new Set(['water', 'railway', 'highway_major']));
@@ -194,9 +212,11 @@ export default function Page7PostAnalysis() {
 
       return {
         ...d,
+        dp:                  d.dp || 0,
         avg_friction:        (gap?.avg_friction || 0) * frictionMul,
         avg_friction_before: gap?.avg_friction || 0,
         gap_index:           (gap?.gap_index || 0) * (isCovered ? 0.4 : 1),
+        gap_index_before:    gap?.gap_index || 0,
         food_count:    d.food    || gap?.food_count    || 0,
         retail_count:  d.retail  || gap?.retail_count   || 0,
         edu_count:     d.edu     || gap?.education_count || 0,
@@ -368,47 +388,27 @@ export default function Page7PostAnalysis() {
     });
   };
 
+  const dpBounds = useMemo(() => {
+    if (!mergedHex?.length) return [0, 200];
+    const vals = mergedHex.map(d => d.dp || 0).filter(v => v > 0);
+    if (!vals.length) return [0, 200];
+    return [Math.min(...vals), Math.max(...vals)];
+  }, [mergedHex]);
+
   const layers = useMemo(() => {
     const result = [];
-
-    if (showBarriers && barriers && activeMode !== 'demand') {
-      Object.entries(barriers)
-        .filter(([type]) => activeBarriers.has(type))
-        .forEach(([type, data]) => {
-          result.push(new GeoJsonLayer({
-            id: `barrier-${type}`, data,
-            getFillColor: BARRIER_COLORS[type],
-            getLineColor: BARRIER_COLORS[type],
-            getLineWidth: type === 'railway' ? 3 : 2,
-            lineWidthMinPixels: 1, opacity: 0.6, pickable: false,
-          }));
-        });
-    }
 
     if (mergedHex) {
       result.push(new H3HexagonLayer({
         id: 'analysis-hex',
         data: mergedHex,
         getHexagon: d => d.h3,
-        getFillColor: d => hexColor(activeMode, d),
+        getFillColor: d => hexColor(activeMode, d, dpBounds),
         extruded: false,
         pickable: true,
         stroked: false,
-        updateTriggers: { getFillColor: [activeMode, viewMode, coverageSet] },
+        updateTriggers: { getFillColor: [activeMode, viewMode, coverageSet, dpBounds] },
         onHover: info => setHoveredHex(info.object || null),
-      }));
-    }
-
-    if (showRoutes && routes) {
-      result.push(new GeoJsonLayer({
-        id: 'od-routes', data: routes,
-        getLineColor: f => {
-          const fr = f.properties?.ground_friction ?? 0;
-          const v  = Math.min(fr / 0.6, 1);
-          return [0, Math.round(255 * (1 - v * 0.6)), Math.round(220 - 100 * v), 50 + Math.round(130 * v)];
-        },
-        getLineWidth: 1.5,
-        lineWidthMinPixels: 0.5, lineWidthMaxPixels: 3, pickable: false,
       }));
     }
 
@@ -446,45 +446,44 @@ export default function Page7PostAnalysis() {
     }
 
     return result;
-  }, [barriers, activeBarriers, showBarriers, activeMode, mergedHex,
-      routes, showRoutes, viewMode, showCoverage, selectedSites, coverageSet]);
+  }, [activeMode, mergedHex, viewMode, showCoverage, selectedSites, coverageSet, dpBounds]);
 
   return (
     <section id="page-7" className="page page-7-post">
       {/* ═══ TOP BAR ═══ */}
-      <div className="p7-topbar">
-        <div className="p7-tab-group">
+      <div className="p6-topbar">
+        <div className="p6-tab-group">
           {LAYER_MODES.map(m => (
             <button
               key={m.id}
-              className={`p7-tab ${activeMode === m.id ? 'active' : ''}`}
+              className={`p6-tab ${activeMode === m.id ? 'active' : ''}`}
               onClick={() => setActiveMode(m.id)}
               style={{ '--tab-color': m.color }}
             >
-              <span className="p7-tab-dot" />
+              <span className="p6-tab-dot" />
               {m.label}
             </button>
           ))}
         </div>
 
-        <div className="p7-view-toggle">
+        <div className="p6-view-toggle">
           <button
-            className={`p7-vt-btn ${viewMode === 'before' ? 'active' : ''}`}
+            className={`p6-vt-btn ${viewMode === 'before' ? 'active' : ''}`}
             onClick={() => setViewMode('before')}
           >Before</button>
           <button
-            className={`p7-vt-btn ${viewMode === 'after' ? 'active' : ''}`}
+            className={`p6-vt-btn ${viewMode === 'after' ? 'active' : ''}`}
             onClick={() => setViewMode('after')}
           >After Drones</button>
         </div>
 
         {viewMode === 'after' && (
-          <div className="p7-budget-group">
-            <span className="p7-budget-label">Sites:</span>
+          <div className="p6-budget-group">
+            <span className="p6-budget-label">Sites:</span>
             {BUDGETS.map(b => (
               <button
                 key={b}
-                className={`p7-budget-btn ${budget === b ? 'active' : ''}`}
+                className={`p6-budget-btn ${budget === b ? 'active' : ''}`}
                 onClick={() => setBudget(b)}
               >+{b}</button>
             ))}
@@ -493,9 +492,10 @@ export default function Page7PostAnalysis() {
       </div>
 
       {/* ═══ MAIN ═══ */}
-      <div className="p7-main">
-        {/* ─── MAP ─── */}
-        <div className="p7-map-area">
+      <div className="p6-main">
+        {/* ─── LEFT: map (66.67%) ─── */}
+        <div className="p6-map-half">
+        <div className="p6-map-card">
           <DeckGL
             viewState={viewState}
             onViewStateChange={({ viewState: vs }) => setViewState(vs)}
@@ -517,119 +517,87 @@ export default function Page7PostAnalysis() {
           />
 
           {hoveredHex && (
-            <div className="p7-hex-tooltip">
+            <div className="p6-hex-tooltip">
+              {activeMode === 'supply' && (
+                <div className="p6-hv-row">
+                  <div className="p6-hv"><span>Supply</span> {hoveredHex.dp?.toFixed(1) ?? '—'}</div>
+                </div>
+              )}
               {activeMode === 'friction' && (
-                <div className="p7-hv-row">
-                  <div className="p7-hv"><span>Friction</span> {hoveredHex.avg_friction?.toFixed(3) ?? '—'}</div>
+                <div className="p6-hv-row">
+                  <div className="p6-hv"><span>Friction</span> {hoveredHex.avg_friction?.toFixed(3) ?? '—'}</div>
                   {viewMode === 'after' && hoveredHex.covered && (
-                    <div className="p7-hv p7-hv-strike"><span>Before</span> {hoveredHex.avg_friction_before?.toFixed(3) ?? '—'}</div>
+                    <div className="p6-hv p6-hv-strike"><span>Before</span> {hoveredHex.avg_friction_before?.toFixed(3) ?? '—'}</div>
                   )}
-                  {hoveredHex.covered && <div className="p7-hv-badge">Drone covered</div>}
+                  {hoveredHex.covered && <div className="p6-hv-badge">Drone covered</div>}
                 </div>
               )}
-              {activeMode === 'priority' && (
-                <div className="p7-hv-row">
-                  <div className="p7-hv">
-                    <span>D×F</span>
-                    {(Math.min(hoveredHex.takeout_demand_index ?? 0, 1) * Math.min(hoveredHex.avg_friction ?? 0, 1)).toFixed(4)}
-                  </div>
-                  {hoveredHex.covered && <div className="p7-hv-badge">Drone covered</div>}
-                </div>
-              )}
-              {activeMode === 'relief' && (
-                <div className="p7-hv-row">
-                  <div className="p7-hv"><span>Relief</span> {hoveredHex.relief_vulnerability?.toFixed(4) ?? '—'}</div>
-                  <div className="p7-hv"><span>Friction</span> {hoveredHex.avg_friction?.toFixed(3) ?? '—'}</div>
-                  {hoveredHex.covered && <div className="p7-hv-badge">Drone covered</div>}
-                </div>
-              )}
-              {activeMode === 'demand' && (
-                <div className="p7-hv-row">
-                  <div className="p7-hv"><span>Demand</span> {hoveredHex.takeout_demand_index?.toFixed(3) ?? '—'}</div>
+              {activeMode === 'composite' && (
+                <div className="p6-hv-row">
+                  <div className="p6-hv"><span>Gap</span> {hoveredHex.gap_index?.toFixed(4) ?? '—'}</div>
+                  {viewMode === 'after' && hoveredHex.covered && (
+                    <div className="p6-hv p6-hv-strike"><span>Before</span> {hoveredHex.gap_index_before?.toFixed(4) ?? '—'}</div>
+                  )}
+                  {hoveredHex.covered && <div className="p6-hv-badge">Drone covered</div>}
                 </div>
               )}
             </div>
           )}
 
-          {(activeMode === 'friction' || activeMode === 'priority' || activeMode === 'relief') && (
-            <div className="p7-barrier-float">
-              <div className="p7-bf-title">
+          {viewMode === 'after' && (
+            <div className="p6-barrier-float">
+              <div className="p6-bf-title">
                 <label>
-                  <input type="checkbox" checked={showBarriers} onChange={e => setShowBarriers(e.target.checked)} />
-                  Barrier Layers
+                  <input type="checkbox" checked={showCoverage} onChange={e => setShowCoverage(e.target.checked)} />
+                  Coverage Circles
                 </label>
               </div>
-              {BARRIER_TYPES.map(b => (
-                <button
-                  key={b.id}
-                  className={`p7-bf-chip ${activeBarriers.has(b.id) ? 'on' : ''}`}
-                  onClick={() => toggleBarrier(b.id)}
-                  style={{ '--chip-color': b.color }}
-                >
-                  <span className="p7-chip-dot" />
-                  {b.label}
-                </button>
-              ))}
-              {activeMode === 'priority' && (
-                <div className="p7-bf-title" style={{ marginTop: 8 }}>
-                  <label>
-                    <input type="checkbox" checked={showRoutes} onChange={e => setShowRoutes(e.target.checked)} />
-                    OD Routes
-                  </label>
-                </div>
-              )}
-              {viewMode === 'after' && (
-                <div className="p7-bf-title" style={{ marginTop: 8 }}>
-                  <label>
-                    <input type="checkbox" checked={showCoverage} onChange={e => setShowCoverage(e.target.checked)} />
-                    Coverage Circles
-                  </label>
-                </div>
-              )}
             </div>
           )}
 
-          <div className="p7-summary-bar">
+          <div className="p6-summary-bar">
             {viewMode === 'before'
               ? 'Ground friction before drone deployment — same as original analysis'
               : `After +${selectedSites.length} drone sites: friction reduced by ${metrics?.frictionReduction ?? '—'}% in covered areas`}
           </div>
         </div>
+        </div>
 
-        {/* ─── RIGHT PANEL ─── */}
-        <div className="p7-panel">
-          <h3 className="p7-panel-title">
+        {/* ─── RIGHT: panel (33.33%) ─── */}
+        <div className="p6-panel-half">
+        <div className="p6-panel">
+          <h3 className="p6-panel-title">
             {viewMode === 'before' ? 'Before Drones' : 'After Drone Deployment'}
           </h3>
 
           {metrics && (
-            <div className="p7-metrics">
-              <div className="p7-metric-card">
-                <div className="p7m-val" style={{ color: '#ff3264' }}>
+            <div className="p6-metrics">
+              <div className="p6-metric-card">
+                <div className="p6m-val" style={{ color: '#ff3264' }}>
                   {viewMode === 'before' ? metrics.avgFrictionBefore : metrics.avgFrictionAfter}
                 </div>
-                <div className="p7m-lab">Avg Friction</div>
+                <div className="p6m-lab">Avg Friction</div>
               </div>
 
               {viewMode === 'after' && (
                 <>
-                  <div className="p7-metric-card">
-                    <div className="p7m-val" style={{ color: '#00e896' }}>
+                  <div className="p6-metric-card">
+                    <div className="p6m-val" style={{ color: '#00e896' }}>
                       -{metrics.frictionReduction}%
                     </div>
-                    <div className="p7m-lab">Friction Reduction</div>
+                    <div className="p6m-lab">Friction Reduction</div>
                   </div>
-                  <div className="p7-metric-card">
-                    <div className="p7m-val" style={{ color: '#64c8ff' }}>
+                  <div className="p6-metric-card">
+                    <div className="p6m-val" style={{ color: '#64c8ff' }}>
                       {metrics.coveragePct}%
                     </div>
-                    <div className="p7m-lab">Area Covered</div>
+                    <div className="p6m-lab">Area Covered</div>
                   </div>
-                  <div className="p7-metric-card">
-                    <div className="p7m-val" style={{ color: '#ffa028' }}>
+                  <div className="p6-metric-card">
+                    <div className="p6m-val" style={{ color: '#ffa028' }}>
                       +{metrics.numSites}
                     </div>
-                    <div className="p7m-lab">Drone Sites</div>
+                    <div className="p6m-lab">Drone Sites</div>
                   </div>
                 </>
               )}
@@ -637,44 +605,44 @@ export default function Page7PostAnalysis() {
           )}
 
           {viewMode === 'after' && metrics && (
-            <div className="p7-comparison">
+            <div className="p6-comparison">
               <h4>Friction Comparison</h4>
-              <div className="p7-comp-row">
-                <span className="p7-comp-label">Before</span>
-                <div className="p7-comp-track">
+              <div className="p6-comp-row">
+                <span className="p6-comp-label">Before</span>
+                <div className="p6-comp-track">
                   <div
-                    className="p7-comp-fill p7-comp-before"
+                    className="p6-comp-fill p6-comp-before"
                     style={{ width: '100%' }}
                   />
                 </div>
-                <span className="p7-comp-val">{metrics.avgFrictionBefore}</span>
+                <span className="p6-comp-val">{metrics.avgFrictionBefore}</span>
               </div>
-              <div className="p7-comp-row">
-                <span className="p7-comp-label">After</span>
-                <div className="p7-comp-track">
+              <div className="p6-comp-row">
+                <span className="p6-comp-label">After</span>
+                <div className="p6-comp-track">
                   <div
-                    className="p7-comp-fill p7-comp-after"
+                    className="p6-comp-fill p6-comp-after"
                     style={{ width: `${(+metrics.avgFrictionAfter / Math.max(+metrics.avgFrictionBefore, 0.001)) * 100}%` }}
                   />
                 </div>
-                <span className="p7-comp-val">{metrics.avgFrictionAfter}</span>
+                <span className="p6-comp-val">{metrics.avgFrictionAfter}</span>
               </div>
-              <div className="p7-comp-row">
-                <span className="p7-comp-label">Covered</span>
-                <div className="p7-comp-track">
+              <div className="p6-comp-row">
+                <span className="p6-comp-label">Covered</span>
+                <div className="p6-comp-track">
                   <div
-                    className="p7-comp-fill p7-comp-coverage"
+                    className="p6-comp-fill p6-comp-coverage"
                     style={{ width: `${metrics.coveragePct}%` }}
                   />
                 </div>
-                <span className="p7-comp-val">{metrics.coveredHexes}/{metrics.totalHexes}</span>
+                <span className="p6-comp-val">{metrics.coveredHexes}/{metrics.totalHexes}</span>
               </div>
             </div>
           )}
 
           {/* ═══ CHARTS ═══ */}
           {frictionDistData.length > 0 && (
-            <div className="p7-chart-section">
+            <div className="p6-chart-section">
               <h4>Friction Distribution</h4>
               <ResponsiveContainer width="100%" height={150}>
                 <AreaChart data={frictionDistData} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
@@ -694,7 +662,7 @@ export default function Page7PostAnalysis() {
                   <Legend formatter={v => v === 'before' ? 'Before' : 'After'} />
                 </AreaChart>
               </ResponsiveContainer>
-              <p className="p7-chart-note">
+              <p className="p6-chart-note">
                 {viewMode === 'after'
                   ? 'Green curve shifts left — friction reduced in covered hexagons.'
                   : 'Original friction distribution across all hexagons.'}
@@ -703,7 +671,7 @@ export default function Page7PostAnalysis() {
           )}
 
           {viewMode === 'after' && efficiencyCurve.length > 1 && (
-            <div className="p7-chart-section">
+            <div className="p6-chart-section">
               <h4>Budget Efficiency</h4>
               <ResponsiveContainer width="100%" height={150}>
                 <AreaChart data={efficiencyCurve} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
@@ -721,12 +689,12 @@ export default function Page7PostAnalysis() {
                   <Legend formatter={v => v === 'coverage' ? 'Coverage %' : 'Friction Reduction %'} />
                 </AreaChart>
               </ResponsiveContainer>
-              <p className="p7-chart-note">Diminishing returns: early sites cover the most high-friction area.</p>
+              <p className="p6-chart-note">Diminishing returns: early sites cover the most high-friction area.</p>
             </div>
           )}
 
           {viewMode === 'after' && barrierComparison && (
-            <div className="p7-chart-section">
+            <div className="p6-chart-section">
               <h4>Barrier Crossings / Trip</h4>
               <ResponsiveContainer width="100%" height={140}>
                 <BarChart data={barrierComparison} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
@@ -743,30 +711,30 @@ export default function Page7PostAnalysis() {
           )}
 
           {viewMode === 'after' && topImproved.length > 0 && (
-            <div className="p7-chart-section">
+            <div className="p6-chart-section">
               <h4>Most Improved Hexagons</h4>
-              <div className="p7-improved-list">
+              <div className="p6-improved-list">
                 {topImproved.map((hex, i) => (
-                  <div key={hex.h3} className="p7-imp-row">
-                    <span className="p7-imp-rank">#{i + 1}</span>
-                    <div className="p7-imp-bars">
-                      <div className="p7-imp-before"
+                  <div key={hex.h3} className="p6-imp-row">
+                    <span className="p6-imp-rank">#{i + 1}</span>
+                    <div className="p6-imp-bars">
+                      <div className="p6-imp-before"
                         style={{ width: `${(hex.before / topImproved[0].before) * 100}%` }} />
-                      <div className="p7-imp-after"
+                      <div className="p6-imp-after"
                         style={{ width: `${(hex.after / topImproved[0].before) * 100}%` }} />
                     </div>
-                    <span className="p7-imp-delta">-{(hex.delta / hex.before * 100).toFixed(0)}%</span>
+                    <span className="p6-imp-delta">-{(hex.delta / hex.before * 100).toFixed(0)}%</span>
                   </div>
                 ))}
               </div>
-              <p className="p7-chart-note">Red = before, green = after. Covered hexagons with largest friction drop.</p>
+              <p className="p6-chart-note">Red = before, green = after. Covered hexagons with largest friction drop.</p>
             </div>
           )}
 
           {viewMode === 'after' && demandCoverage && (
-            <div className="p7-chart-section">
+            <div className="p6-chart-section">
               <h4>High-Demand Area Coverage</h4>
-              <div className="p7-donut-wrap">
+              <div className="p6-donut-wrap">
                 <ResponsiveContainer width="100%" height={150}>
                   <PieChart>
                     <Pie data={demandCoverage} cx="50%" cy="50%"
@@ -780,36 +748,36 @@ export default function Page7PostAnalysis() {
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="p7-donut-center">
+                <div className="p6-donut-center">
                   {((demandCoverage[0].value / Math.max(demandCoverage[0].value + demandCoverage[1].value, 1)) * 100).toFixed(0)}%
                 </div>
               </div>
-              <p className="p7-chart-note">High-demand hexagons (index &gt; 0.3) covered by drone sites.</p>
+              <p className="p6-chart-note">High-demand hexagons (index &gt; 0.3) covered by drone sites.</p>
             </div>
           )}
 
           {viewMode === 'after' && giniData && (
-            <div className="p7-chart-section">
+            <div className="p6-chart-section">
               <h4>Spatial Equity (Gini)</h4>
-              <div className="p7-gini">
-                <div className="p7-gini-row">
-                  <span className="p7-gini-label">Before</span>
-                  <div className="p7-gini-track">
-                    <div className="p7-gini-fill p7-gini-before"
+              <div className="p6-gini">
+                <div className="p6-gini-row">
+                  <span className="p6-gini-label">Before</span>
+                  <div className="p6-gini-track">
+                    <div className="p6-gini-fill p6-gini-before"
                       style={{ width: `${Math.min(giniData.before * 100, 100)}%` }} />
                   </div>
-                  <span className="p7-gini-val">{giniData.before.toFixed(4)}</span>
+                  <span className="p6-gini-val">{giniData.before.toFixed(4)}</span>
                 </div>
-                <div className="p7-gini-row">
-                  <span className="p7-gini-label">After</span>
-                  <div className="p7-gini-track">
-                    <div className="p7-gini-fill p7-gini-after"
+                <div className="p6-gini-row">
+                  <span className="p6-gini-label">After</span>
+                  <div className="p6-gini-track">
+                    <div className="p6-gini-fill p6-gini-after"
                       style={{ width: `${Math.min(giniData.after * 100, 100)}%` }} />
                   </div>
-                  <span className="p7-gini-val">{giniData.after.toFixed(4)}</span>
+                  <span className="p6-gini-val">{giniData.after.toFixed(4)}</span>
                 </div>
               </div>
-              <p className="p7-chart-note">
+              <p className="p6-chart-note">
                 Lower = more equal distribution.
                 {giniData.before > 0 && ` Change: ${((giniData.before - giniData.after) / giniData.before * 100).toFixed(1)}% more equitable.`}
               </p>
@@ -817,7 +785,7 @@ export default function Page7PostAnalysis() {
           )}
 
           {viewMode === 'after' && siteRoi.length > 0 && (
-            <div className="p7-chart-section">
+            <div className="p6-chart-section">
               <h4>Site ROI (Score vs Coverage)</h4>
               <ResponsiveContainer width="100%" height={150}>
                 <ScatterChart margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
@@ -834,34 +802,34 @@ export default function Page7PostAnalysis() {
                   <Scatter data={siteRoi} fill="#ffa028" fillOpacity={0.7} />
                 </ScatterChart>
               </ResponsiveContainer>
-              <p className="p7-chart-note">Each dot = one drone site. Top-right = best return on investment.</p>
+              <p className="p6-chart-note">Each dot = one drone site. Top-right = best return on investment.</p>
             </div>
           )}
 
           {viewMode === 'after' && (
-            <div className="p7-budget-info">
+            <div className="p6-budget-info">
               <h4>Drone Site Budget</h4>
-              <p className="p7-budget-desc">
+              <p className="p6-budget-desc">
                 Adding <strong>{selectedSites.length}</strong> drone sites (ranked by composite
                 score: 0.4·D·F + 0.3·I·F + 0.3·D·I) with a 3 km coverage radius reduces
                 average ground friction by <strong>{metrics?.frictionReduction ?? '—'}%</strong>.
               </p>
-              <div className="p7-budget-visual">
+              <div className="p6-budget-visual">
                 {BUDGETS.map(b => (
                   <button
                     key={b}
-                    className={`p7-bv-btn ${budget === b ? 'active' : ''}`}
+                    className={`p6-bv-btn ${budget === b ? 'active' : ''}`}
                     onClick={() => setBudget(b)}
                   >
-                    <div className="p7-bv-num">+{b}</div>
-                    <div className="p7-bv-label">sites</div>
+                    <div className="p6-bv-num">+{b}</div>
+                    <div className="p6-bv-label">sites</div>
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          <div className="p7-insight">
+          <div className="p6-insight">
             {viewMode === 'before' ? (
               <p>
                 This map shows the original ground friction landscape across Shenzhen.
@@ -880,6 +848,7 @@ export default function Page7PostAnalysis() {
               </p>
             )}
           </div>
+        </div>
         </div>
       </div>
     </section>

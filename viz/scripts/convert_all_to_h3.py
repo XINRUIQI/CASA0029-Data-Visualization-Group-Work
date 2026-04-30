@@ -223,6 +223,35 @@ if ROUTES_PATH.exists():
             if _hid in _friction_by_h3:
                 rec["avg_friction"] = round(_friction_by_h3[_hid], 4)
         print(f"  {len(_friction_by_h3)} hexagons with route-sampled friction ({_n_assigned} rows updated)")
+
+    # ── Neighbour interpolation for ALL zero-friction hexes (iterative IDW) ──
+    import h3 as _h3
+
+    _fr_map = {rec["h3"]: rec["avg_friction"] for rec in gap_records}
+    _max_k = 3
+
+    _zero_targets = [rec for rec in gap_records if (rec.get("avg_friction") or 0) == 0]
+    print(f"\n  Neighbour interpolation: {len(_zero_targets)} zero-friction hexes (all)")
+
+    _n_filled = 0
+    for rec in _zero_targets:
+        _hid = rec["h3"]
+        _weighted_sum, _weight_total = 0.0, 0.0
+        for _k in range(1, _max_k + 1):
+            _ring = _h3.grid_ring(_hid, _k)
+            _w = 1.0 / _k
+            for _nb in _ring:
+                _nf = _fr_map.get(_nb, 0)
+                if _nf > 0:
+                    _weighted_sum += _nf * _w
+                    _weight_total += _w
+        if _weight_total > 0:
+            rec["avg_friction"] = round(_weighted_sum / _weight_total, 4)
+            _fr_map[_hid] = rec["avg_friction"]
+            _n_filled += 1
+
+    print(f"  Interpolated {_n_filled}/{len(_zero_targets)} hexes from neighbours (k≤{_max_k})")
+
 else:
     print("  sz_routes.gpkg not found — falling back to OD endpoint (O+D) …")
     _od_path = OUT / "page2_od_analysis.json"
@@ -257,6 +286,34 @@ else:
             print(f"  OD endpoint fallback: {len(_friction_by_h3)} hexagons ({_n_assigned} rows updated)")
     else:
         print("  No OD data found — friction stays as square-grid aggregate only")
+
+    # ── Neighbour interpolation for ALL zero-friction hexes (iterative IDW) ──
+    import h3 as _h3
+
+    _fr_map = {rec["h3"]: rec["avg_friction"] for rec in gap_records}
+    _max_k = 3
+
+    _zero_targets = [rec for rec in gap_records if (rec.get("avg_friction") or 0) == 0]
+    print(f"\n  Neighbour interpolation: {len(_zero_targets)} zero-friction hexes (all)")
+
+    _n_filled = 0
+    for rec in _zero_targets:
+        _hid = rec["h3"]
+        _weighted_sum, _weight_total = 0.0, 0.0
+        for _k in range(1, _max_k + 1):
+            _ring = _h3.grid_ring(_hid, _k)
+            _w = 1.0 / _k
+            for _nb in _ring:
+                _nf = _fr_map.get(_nb, 0)
+                if _nf > 0:
+                    _weighted_sum += _nf * _w
+                    _weight_total += _w
+        if _weight_total > 0:
+            rec["avg_friction"] = round(_weighted_sum / _weight_total, 4)
+            _fr_map[_hid] = rec["avg_friction"]
+            _n_filled += 1
+
+    print(f"  Interpolated {_n_filled}/{len(_zero_targets)} hexes from neighbours (k≤{_max_k})")
 
 # Recompute demand_norm, friction_norm, intensity_norm, gap_index (notebook 11 formula)
 def _norm_array(vals):

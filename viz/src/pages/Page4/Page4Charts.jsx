@@ -463,8 +463,8 @@ export function GroundFrictionBoxChart({ odData }) {
     return [
       { name: 'Detour ratio', ...detour, color: '#ff7a5c', unit: '×' },
       { name: 'Congestion amp.', ...congestion, color: '#ffb07a', unit: '×' },
-      { name: 'Ground friction', ...friction, color: '#ab47bc', unit: '' },
       { name: 'Barriers / route', ...barriers, color: '#42a5f5', unit: '' },
+      { name: 'Ground friction', ...friction, color: '#ab47bc', unit: '' },
     ];
   }, [odData]);
 

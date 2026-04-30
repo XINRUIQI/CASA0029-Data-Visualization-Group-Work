@@ -71,7 +71,7 @@ function ParticleBg() {
 
 const CONGESTION_TOP10 = [
   { name: 'Shangbu Road',          hours: 21,    increase: '+4%'   },
-  { name: 'Yantian Road',          hours: 19,    increase: null    },
+  { name: 'Yantian Road',          hours: 19,    increase: '+12%'  },
   { name: 'Binhai Avenue',         hours: 15.75, increase: '+9%'   },
   { name: 'Longgang Avenue',       hours: 11.25, increase: '+121%' },
   { name: 'Meiguan Road',          hours: 7.5,   increase: '+114%' },
@@ -79,7 +79,7 @@ const CONGESTION_TOP10 = [
   { name: 'Fulong Road',           hours: 6.5,   increase: '+30%'  },
   { name: 'Xinzhou Road',          hours: 6.5,   increase: '+160%' },
   { name: 'Liuxian Avenue',        hours: 6.25,  increase: '+113%' },
-  { name: 'Xinzhou Rd (segment)',  hours: 6.25,  increase: null    },
+  { name: 'Xinzhou Rd ',  hours: 6.25,  increase: '+85%'  },
 ];
 
 function CongestionLollipop() {
@@ -95,38 +95,38 @@ function CongestionLollipop() {
 
   return (
     <div className="p1s-chart">
-      <p className="p1s-chart-label">TOP CONGESTED CORRIDORS · DAILY HOURS</p>
+      <p className="p1s-chart-label">Daily Congestion Hours by Corridor</p>
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', display: 'block' }}>
         {/* grid lines + x labels */}
         {ticks.map(t => (
           <g key={t}>
             <line x1={mL + xS(t)} y1={mT} x2={mL + xS(t)} y2={mT + plotH}
-              stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
+              stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
             <text x={mL + xS(t)} y={mT + plotH + 18}
-              textAnchor="middle" fill="rgba(255,255,255,0.22)" fontSize={9.5}>{t}h</text>
+              textAnchor="middle" fill="#fff" fontSize={9.5} fontWeight={700}>{t}h</text>
           </g>
         ))}
 
         {CONGESTION_TOP10.map((d, i) => {
           const y   = yS(i);
           const x   = mL + xS(d.hours);
-          // RdYlBu: top 3 red, mid 4 orange-yellow, rest blue
           const col = i < 3 ? '#D73027' : i < 6 ? '#FC8D59' : '#91BFDB';
           const bright = i < 3;
+          const txtFill = bright ? '#F2EBD9' : '#fff';
           return (
             <g key={d.name}>
               <text x={mL - 10} y={y + 4} textAnchor="end"
-                fill={bright ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.32)'}
-                fontSize={10} fontWeight={bright ? 600 : 400}>{d.name}</text>
+                fill={txtFill}
+                fontSize={10} fontWeight={700}>{d.name}</text>
               <line x1={mL} y1={y} x2={x} y2={y}
-                stroke={col} strokeWidth={bright ? 1.5 : 1} opacity={bright ? 0.85 : 0.5} />
-              <circle cx={x} cy={y} r={bright ? 5 : 3.5} fill={col} opacity={bright ? 1 : 0.65} />
+                stroke={col} strokeWidth={bright ? 1.5 : 1} opacity={1} />
+              <circle cx={x} cy={y} r={bright ? 5 : 3.5} fill={col} opacity={1} />
               <text x={x + 9} y={y + 4}
-                fill={bright ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.28)'}
-                fontSize={9.5} fontWeight={bright ? 600 : 400}>{d.hours}h</text>
+                fill={txtFill}
+                fontSize={9.5} fontWeight={700}>{d.hours}h</text>
               {d.increase && (
                 <text x={x + 9} y={y + 16}
-                  fill="#FC8D59" fontSize={8.5} opacity={0.75}>{d.increase}</text>
+                  fill={bright ? '#F2EBD9' : '#fff'} fontSize={8.5} fontWeight={700}>{d.increase}</text>
               )}
             </g>
           );
@@ -191,32 +191,32 @@ function ScalingChart() {
 
   return (
     <div className="p1s-chart">
-      <p className="p1s-chart-label">2024 MONTHLY · NEW ROUTES vs FLIGHTS (×10K)</p>
+      <p className="p1s-chart-label">Monthly New Routes vs Flights</p>
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', display: 'block' }}>
 
         {/* grid */}
         {fTicks.map(t => (
           <line key={t} x1={mL} y1={fyS(t)} x2={mL + plotW} y2={fyS(t)}
-            stroke="rgba(255,255,255,0.05)" strokeWidth={1} />
+            stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
         ))}
 
         {/* left Y (routes) */}
         {rTicks.map(t => (
           <text key={t} x={mL - 5} y={ryS(t) + 4}
-            textAnchor="end" fill="rgba(255,255,255,0.75)" fontSize={9}>{t}</text>
+            textAnchor="end" fill="#fff" fontSize={9} fontWeight={700}>{t}</text>
         ))}
         <text x={10} y={mT + plotH / 2} textAnchor="middle"
-          fill="rgba(255,255,255,0.75)" fontSize={8.5}
+          fill="#fff" fontSize={8.5} fontWeight={700}
           transform={`rotate(-90,10,${mT + plotH / 2})`}>routes</text>
 
         {/* right Y (flights) */}
         {fTicks.map(t => (
           <text key={t} x={mL + plotW + 5} y={fyS(t) + 4}
-            textAnchor="start" fill="rgba(255,255,255,0.75)" fontSize={9}>{t}</text>
+            textAnchor="start" fill="#fff" fontSize={9} fontWeight={700}>{t}</text>
         ))}
-        <text x={W - 9} y={mT + plotH / 2} textAnchor="middle"
-          fill="rgba(255,255,255,0.75)" fontSize={8.5}
-          transform={`rotate(90,${W - 9},${mT + plotH / 2})`}>×10K</text>
+        <text x={W - 5} y={mT + plotH / 2} textAnchor="middle"
+          fill="#fff" fontSize={8.5} fontWeight={700}
+          transform={`rotate(90,${W - 5},${mT + plotH / 2})`}>Monthly flights (×10K)</text>
 
         {/* bars — new routes */}
         {SCALING_DATA.map((d, i) => {
@@ -225,28 +225,28 @@ function ScalingChart() {
           const y = mT + plotH - h;
           return (
             <rect key={i} x={x} y={y} width={barW} height={h}
-              fill="#4575B4" opacity={0.65} rx={2} />
+              fill="#4575B4" opacity={0.85} rx={2} />
           );
         })}
 
         {/* line — flights */}
         <polyline
           points={SCALING_DATA.map((d, i) => `${xS(i)},${fyS(d.flights)}`).join(' ')}
-          fill="none" stroke="#FC8D59" strokeWidth={1.8} opacity={0.85} strokeLinejoin="round" />
+          fill="none" stroke="#FC8D59" strokeWidth={1.8} opacity={1} strokeLinejoin="round" />
         {SCALING_DATA.map((d, i) => (
           <circle key={i} cx={xS(i)} cy={fyS(d.flights)} r={2.8}
-            fill="#FC8D59" opacity={0.9} />
+            fill="#FC8D59" opacity={1} />
         ))}
 
         {/* x labels */}
         {SCALING_DATA.map((d, i) => (
           <text key={i} x={xS(i)} y={mT + plotH + 16}
-            textAnchor="middle" fill="rgba(255,255,255,0.75)" fontSize={9}>{d.month}</text>
+            textAnchor="middle" fill="#fff" fontSize={9} fontWeight={700}>{d.month}</text>
         ))}
 
         {/* baseline */}
         <line x1={mL} y1={mT + plotH} x2={mL + plotW} y2={mT + plotH}
-          stroke="rgba(255,255,255,0.4)" strokeWidth={1} />
+          stroke="rgba(255,255,255,1)" strokeWidth={1} />
       </svg>
       <div className="p1s-chart-legend">
         <span><span className="p1s-legend-box" style={{ background: '#4575B4' }} />New routes</span>
@@ -264,15 +264,18 @@ const SLICES = [
     year: '',
     title: 'Why Move Delivery into the Air?',
     subtitle: 'Ground-level congestion makes faster urban logistics increasingly necessary.',
+    cardSubtitle: null,
     detail:
-      <>Major roads in Shenzhen experience an average of <strong>5.7</strong> hours of daily congestion. The most affected corridors include Shangbu Road (21 h), Yantian Road (19 h), and Binhai Avenue (15.75 h). For time-sensitive delivery, flying above ground-level traffic can help bypass these bottlenecks and reduce travel time across the city.</>,
+      <>Major roads in Shenzhen experience an average of <strong style={{color:'#E8A88B'}}>5.7</strong> hours of daily congestion. The most affected corridors include Shangbu Road (21 h), Yantian Road (19 h), and Binhai Avenue (15.75 h). For time-sensitive delivery, flying above ground-level traffic can help bypass these bottlenecks and reduce travel time across the city.</>,
     color: PALETTE[0],   // #D73027 red — problem / urgency
     num: '01',
   },
   {
     year: '2023',
     title: 'Why Shenzhen?',
+    cardTitle: 'eVTOL Hub Set in Shenzhen',
     subtitle: 'The city has become a major testbed for low-altitude mobility innovation.',
+    cardSubtitle: null,
     detail:
       'Lilium, a German eVTOL manufacturer, announced its China headquarters in Shenzhen. Domestic firms including EHang, Fengfei, and Shij Technology have also entered Shenzhen to develop flight routes, signalling the city’s emergence as a major hub for aerial mobility innovation.',
     color: PALETTE[1],
@@ -281,7 +284,9 @@ const SLICES = [
   {
     year: '2023',
     title: 'Is Drone Delivery Already Happening?',
+    cardTitle: 'Shenzhen Drone Routes Expand',
     subtitle: 'Shenzhen is moving from pilot routes to real-world drone delivery networks.',
+    cardSubtitle: null,
     detail:
       'Meituan has established 23 drone food delivery routes in Shenzhen. According to the Shenzhen Municipal Transport Bureau, 77 new drone routes were launched in 2023, bringing the total to 156 operational routes, with cargo drones completing over 600,000 flights.',
     color: PALETTE[2],
@@ -290,7 +295,9 @@ const SLICES = [
   {
     year: '2024',
     title: 'Is Drone Delivery Scaling Up?',
+    cardTitle: 'Low-Altitude Flights Surge',
     subtitle: 'Low-altitude delivery is expanding rapidly across the city.',
+    cardSubtitle: null,
     detail:
       'Low-altitude activity surged across Shenzhen in 2024. Helicopter operations reached 28,000 flights, carrying 136,800 passengers and expanding into medical rescue, business travel, and cross-border transport. Unmanned cargo flights reached 776,000 — up 27% year-on-year — spanning express delivery, on-demand consumer logistics, and medical services.',
     color: PALETTE[3],
@@ -299,10 +306,12 @@ const SLICES = [
   {
     year: '2025+',
     title: 'What Does Scaling Drone Delivery Require Next?',
+    cardTitle: 'From Policy to Site',
     subtitle: 'Policy support creates the opportunity, but spatial planning determines whether the network can work.',
+    cardSubtitle: null,
     detail:
       'Shenzhen is positioning itself as a leading city for the low-altitude economy, supported by urban planning, industrial coordination, and the development of four key centres: Global Headquarters & R&D, High-End Intelligent Manufacturing, All-Scenario Demonstration, and One-Stop Solution Provision. However, turning this policy vision into an operational drone delivery system requires more than technological capacity. It depends on where take-off and landing sites are located, how well they cover delivery demand, and whether they can operate within urban spatial constraints.',
-    color: PALETTE[5],
+    color: '#C9A85A',
     num: '05',
   },
 ];
@@ -396,8 +405,10 @@ export default function Page1Slices() {
                 <div className="p1s-card-meta">
                   <span className="p1s-card-num">{s.num}</span>
                 </div>
-                <h3 className="p1s-card-title">{s.title}</h3>
-                <p className="p1s-card-sub">{s.subtitle}</p>
+                <h3 className="p1s-card-title">{s.cardTitle || s.title}</h3>
+                {('cardSubtitle' in s ? s.cardSubtitle : s.subtitle) && (
+                  <p className="p1s-card-sub">{'cardSubtitle' in s ? s.cardSubtitle : s.subtitle}</p>
+                )}
                 <p className="p1s-card-detail">{s.detail}</p>
                 {i === 0 && <CongestionLollipop />}
                 {i === 1 && (

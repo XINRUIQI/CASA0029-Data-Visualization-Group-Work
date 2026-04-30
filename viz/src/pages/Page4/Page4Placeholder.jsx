@@ -3,8 +3,6 @@ import Page4Map from './Page4Map';
 import {
   DistanceDistributionChart,
   FrictionDemandScatter,
-  GroundFrictionBoxChart,
-  DemandVulnerabilityBubble,
   EnhancedKpiCards,
 } from './Page4Charts';
 import { publicDataUrl } from '../../config';
@@ -117,39 +115,6 @@ export default function Page4Placeholder() {
           <FrictionDemandScatter h3Gap={h3Gap} />
         </div>
 
-        <div className="p4-divider" />
-
-        {/* ── Section 6: Ground friction box plot ── */}
-        <div className="p4-section">
-          <h3 className="p4-col-title">Ground Delivery — The Hidden Costs</h3>
-          <div className="p4-col-body">
-            <p>
-              Analysis of origin–destination route pairs across Shenzhen shows how
-              much ground logistics actually costs in terms of detour, congestion,
-              and physical barriers. The box plots summarise each metric's
-              distribution — the wider the box, the more variability; the further
-              right the median, the worse the problem.
-            </p>
-          </div>
-          <GroundFrictionBoxChart odData={odData} />
-        </div>
-
-        <div className="p4-divider" />
-
-        {/* ── Section 7: Demand vulnerability bubble ── */}
-        <div className="p4-section">
-          <h3 className="p4-col-title">Demand Intensity vs. Service Vulnerability</h3>
-          <div className="p4-col-body">
-            <p>
-              A complementary view: the horizontal axis captures how
-              <em> intense</em> an area's delivery activity is, while the vertical
-              axis measures <em>relief vulnerability</em> — a composite score
-              reflecting how badly an area needs drone service based on its
-              combined demand gap and friction. Bubble size encodes population.
-            </p>
-          </div>
-          <DemandVulnerabilityBubble h3Gap={h3Gap} />
-        </div>
 
       </div>
 

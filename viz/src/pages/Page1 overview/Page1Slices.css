@@ -94,10 +94,11 @@
   font-weight: 700;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: #A09888;
+  color: #F2EBD9;
   padding: 6px 16px;
   border-radius: 20px;
-  border: 1px solid rgba(168, 196, 212, 0.12);
+  border: 1px solid rgba(168, 196, 212, 0.15);
+  background: rgba(0, 80, 160, 0.08);
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s;
   z-index: 2;
@@ -138,7 +139,8 @@
 
 .p1s-info-sub {
   font-size: 0.82rem;
-  color: rgba(30, 60, 100, 0.6);
+  color: #F2EBD9;
+  font-weight: 700;
   line-height: 1.55;
   margin: 0;
   transition: color 0.45s;
@@ -346,8 +348,8 @@
 }
 
 .p1s-card-num {
-  font-size: 0.63rem;
-  font-weight: 700;
+  font-size: 1.7rem;
+  font-weight: 800;
   letter-spacing: 3px;
   color: var(--accent);
   opacity: 0.75;
@@ -386,8 +388,8 @@
 }
 
 .p1s-card-detail {
-  font-size: 0.84rem;
-  color: rgba(30, 60, 100, 0.6);
+  font-size: 1rem;
+  color: #F2EBD9;
   line-height: 1.95;
   margin: 0;
   transition: color 0.4s;
@@ -395,7 +397,7 @@
 }
 
 .p1s-card.active .p1s-card-detail {
-  color: rgba(30, 60, 100, 0.75);
+  color: #F2EBD9;
 }
 
 /* ── Card image ── */
@@ -451,7 +453,7 @@
 
 .p1s-pilot-lbl {
   font-size: 0.72rem;
-  color: rgba(30, 60, 100, 0.55);
+  color: #F2EBD9;
   line-height: 1.4;
   margin-top: 4px;
 }
@@ -462,7 +464,8 @@
   gap: 20px;
   margin-top: 8px;
   font-size: 0.68rem;
-  color: rgba(168, 196, 212, 0.4);
+  color: #fff;
+  font-weight: 700;
 }
 
 .p1s-legend-box {
@@ -491,9 +494,9 @@
 }
 
 .p1s-chart-label {
-  font-size: 0.6rem;
+  font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 2.5px;
-  color: rgba(168, 196, 212, 0.3);
+  color: #fff;
   margin-bottom: 12px;
 }

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import Map from 'react-map-gl/mapbox';
 import DeckGL from '@deck.gl/react';
 import { GeoJsonLayer, ScatterplotLayer, ArcLayer } from '@deck.gl/layers';
@@ -24,7 +24,71 @@ const VIEW = {
 };
 
 
-function hexColor(mode, d, highlight, tw) {
+function rampLerp(ramp, v01) {
+  const t = Math.max(0, Math.min(1, v01));
+  const n = ramp.length - 1;
+  const idx = t * n;
+  const lo = Math.floor(idx);
+  const hi = Math.min(lo + 1, n);
+  const f = idx - lo;
+  const c0 = ramp[lo];
+  const c1 = ramp[hi];
+  return [
+    Math.round(c0[0] + (c1[0] - c0[0]) * f),
+    Math.round(c0[1] + (c1[1] - c0[1]) * f),
+    Math.round(c0[2] + (c1[2] - c0[2]) * f),
+  ];
+}
+
+const DEMAND_RAMP = [
+  [220, 245, 242],
+  [190, 236, 230],
+  [160, 226, 218],
+  [129, 216, 208],
+  [100, 200, 192],
+  [72, 178, 170],
+  [48, 152, 144],
+  [28, 122, 116],
+  [10, 88, 84],
+];
+
+const SUPPLY_RAMP = [
+  [216, 232, 242],
+  [184, 214, 230],
+  [148, 194, 216],
+  [116, 170, 198],
+  [90, 137, 166],
+  [66, 112, 148],
+  [44, 88, 126],
+  [26, 62, 100],
+  [10, 38, 72],
+];
+
+const FRICTION_RAMP = [
+  [255, 240, 220],
+  [255, 218, 180],
+  [255, 190, 140],
+  [255, 160, 100],
+  [255, 130, 60],
+  [240, 100, 30],
+  [215, 72, 10],
+  [180, 45, 0],
+  [140, 20, 0],
+];
+
+const COMPOSITE_RAMP = [
+  [232, 218, 242],
+  [214, 190, 232],
+  [196, 162, 220],
+  [176, 132, 206],
+  [156, 104, 192],
+  [136, 78, 176],
+  [114, 54, 156],
+  [90, 34, 132],
+  [64, 16, 104],
+];
+
+function hexColor(mode, d, highlight, tw, frBounds, dpBounds, tdiBounds, compBounds) {
   if (!d) return [80, 80, 80, 40];
 
   if (highlight) {
@@ -39,36 +103,38 @@ function hexColor(mode, d, highlight, tw) {
   if ((mode === 'friction' || mode === 'priority') && !(fr > 0)) {
     return [0, 0, 0, 0];
   }
-  if (mode === 'supply') {
-    const v = Math.min(dp / 200, 1);
-    return [255, Math.round(160 * (1 - v)), 0, Math.round(10 + 220 * v)];
-  }
   if (mode === 'demand') {
-    const v = Math.min(tdi, 1) * tw;
-    return [255, Math.round(100 * (1 - v)), Math.round(50 * (1 - v)), Math.round(15 + 220 * v)];
+    if (tdi <= 0) return [0, 0, 0, 0];
+    const lo = tdiBounds?.[0] ?? 0;
+    const hi = tdiBounds?.[1] ?? 1;
+    const raw = hi > lo ? (tdi * tw - lo) / (hi - lo) : 0.5;
+    const v = Math.max(0, Math.min(1, raw));
+    const rgb = rampLerp(DEMAND_RAMP, v);
+    return [...rgb, Math.round(90 + 165 * v)];
+  }
+  if (mode === 'supply') {
+    if (dp <= 0) return [0, 0, 0, 0];
+    const lo = dpBounds?.[0] ?? 0;
+    const hi = dpBounds?.[1] ?? 200;
+    const v = Math.max(0, Math.min(1, (dp - lo) / (hi - lo)));
+    const rgb = rampLerp(SUPPLY_RAMP, v);
+    return [...rgb, Math.round(90 + 165 * v)];
   }
   if (mode === 'friction') {
-    const t = Math.min(Math.max(fr, 0), 1);
-    // Stronger stretch: slight gain + lower gamma so mid/low values spread across more of the ramp
-    const v = Math.pow(Math.min(1, t * 1.18), 0.38);
-    return [
-      255,
-      Math.round(235 * (1 - v)),
-      Math.round(175 * (1 - v)),
-      Math.round(28 + 227 * v),
-    ];
+    const lo = frBounds?.[0] ?? 0;
+    const hi = frBounds?.[1] ?? 1;
+    const v = hi > lo ? Math.max(0, Math.min(1, (fr - lo) / (hi - lo))) : 0.5;
+    const rgb = rampLerp(FRICTION_RAMP, v);
+    return [...rgb, Math.round(100 + 140 * v)];
   }
   if (mode === 'priority') {
-    const dv = Math.min(tdi, 1) * tw;
-    const fv = Math.min(fr, 1);
-    const raw = Math.min(1, dv * fv);
-    const v = Math.pow(Math.min(1, raw * 1.28), 0.34);
-    return [
-      Math.round(118 + 137 * v),
-      Math.round(238 * (1 - v)),
-      Math.round(168 + 87 * v),
-      Math.round(26 + 229 * v),
-    ];
+    const gi = d.gap_index || 0;
+    if (gi <= 0) return [0, 0, 0, 0];
+    const lo = compBounds?.[0] ?? 0;
+    const hi = compBounds?.[1] ?? 1;
+    const v = hi > lo ? Math.max(0, Math.min(1, (gi - lo) / (hi - lo))) : 0.5;
+    const rgb = rampLerp(COMPOSITE_RAMP, v);
+    return [...rgb, Math.round(90 + 165 * v)];
   }
   return [80, 80, 80, 40];
 }
@@ -85,18 +151,33 @@ export default function Page2FrictionMap({
   selectedDemandH3 = null, onDemandHexClick,
 }) {
   const [viewState, setViewState] = useState(VIEW);
-  const [pulsePhase, setPulsePhase] = useState(0);
-  const pulseRef = useRef(null);
+  const onHoverHexRef = useRef(onHoverHex);
+  onHoverHexRef.current = onHoverHex;
+  const onDemandHexClickRef = useRef(onDemandHexClick);
+  onDemandHexClickRef.current = onDemandHexClick;
+  const hoveredHexRef = useRef(hoveredHexData);
+  hoveredHexRef.current = hoveredHexData;
+  const selectedDemandH3Ref = useRef(selectedDemandH3);
+  selectedDemandH3Ref.current = selectedDemandH3;
+  const activeModeRef = useRef(activeMode);
+  activeModeRef.current = activeMode;
 
-  useEffect(() => {
-    if (selectedDemandH3) {
-      pulseRef.current = setInterval(() => setPulsePhase(p => (p + 1) % 2), 500);
+  const lastHoverH3Ref = useRef(null);
+  const hoverThrottleRef = useRef(0);
+  const throttledHover = useCallback((info) => {
+    const h3 = info.object?.h3 ?? null;
+    if (h3 === lastHoverH3Ref.current) return;
+    lastHoverH3Ref.current = h3;
+    const now = performance.now();
+    if (now - hoverThrottleRef.current < 32) return;
+    hoverThrottleRef.current = now;
+    const cb = onHoverHexRef.current;
+    if (info.object) {
+      cb?.({ ...info.object, _x: info.x, _y: info.y });
     } else {
-      clearInterval(pulseRef.current);
-      setPulsePhase(0);
+      cb?.(null);
     }
-    return () => clearInterval(pulseRef.current);
-  }, [selectedDemandH3]);
+  }, []);
 
   const popResBounds = useMemo(() => {
     const rows = h3Takeout || [];
@@ -151,27 +232,43 @@ export default function Page2FrictionMap({
     });
   }, [h3Demand, h3Gap, h3Takeout, popResBounds]);
 
+  const frBounds = useMemo(() => {
+    if (!mergedHex) return null;
+    const vals = mergedHex.map(d => d.avg_friction).filter(v => v > 0).sort((a, b) => a - b);
+    if (vals.length < 10) return null;
+    const p5 = vals[Math.floor(vals.length * 0.05)];
+    const p95 = vals[Math.floor(vals.length * 0.95)];
+    return [p5, p95];
+  }, [mergedHex]);
+
+  const dpBounds = useMemo(() => {
+    if (!mergedHex) return null;
+    const vals = mergedHex.map(d => d.dp || 0).filter(v => v > 0).sort((a, b) => a - b);
+    if (vals.length < 10) return null;
+    const p5 = vals[Math.floor(vals.length * 0.05)];
+    const p95 = vals[Math.floor(vals.length * 0.95)];
+    return [p5, p95];
+  }, [mergedHex]);
+
+  const tdiBounds = useMemo(() => {
+    if (!mergedHex) return null;
+    const vals = mergedHex.map(d => d.takeout_demand_index || 0).filter(v => v > 0).sort((a, b) => a - b);
+    if (vals.length < 10) return null;
+    return [vals[Math.floor(vals.length * 0.05)], vals[Math.floor(vals.length * 0.95)]];
+  }, [mergedHex]);
+
+  const compBounds = useMemo(() => {
+    if (!mergedHex) return null;
+    const vals = mergedHex
+      .map(d => d.gap_index || 0)
+      .filter(v => v > 0)
+      .sort((a, b) => a - b);
+    if (vals.length < 10) return null;
+    return [vals[Math.floor(vals.length * 0.05)], vals[Math.floor(vals.length * 0.95)]];
+  }, [mergedHex]);
+
   const layers = useMemo(() => {
     const result = [];
-
-    if (showBarriers && barriers) {
-      Object.entries(barriers)
-        .filter(([type]) => activeBarriers.has(type))
-        .forEach(([type, data]) => {
-          result.push(
-            new GeoJsonLayer({
-              id: `barrier-${type}`,
-              data,
-              getFillColor: BARRIER_COLORS[type] || [128, 128, 128, 100],
-              getLineColor: BARRIER_COLORS[type] || [128, 128, 128, 160],
-              getLineWidth: type === 'railway' ? 3 : 2,
-              lineWidthMinPixels: 1,
-              opacity: 0.6,
-              pickable: false,
-            })
-          );
-        });
-    }
 
     if (mergedHex) {
       result.push(
@@ -179,40 +276,20 @@ export default function Page2FrictionMap({
           id: 'analysis-hex',
           data: mergedHex,
           getHexagon: d => d.h3,
-          getFillColor: d => hexColor(activeMode, d, highlightFilter, timeWeight),
+          getFillColor: d => hexColor(activeMode, d, highlightFilter, timeWeight, frBounds, dpBounds, tdiBounds, compBounds),
           getElevation: 0,
           extruded: false,
           pickable: true,
-          stroked: true,
-          lineWidthUnits: 'pixels',
-          getLineWidth: d => {
-            if (selectedDemandH3 && d.h3 === selectedDemandH3) return pulsePhase ? 4 : 2;
-            if (hoveredHexData?.h3 && d.h3 === hoveredHexData.h3) return 2.5;
-            return 0;
-          },
-          getLineColor: d => {
-            if (selectedDemandH3 && d.h3 === selectedDemandH3) {
-              return pulsePhase ? [255, 220, 0, 255] : [255, 180, 0, 140];
-            }
-            if (hoveredHexData?.h3 && d.h3 === hoveredHexData.h3) return [255, 220, 0, 255];
-            return [0, 0, 0, 0];
-          },
+          stroked: false,
           updateTriggers: {
-            getFillColor: [activeMode, highlightFilter, timeWeight],
-            getLineWidth: [activeMode, selectedDemandH3, hoveredHexData?.h3, pulsePhase],
-            getLineColor: [activeMode, selectedDemandH3, hoveredHexData?.h3, pulsePhase],
+            getFillColor: [activeMode, highlightFilter, timeWeight, frBounds, dpBounds, tdiBounds, compBounds],
           },
-          onHover: info => {
-            if (info.object) {
-              onHoverHex?.({ ...info.object, _x: info.x, _y: info.y });
-            } else {
-              onHoverHex?.(null);
-            }
-          },
+          onHover: throttledHover,
           onClick: info => {
-            if (activeMode !== 'demand' || !info.object?.h3) return;
-            const next = info.object.h3 === selectedDemandH3 ? null : info.object.h3;
-            onDemandHexClick?.(next);
+            if (!info.object?.h3) return;
+            const sel = selectedDemandH3Ref.current;
+            const next = info.object.h3 === sel ? null : info.object.h3;
+            onDemandHexClickRef.current?.(next);
           },
         })
       );
@@ -227,11 +304,11 @@ export default function Page2FrictionMap({
           getTargetPosition: d => [d.d_lon, d.d_lat],
           getSourceColor: d => {
             const f = Math.min((d.ground_friction ?? 0) / 0.35, 1);
-            return [Math.round(60 + 195 * f), Math.round(200 * (1 - f)), Math.round(255 * (1 - f)), 100 + Math.round(100 * f)];
+            return [Math.round(40 * (1 - f)), Math.round(180 + 60 * (1 - f)), Math.round(80 + 80 * (1 - f)), 100 + Math.round(100 * f)];
           },
           getTargetColor: d => {
             const f = Math.min((d.ground_friction ?? 0) / 0.35, 1);
-            return [Math.round(60 + 195 * f), Math.round(200 * (1 - f)), Math.round(255 * (1 - f)), 60 + Math.round(80 * f)];
+            return [Math.round(40 * (1 - f)), Math.round(180 + 60 * (1 - f)), Math.round(80 + 80 * (1 - f)), 60 + Math.round(80 * f)];
           },
           getWidth: 1.2,
           getHeight: 0.15,
@@ -242,64 +319,101 @@ export default function Page2FrictionMap({
       );
     }
 
-    if (activeMode === 'supply' && hoveredHexData?.h3) {
-      try {
-        const [lat, lng] = cellToLatLng(hoveredHexData.h3);
-        const center = [lng, lat];
-        const a1 = hoveredHexData.food_access_1km || 0;
-        const a2 = hoveredHexData.food_access_2km || 0;
-        const a3 = hoveredHexData.food_access_3km || 0;
-        const aMax = Math.max(a1, a2, a3, 1);
-
-        const rings = [
-          { id: 'buf-3km', radius: 3000, access: a3, color: [255, 140, 0] },
-          { id: 'buf-2km', radius: 2000, access: a2, color: [255, 100, 0] },
-          { id: 'buf-1km', radius: 1000, access: a1, color: [255, 69, 0] },
-        ];
-
-        rings.forEach(ring => {
-          const intensity = ring.access / aMax;
+    if (showBarriers && barriers) {
+      Object.entries(barriers)
+        .filter(([type]) => activeBarriers.has(type))
+        .forEach(([type, data]) => {
           result.push(
-            new ScatterplotLayer({
-              id: `${ring.id}-fill`,
-              data: [{ pos: center }],
-              getPosition: d => d.pos,
-              getRadius: ring.radius,
-              radiusUnits: 'meters',
-              getFillColor: [...ring.color, Math.round(15 + 70 * intensity)],
-              getLineColor: [...ring.color, Math.round(80 + 150 * intensity)],
-              stroked: true,
-              lineWidthMinPixels: 1.5,
-              getLineWidth: 2,
+            new GeoJsonLayer({
+              id: `barrier-${type}`,
+              data,
+              getFillColor: BARRIER_COLORS[type] || [128, 128, 128, 100],
+              getLineColor: BARRIER_COLORS[type] || [128, 128, 128, 160],
+              getLineWidth: type === 'railway' ? 3 : 2,
+              lineWidthMinPixels: 1,
+              opacity: 0.8,
               pickable: false,
             })
           );
         });
-
-        result.push(
-          new ScatterplotLayer({
-            id: 'buf-center',
-            data: [{ pos: center }],
-            getPosition: d => d.pos,
-            getRadius: 80,
-            radiusUnits: 'meters',
-            getFillColor: [255, 255, 255, 220],
-            getLineColor: [255, 69, 0, 200],
-            stroked: true,
-            lineWidthMinPixels: 2,
-            getLineWidth: 3,
-            pickable: false,
-          })
-        );
-      } catch (_) { /* invalid h3 index */ }
     }
 
     return result;
   }, [
-    barriers, activeBarriers, showBarriers, activeMode, mergedHex, onHoverHex,
-    highlightFilter, timeWeight, odAnalysis, showOdArcs, hoveredHexData,
-    selectedDemandH3, onDemandHexClick,
+    barriers, activeBarriers, showBarriers, activeMode, mergedHex, frBounds, dpBounds, tdiBounds, compBounds,
+    highlightFilter, timeWeight, odAnalysis, showOdArcs,
   ]);
+
+  const highlightLayer = useMemo(() => {
+    const target = selectedDemandH3 || (!selectedDemandH3 && hoveredHexData?.h3) ? (selectedDemandH3 || hoveredHexData?.h3) : null;
+    if (!target) return [];
+    return [
+      new H3HexagonLayer({
+        id: 'hex-highlight',
+        data: [{ h3: target }],
+        getHexagon: d => d.h3,
+        getFillColor: [0, 0, 0, 0],
+        stroked: true,
+        lineWidthUnits: 'pixels',
+        getLineWidth: 3,
+        getLineColor: [255, 220, 0, 255],
+        pickable: false,
+      }),
+    ];
+  }, [selectedDemandH3, hoveredHexData?.h3]);
+
+  const allLayers = useMemo(() => {
+    const base = [...layers, ...highlightLayer];
+    if (activeMode !== 'supply' || !hoveredHexData?.h3) return base;
+    try {
+      const [lat, lng] = cellToLatLng(hoveredHexData.h3);
+      const center = [lng, lat];
+      const a1 = hoveredHexData.food_access_1km || 0;
+      const a2 = hoveredHexData.food_access_2km || 0;
+      const a3 = hoveredHexData.food_access_3km || 0;
+      const aMax = Math.max(a1, a2, a3, 1);
+
+      const rings = [
+        { id: 'buf-3km', radius: 3000, access: a3, color: [255, 140, 0] },
+        { id: 'buf-2km', radius: 2000, access: a2, color: [255, 100, 0] },
+        { id: 'buf-1km', radius: 1000, access: a1, color: [255, 69, 0] },
+      ];
+
+      const extra = rings.map(ring => {
+        const intensity = ring.access / aMax;
+        return new ScatterplotLayer({
+          id: `${ring.id}-fill`,
+          data: [{ pos: center }],
+          getPosition: d => d.pos,
+          getRadius: ring.radius,
+          radiusUnits: 'meters',
+          getFillColor: [...ring.color, Math.round(15 + 70 * intensity)],
+          getLineColor: [...ring.color, Math.round(80 + 150 * intensity)],
+          stroked: true,
+          lineWidthMinPixels: 1.5,
+          getLineWidth: 2,
+          pickable: false,
+        });
+      });
+
+      extra.push(
+        new ScatterplotLayer({
+          id: 'buf-center',
+          data: [{ pos: center }],
+          getPosition: d => d.pos,
+          getRadius: 80,
+          radiusUnits: 'meters',
+          getFillColor: [255, 255, 255, 220],
+          getLineColor: [255, 69, 0, 200],
+          stroked: true,
+          lineWidthMinPixels: 2,
+          getLineWidth: 3,
+          pickable: false,
+        })
+      );
+      return [...base, ...extra];
+    } catch (_) { return base; }
+  }, [layers, highlightLayer, activeMode, hoveredHexData]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -307,7 +421,7 @@ export default function Page2FrictionMap({
         viewState={viewState}
         onViewStateChange={({ viewState: vs }) => setViewState(vs)}
         controller={true}
-        layers={layers}
+        layers={allLayers}
         style={{ width: '100%', height: '100%' }}
         useDevicePixels={false}
       >

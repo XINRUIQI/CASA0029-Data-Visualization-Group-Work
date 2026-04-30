@@ -14,42 +14,6 @@ gsap.registerPlugin(ScrollTrigger);
 // replay it.
 let introPlayedInSession = false;
 
-const INFO_ITEMS = [
-  {
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <rect x="2" y="3" width="16" height="14" rx="2" stroke="currentColor" strokeWidth="1.5"/>
-        <path d="M6 7h8M6 10h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-      </svg>
-    ),
-    title: 'About This Project',
-    content:
-      'This project explores how drone logistics is reshaping urban infrastructure in Shenzhen — one of the world\'s first cities to operate large-scale urban drone delivery networks.',
-  },
-  {
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <circle cx="10" cy="10" r="7.5" stroke="currentColor" strokeWidth="1.5"/>
-        <path d="M10 6v4l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-      </svg>
-    ),
-    title: 'Data Sources',
-    content:
-      'Meituan drone delivery data (2024): 483 launch pads, 250 routes, 776,000 cargo flights. POI data from Gaode Map API. Administrative boundaries from Shenzhen Open Data.',
-  },
-  {
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <circle cx="7" cy="8" r="3" stroke="currentColor" strokeWidth="1.5"/>
-        <circle cx="13" cy="8" r="3" stroke="currentColor" strokeWidth="1.5"/>
-        <path d="M4 16c0-2 1.5-3 3-3s3 1 3 3M10 16c0-2 1.5-3 3-3s3 1 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-      </svg>
-    ),
-    title: 'Team',
-    content: 'CASA0029 Data Visualization — UCL Bartlett Centre for Advanced Spatial Analysis.',
-  },
-];
-
 export default function Page0Cover() {
   const sectionRef = useRef(null);
   const heroContentRef = useRef(null);
@@ -62,7 +26,6 @@ export default function Page0Cover() {
     v.play().catch(() => {});
   }, []);
 
-  const [activeInfo, setActiveInfo] = useState(null);
   const [transitioning, setTransitioning] = useState(false);
   const [spawnPoints, setSpawnPoints] = useState(null);
   const isFirstVisit = useRef(!introPlayedInSession);
@@ -129,12 +92,6 @@ export default function Page0Cover() {
             duration: 0.5,
             ease: 'back.out(1.5)',
           }, 0.95)
-          .from('.p0-sidebar-btn', {
-            x: -20,
-            opacity: 0,
-            duration: 0.4,
-            stagger: 0.08,
-          }, 0.6)
           .from('.p0-scroll-hint', { opacity: 0, duration: 0.4 }, 1.1);
       }
 
@@ -172,35 +129,6 @@ export default function Page0Cover() {
         <div className="p0-bg-overlay" />
         <div className="p0-bg-grain" />
       </div>
-
-      {/* ── sidebar info buttons ── */}
-      <aside className="p0-sidebar">
-        {INFO_ITEMS.map((item, i) => (
-          <button
-            key={i}
-            className={`p0-sidebar-btn ${activeInfo === i ? 'active' : ''}`}
-            onClick={() => setActiveInfo(activeInfo === i ? null : i)}
-            aria-label={item.title}
-          >
-            {item.icon}
-          </button>
-        ))}
-      </aside>
-
-      {/* ── sidebar popup ── */}
-      {activeInfo !== null && (
-        <div className="p0-sidebar-popup" key={activeInfo}>
-          <button
-            className="p0-popup-close"
-            onClick={() => setActiveInfo(null)}
-            aria-label="Close"
-          >
-            ×
-          </button>
-          <h3 className="p0-popup-title">{INFO_ITEMS[activeInfo].title}</h3>
-          <p className="p0-popup-body">{INFO_ITEMS[activeInfo].content}</p>
-        </div>
-      )}
 
       {/* ── intro mask overlay ── */}
       {!introDone && (

@@ -114,16 +114,16 @@
   right: 0;
   width: min(288px, 88vw);
   padding: 10px 12px;
-  background: rgba(46, 94, 126, 0.98);
-  border: 1px solid rgba(168, 196, 212, 0.12);
+  background: #F6E8BF;
+  border: 1px solid rgba(200, 180, 120, 0.3);
   border-radius: 8px;
   font-size: 0.66rem;
   font-style: normal;
-  color: #B8B0A0;
-  font-style: italic;
-  line-height: 1.45;
+  font-weight: 400;
+  color: #706860;
+  line-height: 1.4;
   z-index: 80;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
 }
 
 .p2c-crossing-lanes {

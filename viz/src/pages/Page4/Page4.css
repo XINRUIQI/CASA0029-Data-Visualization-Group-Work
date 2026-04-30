@@ -3,6 +3,7 @@
    ═══════════════════════════════════════════ */
 
 .page-4 {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -11,9 +12,33 @@
   box-sizing: border-box;
 }
 
+.page-4::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 260px;
+  background: linear-gradient(
+    to bottom,
+    #5a89a6 0%,
+    #6d9bb3 15%,
+    #8aabbf 30%,
+    #a3bfcb 45%,
+    #bccfd3 58%,
+    #d4ddd0 72%,
+    #e6e4d5 86%,
+    #F2EBD9 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
 /* ─── TOP: centered text block ─── */
 .p4-text {
-  padding: 110px 40px 32px;
+  position: relative;
+  z-index: 1;
+  padding: 140px 40px 32px;
   box-sizing: border-box;
   max-width: 820px;
   width: 100%;
@@ -310,6 +335,8 @@
 
 /* ─── BOTTOM: strategy/budget controls + map card ─── */
 .p4-map-wrap {
+  position: relative;
+  z-index: 1;
   padding: 24px 40px 80px;
   box-sizing: border-box;
   max-width: 1100px;

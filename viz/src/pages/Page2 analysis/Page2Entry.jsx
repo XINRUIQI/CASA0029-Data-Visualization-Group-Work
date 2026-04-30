@@ -1,5 +1,8 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { GroundFrictionBoxChart } from '../Page4/Page4Charts';
+import { publicDataUrl } from '../../config';
+import '../Page4/Page4.css';
 import './Page2Entry.css';
 
 const STATS = [
@@ -10,116 +13,28 @@ const STATS = [
 
 const SECTION_TITLE = 'Where Is Ground Delivery Most Constrained?';
 const SECTION_SUB =
-  'Mapping demand hotspots, urban barriers, and delivery inefficiency';
+  'High demand, road barriers, and longer delivery routes.';
 const SECTION_BODY =
   'Before optimising drone delivery hubs, we first examine where delivery demand is concentrated and where '
-  + 'ground transport faces spatial barriers. Rivers, railways, and expressways can create detours and reduce '
-  + 'last-mile efficiency. By mapping demand, barriers, and supply–demand mismatch, this section identifies areas '
-  + 'where drone delivery may provide the greatest benefit.';
-
-const AUTO_DROP_DELAY_MS = 2000;
-
-function readNoIntroFromEntry(location) {
-  if (typeof window === 'undefined') return false;
-  if (location?.state?.page2SkipIntro === true) return true;
-  try {
-    return sessionStorage.getItem('page2SkipIntro') === '1';
-  } catch {
-    return false;
-  }
-}
+  + 'ground transport faces spatial barriers. Rivers, railways, and expressways can create create barriers '
+  + 'to delivery and increase pressure on ground transport. By mapping demand, barriers, and supply–demand mismatch,  '
+  + 'this section identifies areas where drone delivery may provide the greatest benefit.';
 
 export default function Page2Entry() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [noIntro] = useState(() => readNoIntroFromEntry(location));
-  const clearedStorage = useRef(false);
+  const [odData, setOdData] = useState(null);
 
-  const [surfaceDown, setSurfaceDown] = useState(false);
-  const [showContent, setShowContent] = useState(noIntro);
-
-  const goDropHalf = useCallback(() => {
-    setSurfaceDown(true);
+  useEffect(() => {
+    fetch(publicDataUrl('data/page2_od_analysis.json'))
+      .then(r => r.json())
+      .then(setOdData)
+      .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    if (!noIntro || clearedStorage.current) return;
-    clearedStorage.current = true;
-    try {
-      sessionStorage.removeItem('page2SkipIntro');
-    } catch { /* ignore */ }
-  }, [noIntro]);
-
-  useEffect(() => {
-    if (noIntro) return;
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setShowContent(true);
-      setSurfaceDown(true);
-      return;
-    }
-    const id = requestAnimationFrame(() => setShowContent(true));
-    return () => cancelAnimationFrame(id);
-  }, [noIntro]);
-
-  useEffect(() => {
-    if (noIntro || surfaceDown) return;
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const t = window.setTimeout(() => setSurfaceDown(true), AUTO_DROP_DELAY_MS);
-    return () => clearTimeout(t);
-  }, [noIntro, surfaceDown]);
-
-  useEffect(() => {
-    if (noIntro || surfaceDown) return;
-    const el = document.getElementById('page-2');
-    if (!el) return;
-    const onWheel = (e) => {
-      if (e.deltaY > 12) goDropHalf();
-    };
-    el.addEventListener('wheel', onWheel, { passive: true });
-    return () => el.removeEventListener('wheel', onWheel);
-  }, [noIntro, surfaceDown, goDropHalf]);
-
-  useEffect(() => {
-    if (noIntro || surfaceDown) return;
-    let startY = null;
-    const el = document.getElementById('page-2');
-    if (!el) return;
-    const onStart = (e) => {
-      startY = e.touches[0]?.clientY ?? null;
-    };
-    const onEnd = (e) => {
-      if (startY == null) return;
-      const endY = e.changedTouches[0]?.clientY;
-      if (endY != null && startY - endY > 48) goDropHalf();
-      startY = null;
-    };
-    el.addEventListener('touchstart', onStart, { passive: true });
-    el.addEventListener('touchend', onEnd, { passive: true });
-    return () => {
-      el.removeEventListener('touchstart', onStart);
-      el.removeEventListener('touchend', onEnd);
-    };
-  }, [noIntro, surfaceDown, goDropHalf]);
-
   return (
-    <section
-      id="page-2"
-      className={
-        'page page-2-entry' +
-        (surfaceDown ? ' page-2-entry--settled' : '') +
-        (noIntro ? ' page-2-entry--no-intro' : '')
-      }
-    >
-      <div className="p2e-behind" aria-hidden={!surfaceDown}>
-        <div className="p2e-behind-inner">
-          <h1 className="p2e-behind-title">{SECTION_TITLE}</h1>
-          <p className="p2e-behind-sub">{SECTION_SUB}</p>
-          <p className="p2e-behind-body">{SECTION_BODY}</p>
-        </div>
-      </div>
-
-      <div className={`p2e-surface ${surfaceDown ? 'p2e-surface--down' : ''}`}>
-        <div className={`p2e-content ${showContent ? 'p2e-visible' : ''}`}>
+    <section id="page-2" className="page page-2-entry page-2-entry--settled page-2-entry--no-intro">
+      <div className="p2e-surface p2e-surface--down">
+        <div className="p2e-content p2e-visible">
           <p className="p2e-kicker">Chapter 2</p>
           <h2 className="p2e-title">{SECTION_TITLE}</h2>
           <p className="p2e-subtitle">{SECTION_SUB}</p>
@@ -134,20 +49,16 @@ export default function Page2Entry() {
             ))}
           </div>
 
+          {odData && (
+            <div className="p2e-box-chart-wrap">
+              <GroundFrictionBoxChart odData={odData} />
+            </div>
+          )}
+
           <button className="p2e-enter-btn" onClick={() => navigate('/analysis')}>
             <span className="p2e-btn-text">Enter Interactive Analysis Map</span>
             <span className="p2e-btn-arrow">→</span>
           </button>
-
-          {!noIntro && !surfaceDown && (
-            <>
-              <button type="button" className="p2e-surface-cta" onClick={goDropHalf}>
-                Continue
-                <span className="p2e-surface-cta-arrow" aria-hidden>↓</span>
-              </button>
-              <p className="p2e-surface-hint">上滑 · 或稍候 · 降半屏见内页</p>
-            </>
-          )}
         </div>
       </div>
     </section>
