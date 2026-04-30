@@ -553,9 +553,7 @@ export default function Page7PostAnalysis() {
               <p>
                 This view compares <strong>local delivery demand</strong> with <strong>accessibility to nearby drone sites</strong>. The gap is calculated as <strong>A − D</strong>, where <strong>A</strong> represents accessibility to drone sites within a <strong>3 km service range</strong>, and <strong>D</strong> represents the <strong>normalised demand index</strong>.
                 <br /><br />
-                Areas with <strong>lower values</strong> indicate <strong>under-served zones</strong> where demand is stronger than current drone-site accessibility.
-                <br /><br />
-                After adding <strong>optimised drone sites</strong>, more high-demand cells become reachable, reducing the <strong>accessibility-demand gap</strong>.
+                Areas with <strong>lower values</strong> indicate <strong>under-served zones</strong> where demand is stronger than current drone-site accessibility. After adding <strong>optimised drone sites</strong>, more high-demand cells become reachable, reducing the <strong>accessibility-demand gap</strong>.
               </p>
             )}
             {activeMode === 'friction' && (
