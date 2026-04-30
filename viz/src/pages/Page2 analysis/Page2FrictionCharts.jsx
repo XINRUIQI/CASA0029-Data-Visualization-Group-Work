@@ -868,7 +868,7 @@ function Page2FrictionCharts({
                   <ZAxis range={[8, 8]} />
                   <Tooltip contentStyle={TT_STYLE}
                     formatter={(v, name) => [typeof v === 'number' ? v.toLocaleString() : v, name]} />
-                  <Scatter data={orderVsProxy} fill="#ff4500" fillOpacity={0.4} r={2.5} />
+                  <Scatter data={orderVsProxy} fill="#81D8D0" fillOpacity={0.5} r={2.5} />
                 </ScatterChart>
               </ResponsiveContainer>
             </div>
@@ -904,8 +904,8 @@ function Page2FrictionCharts({
                   <LineChart data={demandCoverage.pts} margin={{ left: 16, right: 12, top: 24, bottom: 18 }}>
                     <defs>
                       <linearGradient id="demCovGradP2" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#ff4500" stopOpacity={0.42} />
-                        <stop offset="100%" stopColor="#ff4500" stopOpacity={0.06} />
+                        <stop offset="0%" stopColor="#81D8D0" stopOpacity={0.42} />
+                        <stop offset="100%" stopColor="#81D8D0" stopOpacity={0.06} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#1e2040" />
@@ -977,7 +977,7 @@ function Page2FrictionCharts({
                     <Line
                       type="monotone"
                       dataKey="pctDemand"
-                      stroke="#ff4500"
+                      stroke="#81D8D0"
                       strokeWidth={2}
                       dot={false}
                       name="Cumulative demand %"

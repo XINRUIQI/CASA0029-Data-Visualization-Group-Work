@@ -366,8 +366,8 @@ export default function Page2FullMap() {
                   <AreaChart data={hourlyDemand} margin={{ left: 0, right: 0, top: 2, bottom: 0 }}>
                     <defs>
                       <linearGradient id="demandGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#ff8c00" stopOpacity={0.6} />
-                        <stop offset="100%" stopColor="#ff8c00" stopOpacity={0.05} />
+                      <stop offset="0%" stopColor="#81D8D0" stopOpacity={0.6} />
+                      <stop offset="100%" stopColor="#81D8D0" stopOpacity={0.05} />
                       </linearGradient>
                     </defs>
                     <XAxis
@@ -383,7 +383,7 @@ export default function Page2FullMap() {
                     />
                     <Area
                       type="monotone" dataKey="pct"
-                      stroke="#ff8c00" strokeWidth={1.5}
+                      stroke="#81D8D0" strokeWidth={1.5}
                       fill="url(#demandGrad)"
                     />
                   </AreaChart>

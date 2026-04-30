@@ -27,32 +27,33 @@
   z-index: 3;
 }
 
-/* ─── Hero title overlay ─── */
+/* ─── Hero title overlay — right side, vertically centered ─── */
 .p3-hero-text {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 50%;
+  right: 60px;
+  transform: translateY(-50%);
   z-index: 4;
-  padding: 18px 40px 14px 60px;
-  background: linear-gradient(to bottom, rgba(46, 94, 126, 0.85) 0%, rgba(46, 94, 126, 0.4) 70%, transparent 100%);
   pointer-events: none;
+  max-width: 320px;
+  text-align: right;
 }
 
 .p3-hero-title {
-  font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+  font-size: clamp(1.1rem, 2.4vw, 1.5rem);
   font-weight: 700;
-  color: #F0EBE0;
-  margin: 0 0 6px;
-  line-height: 1.25;
+  color: rgba(240, 235, 224, 0.92);
+  margin: 0 0 8px;
+  line-height: 1.3;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
 }
 
 .p3-hero-desc {
-  font-size: clamp(0.72rem, 1.3vw, 0.82rem);
-  color: rgba(240, 235, 224, 0.7);
-  line-height: 1.5;
+  font-size: clamp(0.72rem, 1.2vw, 0.82rem);
+  color: rgba(240, 235, 224, 0.6);
+  line-height: 1.6;
   margin: 0;
-  max-width: 860px;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
 }
 
 /* 与 Page 2 降半屏后露出的区域一致：上半屏日落色 + 文案 */
@@ -112,7 +113,7 @@
   background: transparent;
 }
 
-/* ─── TWO-COLUMN LAYOUT ─── */
+/* ─── LAYOUT ─── */
 .p3-layout {
   display: flex;
   height: 100%;
@@ -121,17 +122,7 @@
   width: 100%;
   position: relative;
   z-index: 1;
-}
-
-/* Left half — map */
-.p3-map-half {
-  width: 66.67%;
-  flex-shrink: 0;
-  padding: 70px 8px 30px 60px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  overflow: hidden;
+  padding: 40px 60px 20px 60px;
 }
 
 /* ─── 上方 legend 行 ─── */
@@ -188,23 +179,61 @@
   flex-shrink: 0;
 }
 
-/* ─── 下方区域：侧边筛选 + 地图卡片 ─── */
+/* ─── 地图区域：tab sidebar + 右侧列 ─── */
 .p3-map-body {
-  flex: 1;
-  min-height: 0;
   display: flex;
+  height: 100%;
   gap: 10px;
 }
 
-/* ─── 左侧：4 个切页 Tab ─── */
+/* 右侧列：图例 + 地图 + 图表（等宽） */
+.p3-map-col {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  height: 100%;
+}
+
+/* ─── 下方图表区 ─── */
+.p3-chart-section {
+  flex: 1;
+  min-height: 0;
+  background: rgba(46, 94, 126, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(168, 196, 212, 0.12);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.p3-chart-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.p3-chart-placeholder-text {
+  font-size: 0.82rem;
+  color: rgba(240, 235, 224, 0.4);
+  letter-spacing: 0.05em;
+}
+
+/* ─── 左侧：4 个切页 Tab（与地图卡片垂直居中） ─── */
 .p3-tab-sidebar {
   display: flex;
   flex-direction: column;
   gap: 6px;
   flex-shrink: 0;
   width: 72px;
+  height: 50vh;
   justify-content: center;
   align-items: center;
+  align-self: flex-start;
+  margin-top: 42px;
 }
 
 .p3-tab-btn {
@@ -390,14 +419,15 @@
   flex-shrink: 0;
 }
 
-/* Legend bar between map and district card */
+/* Legend bar above map */
 .p3-inline-legend {
   display: flex;
   align-items: center;
   justify-content: space-evenly;
   flex-shrink: 0;
   flex-wrap: wrap;
-  padding: 8px 8px;
+  width: 100%;
+  padding: 8px 12px;
   background: rgba(46, 94, 126, 0.85);
   border: 1px solid rgba(168, 196, 212, 0.12);
   border-radius: 8px;
@@ -479,39 +509,20 @@
   gap: 10px;
 }
 
-/* Map card — rounded box */
+/* Map card — 21:9, 50vh height */
 .p3-map-card {
-  flex: 1;
+  height: 50vh;
+  aspect-ratio: 21 / 9;
+  max-width: 100%;
+  flex-shrink: 0;
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid rgba(168, 196, 212, 0.12);
   background: #5A89A6;
   position: relative;
-  min-height: 0;
-  min-width: 0;
   isolation: isolate;
 }
 
-/* Push scale bar up so legend sits at the very bottom */
-.p3-map-card .mc-scale {
-  bottom: 68px;
-}
-
-/* Legend floating inside map (bottom-left, below scale bar) */
-.p3-map-inner-legend {
-  position: absolute;
-  bottom: 14px;
-  left: 16px;
-  z-index: 15;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  background: rgba(46, 94, 126, 0.75);
-  backdrop-filter: blur(6px);
-  border: 1px solid rgba(168, 196, 212, 0.12);
-  border-radius: 6px;
-  padding: 6px 10px;
-}
 
 .p3-mil-item {
   display: flex;
@@ -540,7 +551,7 @@
 .p3-panel-half {
   width: 33.33%;
   flex-shrink: 0;
-  padding: 70px 60px 30px 8px;
+  padding: 52px 60px 30px 8px;
   display: flex;
   flex-direction: column;
 }

@@ -6,9 +6,10 @@ import '../Page4/Page4.css';
 import './Page2Entry.css';
 
 const STATS = [
-  { value: '490K+', label: 'Delivery Destinations', color: '#ff8c00' },
-  { value: '4', label: 'Barrier Types', color: '#ff3264' },
-  { value: '1.5×', label: 'Avg Detour Ratio', color: '#c864ff' },
+  { value: '490K+', label: 'Demand Locations', color: '#ff8c00' },
+  { value: '1818', label: 'Routes analysed', color: '#64c8ff' },
+  { value: '1.39×', label: 'Typical detour', color: '#c864ff' },
+  { value: '1.79×', label: 'Typical traffic delay', color: '#ff3264' },
 ];
 
 const SECTION_TITLE = 'Where Is Ground Delivery Most Constrained?';
@@ -32,10 +33,9 @@ export default function Page2Entry() {
   }, []);
 
   return (
-    <section id="page-2" className="page page-2-entry page-2-entry--settled page-2-entry--no-intro">
-      <div className="p2e-surface p2e-surface--down">
-        <div className="p2e-content p2e-visible">
-          <p className="p2e-kicker">Chapter 2</p>
+    <section id="page-2" className="page page-2-entry">
+      <div className="p2e-surface">
+        <div className="p2e-content">
           <h2 className="p2e-title">{SECTION_TITLE}</h2>
           <p className="p2e-subtitle">{SECTION_SUB}</p>
           <p className="p2e-desc">{SECTION_BODY}</p>

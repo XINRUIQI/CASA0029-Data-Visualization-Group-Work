@@ -267,22 +267,31 @@ export default function Page2FrictionMap({
     return [vals[Math.floor(vals.length * 0.05)], vals[Math.floor(vals.length * 0.95)]];
   }, [mergedHex]);
 
+  const colorCache = useMemo(() => {
+    if (!mergedHex) return null;
+    const cache = new window.Map();
+    for (const d of mergedHex) {
+      cache.set(d.h3, hexColor(activeMode, d, highlightFilter, timeWeight, frBounds, dpBounds, tdiBounds, compBounds));
+    }
+    return cache;
+  }, [mergedHex, activeMode, highlightFilter, timeWeight, frBounds, dpBounds, tdiBounds, compBounds]);
+
   const layers = useMemo(() => {
     const result = [];
 
-    if (mergedHex) {
+    if (mergedHex && colorCache) {
       result.push(
         new H3HexagonLayer({
           id: 'analysis-hex',
           data: mergedHex,
           getHexagon: d => d.h3,
-          getFillColor: d => hexColor(activeMode, d, highlightFilter, timeWeight, frBounds, dpBounds, tdiBounds, compBounds),
+          getFillColor: d => colorCache.get(d.h3) || [0, 0, 0, 0],
           getElevation: 0,
           extruded: false,
           pickable: true,
           stroked: false,
           updateTriggers: {
-            getFillColor: [activeMode, highlightFilter, timeWeight, frBounds, dpBounds, tdiBounds, compBounds],
+            getFillColor: [colorCache],
           },
           onHover: throttledHover,
           onClick: info => {
@@ -340,31 +349,28 @@ export default function Page2FrictionMap({
 
     return result;
   }, [
-    barriers, activeBarriers, showBarriers, activeMode, mergedHex, frBounds, dpBounds, tdiBounds, compBounds,
-    highlightFilter, timeWeight, odAnalysis, showOdArcs,
+    barriers, activeBarriers, showBarriers, activeMode, mergedHex, colorCache,
+    odAnalysis, showOdArcs,
   ]);
 
+  const highlightH3 = selectedDemandH3 || hoveredHexData?.h3 || null;
   const highlightLayer = useMemo(() => {
-    const target = selectedDemandH3 || (!selectedDemandH3 && hoveredHexData?.h3) ? (selectedDemandH3 || hoveredHexData?.h3) : null;
-    if (!target) return [];
-    return [
-      new H3HexagonLayer({
-        id: 'hex-highlight',
-        data: [{ h3: target }],
-        getHexagon: d => d.h3,
-        getFillColor: [0, 0, 0, 0],
-        stroked: true,
-        lineWidthUnits: 'pixels',
-        getLineWidth: 3,
-        getLineColor: [255, 220, 0, 255],
-        pickable: false,
-      }),
-    ];
-  }, [selectedDemandH3, hoveredHexData?.h3]);
+    if (!highlightH3) return null;
+    return new H3HexagonLayer({
+      id: 'hex-highlight',
+      data: [{ h3: highlightH3 }],
+      getHexagon: d => d.h3,
+      getFillColor: [0, 0, 0, 0],
+      stroked: true,
+      lineWidthUnits: 'pixels',
+      getLineWidth: 3,
+      getLineColor: [255, 220, 0, 255],
+      pickable: false,
+    });
+  }, [highlightH3]);
 
-  const allLayers = useMemo(() => {
-    const base = [...layers, ...highlightLayer];
-    if (activeMode !== 'supply' || !hoveredHexData?.h3) return base;
+  const supplyBuffers = useMemo(() => {
+    if (activeMode !== 'supply' || !hoveredHexData?.h3) return null;
     try {
       const [lat, lng] = cellToLatLng(hoveredHexData.h3);
       const center = [lng, lat];
@@ -372,14 +378,11 @@ export default function Page2FrictionMap({
       const a2 = hoveredHexData.food_access_2km || 0;
       const a3 = hoveredHexData.food_access_3km || 0;
       const aMax = Math.max(a1, a2, a3, 1);
-
-      const rings = [
+      return [
         { id: 'buf-3km', radius: 3000, access: a3, color: [255, 140, 0] },
         { id: 'buf-2km', radius: 2000, access: a2, color: [255, 100, 0] },
         { id: 'buf-1km', radius: 1000, access: a1, color: [255, 69, 0] },
-      ];
-
-      const extra = rings.map(ring => {
+      ].map(ring => {
         const intensity = ring.access / aMax;
         return new ScatterplotLayer({
           id: `${ring.id}-fill`,
@@ -389,31 +392,26 @@ export default function Page2FrictionMap({
           radiusUnits: 'meters',
           getFillColor: [...ring.color, Math.round(15 + 70 * intensity)],
           getLineColor: [...ring.color, Math.round(80 + 150 * intensity)],
-          stroked: true,
-          lineWidthMinPixels: 1.5,
-          getLineWidth: 2,
-          pickable: false,
+          stroked: true, lineWidthMinPixels: 1.5, getLineWidth: 2, pickable: false,
         });
-      });
+      }).concat(new ScatterplotLayer({
+        id: 'buf-center',
+        data: [{ pos: center }],
+        getPosition: d => d.pos,
+        getRadius: 80, radiusUnits: 'meters',
+        getFillColor: [255, 255, 255, 220],
+        getLineColor: [255, 69, 0, 200],
+        stroked: true, lineWidthMinPixels: 2, getLineWidth: 3, pickable: false,
+      }));
+    } catch (_) { return null; }
+  }, [activeMode, hoveredHexData]);
 
-      extra.push(
-        new ScatterplotLayer({
-          id: 'buf-center',
-          data: [{ pos: center }],
-          getPosition: d => d.pos,
-          getRadius: 80,
-          radiusUnits: 'meters',
-          getFillColor: [255, 255, 255, 220],
-          getLineColor: [255, 69, 0, 200],
-          stroked: true,
-          lineWidthMinPixels: 2,
-          getLineWidth: 3,
-          pickable: false,
-        })
-      );
-      return [...base, ...extra];
-    } catch (_) { return base; }
-  }, [layers, highlightLayer, activeMode, hoveredHexData]);
+  const allLayers = useMemo(() => {
+    const result = [...layers];
+    if (highlightLayer) result.push(highlightLayer);
+    if (supplyBuffers) result.push(...supplyBuffers);
+    return result;
+  }, [layers, highlightLayer, supplyBuffers]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>

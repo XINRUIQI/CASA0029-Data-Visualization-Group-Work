@@ -323,28 +323,81 @@ export default function Page3Friction() {
       </div>
       <div className="p3-layout" style={{ position: 'relative', zIndex: 1 }}>
 
-        {/* ── LEFT: map (50%) ── */}
-        <div className="p3-map-half">
+        <div className="p3-map-body">
+          {/* 左侧 tab，与地图垂直居中 */}
+          <div className="p3-tab-sidebar">
+            {TABS.map(tab => (
+              <button
+                key={tab.id}
+                className={`p3-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+                onClick={() => { setActiveTab(tab.id); setCompoundFilter('all'); }}
+              >
+                <span className="p3-tab-icon">{tab.icon}</span>
+                <span className="p3-tab-label">{tab.label}</span>
+              </button>
+            ))}
+          </div>
 
+          {/* 右侧：图例 + 地图 + 图表（同宽） */}
+          <div className="p3-map-col">
+            {activeTab === 1 && (
+              <div className="p3-inline-legend">
+                <span className="p3-mil-item" role="button" tabIndex={0}
+                  style={{ opacity: showCommercial ? 1 : 0.4 }}
+                  onClick={() => setShowCommercial(v => !v)}>
+                  <svg viewBox="0 0 40 52" width={11} height={14} style={{ display: 'block', flexShrink: 0 }}>
+                    <path d="M20 0C8.954 0 0 8.954 0 20c0 13.333 20 32 20 32S40 33.333 40 20C40 8.954 31.046 0 20 0z" fill="#ffa028" />
+                    <circle cx="20" cy="19" r="8" fill="white" opacity="0.9" />
+                  </svg>
+                  <span className="p3-mil-label">Departure Hubs</span>
+                  <span className="p3-mil-count">45</span>
+                </span>
+                <span className="p3-mil-item" role="button" tabIndex={0}
+                  style={{ opacity: showLastMile ? 1 : 0.4 }}
+                  onClick={() => setShowLastMile(v => !v)}>
+                  <svg viewBox="0 0 40 52" width={11} height={14} style={{ display: 'block', flexShrink: 0 }}>
+                    <path d="M20 0C8.954 0 0 8.954 0 20c0 13.333 20 32 20 32S40 33.333 40 20C40 8.954 31.046 0 20 0z" fill="#c864ff" />
+                    <circle cx="20" cy="19" r="8" fill="white" opacity="0.9" />
+                  </svg>
+                  <span className="p3-mil-label">Landing Hubs</span>
+                  <span className="p3-mil-count">161</span>
+                </span>
+              </div>
+            )}
 
-          {/* 下方：左侧 tab + 右侧地图 */}
-          <div className="p3-map-body">
+            {(activeTab === 2 || activeTab === 4) && (
+              <div className="p3-inline-legend">
+                {activeTab === 4 && [
+                  { color: '#111118', label: '0' },
+                  { color: '#0d3060', label: '< 50' },
+                  { color: '#0a5a8a', label: '50–100' },
+                  { color: '#0b7a6a', label: '100–200' },
+                  { color: '#1a9640', label: '200–400' },
+                  { color: '#c8a200', label: '400–800' },
+                  { color: '#d04800', label: '800–1500' },
+                  { color: '#b50000', label: '> 1500' },
+                ].map(({ color, label }) => (
+                  <div key={label} className="p3-il-btn" style={{ cursor: 'default', gap: 6 }}>
+                    <span style={{ width: 14, height: 14, borderRadius: 3, background: color, display: 'inline-block', flexShrink: 0, border: '1px solid rgba(255,255,255,0.2)' }} />
+                    <span style={{ fontSize: 11, color: '#ccc', whiteSpace: 'nowrap' }}>{label}</span>
+                  </div>
+                ))}
+                {activeTab === 2 && Object.entries(POI_COLORS).map(([k, v]) => (
+                  <button key={k}
+                    className={`p3-il-btn ${compoundFilter === k ? 'active' : compoundFilter === 'all' ? '' : 'dim'}`}
+                    style={{ '--ilc': v.hex, color: '#fff' }}
+                    onClick={() => {
+                      const next = compoundFilter === k ? 'all' : k;
+                      setCompoundFilter(next);
+                      setContextChartType(next === 'all' ? 'retail' : next);
+                    }}>
+                    <PoiPinIcon type={k} size={16} />
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            )}
 
-            {/* 左侧：4 个切页 tab */}
-            <div className="p3-tab-sidebar">
-              {TABS.map(tab => (
-                <button
-                  key={tab.id}
-                  className={`p3-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
-                  onClick={() => { setActiveTab(tab.id); setCompoundFilter('all'); }}
-                >
-                  <span className="p3-tab-icon">{tab.icon}</span>
-                  <span className="p3-tab-label">{tab.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* 右侧：地图卡片 */}
             <div className="p3-map-card">
               <Page3Map
                 data={filteredSites}
@@ -357,159 +410,77 @@ export default function Page3Friction() {
                 districtStats={districtStats}
                 onDistrictFocus={handleDistrictFocus}
               />
+            </div>
 
-              {/* Sites tab legend inside map */}
-              {activeTab === 1 && (
-                <div className="p3-map-inner-legend">
-                  <span className="p3-mil-item" role="button" tabIndex={0}
-                    style={{ opacity: showCommercial ? 1 : 0.4 }}
-                    onClick={() => setShowCommercial(v => !v)}>
-                    <svg viewBox="0 0 40 52" width={11} height={14} style={{ display: 'block', flexShrink: 0 }}>
-                      <path d="M20 0C8.954 0 0 8.954 0 20c0 13.333 20 32 20 32S40 33.333 40 20C40 8.954 31.046 0 20 0z" fill="#ffa028" />
-                      <circle cx="20" cy="19" r="8" fill="white" opacity="0.9" />
-                    </svg>
-                    <span className="p3-mil-label">Departure Hubs</span>
-                    <span className="p3-mil-count">45</span>
-                  </span>
-                  <span className="p3-mil-item" role="button" tabIndex={0}
-                    style={{ opacity: showLastMile ? 1 : 0.4 }}
-                    onClick={() => setShowLastMile(v => !v)}>
-                    <svg viewBox="0 0 40 52" width={11} height={14} style={{ display: 'block', flexShrink: 0 }}>
-                      <path d="M20 0C8.954 0 0 8.954 0 20c0 13.333 20 32 20 32S40 33.333 40 20C40 8.954 31.046 0 20 0z" fill="#c864ff" />
-                      <circle cx="20" cy="19" r="8" fill="white" opacity="0.9" />
-                    </svg>
-                    <span className="p3-mil-label">Landing Hubs</span>
-                    <span className="p3-mil-count">161</span>
-                  </span>
+            {/* 图表区（与地图同宽） */}
+            <div className="p3-chart-section">
+              {activeTab === 1 && districtStats.length > 0 && (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={districtStats} margin={{ left: 4, right: 8, top: 16, bottom: 4 }} barCategoryGap="28%" barGap={3}>
+                    <CartesianGrid vertical={false} horizontal stroke="rgba(200,200,210,0.12)" strokeDasharray="3 3" />
+                    <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
+                    <YAxis type="number" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
+                      label={{ value: 'Sites', angle: 0, position: 'top', fill: '#888', fontSize: 10, dy: -6, dx: 14 }} />
+                    <Tooltip contentStyle={{ background: '#2E5E7E', border: '1px solid rgba(168,196,212,0.2)', borderRadius: 8, fontSize: 12 }}
+                      labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                      formatter={(v, name) => [v, name === 'commercial' ? 'Departure Hubs' : 'Landing Hubs']} />
+                    <Bar dataKey="commercial" fill="#ffa028" fillOpacity={0.85} maxBarSize={18} cursor="pointer"
+                      onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
+                      <LabelList dataKey="commercial" position="top" style={{ fill: '#ccc', fontSize: 9 }} formatter={v => v > 0 ? v : ''} />
+                    </Bar>
+                    <Bar dataKey="last_mile" fill="#c864ff" fillOpacity={0.85} maxBarSize={18} cursor="pointer"
+                      onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
+                      <LabelList dataKey="last_mile" position="top" style={{ fill: '#ccc', fontSize: 9 }} formatter={v => v > 0 ? v : ''} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+
+              {activeTab === 2 && districtContextStats.length > 0 && (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={districtContextStats} margin={{ left: 4, right: 8, top: 16, bottom: 4 }} barCategoryGap="35%">
+                    <CartesianGrid vertical={false} horizontal stroke="rgba(200,200,210,0.12)" strokeDasharray="3 3" />
+                    <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
+                    <YAxis type="number" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
+                      label={{ value: 'Sites', angle: 0, position: 'top', fill: '#888', fontSize: 10, dy: -6, dx: 14 }} />
+                    <Tooltip contentStyle={{ background: '#2E5E7E', border: '1px solid rgba(168,196,212,0.2)', borderRadius: 8, fontSize: 12 }}
+                      labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                      formatter={v => [v, POI_COLORS[contextChartType]?.label]} />
+                    <Bar dataKey={contextChartType} fill={POI_COLORS[contextChartType]?.hex} fillOpacity={0.85} maxBarSize={22} cursor="pointer"
+                      onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
+                      <LabelList dataKey={contextChartType} position="top" style={{ fill: '#ccc', fontSize: 9 }} formatter={v => v > 0 ? v : ''} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+
+              {activeTab === 3 && (
+                <div className="p3-chart-placeholder">
+                  <span className="p3-chart-placeholder-text">Route statistics will appear here</span>
                 </div>
+              )}
+
+              {activeTab === 4 && districtCoverageStats.length > 0 && (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={districtCoverageStats} margin={{ left: 4, right: 8, top: 16, bottom: 4 }} barCategoryGap="35%">
+                    <CartesianGrid vertical={false} horizontal stroke="rgba(200,200,210,0.12)" strokeDasharray="3 3" />
+                    <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
+                    <YAxis type="number" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
+                      label={{ value: 'per 10k', angle: 0, position: 'top', fill: '#888', fontSize: 10, dy: -6, dx: 18 }} />
+                    <Tooltip contentStyle={{ background: '#2E5E7E', border: '1px solid rgba(168,196,212,0.2)', borderRadius: 8, fontSize: 12 }}
+                      labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                      formatter={(v, name) => [name === 'ratio' ? `${v} sites/万人` : v, 'Coverage Rate']} />
+                    <Bar dataKey="ratio" fill="#e03030" fillOpacity={0.85} maxBarSize={22} cursor="pointer"
+                      onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
+                      <LabelList dataKey="ratio" position="top" style={{ fill: '#ccc', fontSize: 9 }} formatter={v => v > 0 ? v : ''} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               )}
             </div>
           </div>
-
-          {/* ── 地图与图表之间的图例条（仅 Tab 2/4 时显示） ── */}
-          {(activeTab === 2 || activeTab === 4) && (
-            <div className="p3-inline-legend">
-              {activeTab === 4 && [
-                { color: '#111118', label: '0' },
-                { color: '#0d3060', label: '< 50' },
-                { color: '#0a5a8a', label: '50–100' },
-                { color: '#0b7a6a', label: '100–200' },
-                { color: '#1a9640', label: '200–400' },
-                { color: '#c8a200', label: '400–800' },
-                { color: '#d04800', label: '800–1500' },
-                { color: '#b50000', label: '> 1500' },
-              ].map(({ color, label }) => (
-                <div key={label} className="p3-il-btn" style={{ cursor: 'default', gap: 6 }}>
-                  <span style={{ width: 14, height: 14, borderRadius: 3, background: color, display: 'inline-block', flexShrink: 0, border: '1px solid rgba(255,255,255,0.2)' }} />
-                  <span style={{ fontSize: 11, color: '#ccc', whiteSpace: 'nowrap' }}>{label}</span>
-                </div>
-              ))}
-              {activeTab === 2 && Object.entries(POI_COLORS).map(([k, v]) => (
-                <button key={k}
-                  className={`p3-il-btn ${compoundFilter === k ? 'active' : compoundFilter === 'all' ? '' : 'dim'}`}
-                  style={{ '--ilc': v.hex, color: '#fff' }}
-                  onClick={() => {
-                    const next = compoundFilter === k ? 'all' : k;
-                    setCompoundFilter(next);
-                    setContextChartType(next === 'all' ? 'retail' : next);
-                  }}>
-                  <PoiPinIcon type={k} size={16} />
-                  {v.label}
-                </button>
-              ))}
-            </div>
-          )}
-
         </div>
 
-        {/* ── RIGHT: panel (50%) ── */}
-        <div className="p3-panel-half">
-        <div className="p3-panel-card">
-          <div className="p3p-header">
-            <h2 className="p3p-title">{panelMeta.title}</h2>
-            {panelMeta.subtitle === 'highlight' ? (
-              <p className="p3p-desc">
-                Shenzhen's drone delivery network spans{' '}
-                <span style={{ color: '#E8A88B', fontWeight: 700 }}>45 departure</span> and{' '}
-                <span style={{ color: '#E8A88B', fontWeight: 700 }}>161 landing hubs</span>{' '}
-                across 9 districts — revealing where UAV logistics capacity is concentrated and where gaps remain.
-              </p>
-            ) : (
-              <p className="p3p-desc">{panelMeta.subtitle}</p>
-            )}
-          </div>
-
-          {loadError && <div className="p3p-loading" style={{ color: '#ff6b6b' }}>加载失败：{loadError}</div>}
-
-
-          {/* ── Sites by District (moved from bottom-left) ── */}
-          <div className="p3p-section p3p-district-section">
-            <div className="p3p-section-label">Sites by District</div>
-
-            {activeTab !== 2 && activeTab !== 4 && districtStats.length > 0 && (
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={districtStats} margin={{ left: 4, right: 8, top: 24, bottom: 30 }} barCategoryGap="28%" barGap={3}>
-                  <CartesianGrid vertical={false} horizontal={true} stroke="rgba(200,200,210,0.12)" strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
-                  <YAxis type="number" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
-                    label={{ value: 'Sites (n)', angle: 0, position: 'top', fill: '#555', fontSize: 10, dy: -8, dx: 20, textAnchor: 'middle' }} />
-                  <Tooltip contentStyle={{ background: '#2E5E7E', border: '1px solid rgba(168, 196, 212, 0.2)', borderRadius: 8, fontSize: 12 }}
-                    labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                    formatter={(value, name) => [value, name === 'commercial' ? 'Departure Hubs' : 'Landing Hubs']} />
-                  <Bar dataKey="commercial" fill="#ffa028" fillOpacity={showCommercial ? 0.85 : 0.15} maxBarSize={18} cursor="pointer"
-                    onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
-                    <LabelList dataKey="commercial" position="top" style={{ fill: showCommercial ? '#ccc' : 'transparent', fontSize: 9 }} formatter={v => v > 0 ? v : ''} />
-                  </Bar>
-                  <Bar dataKey="last_mile" fill="#c864ff" fillOpacity={showLastMile ? 0.85 : 0.15} maxBarSize={18} cursor="pointer"
-                    onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
-                    <LabelList dataKey="last_mile" position="top" style={{ fill: showLastMile ? '#ccc' : 'transparent', fontSize: 9 }} formatter={v => v > 0 ? v : ''} />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-
-            {activeTab === 4 && districtCoverageStats.length > 0 && (
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={districtCoverageStats} margin={{ left: 4, right: 8, top: 24, bottom: 30 }} barCategoryGap="35%">
-                  <CartesianGrid vertical={false} horizontal={true} stroke="rgba(200,200,210,0.12)" strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
-                  <YAxis type="number" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
-                    label={{ value: 'per 万人', angle: 0, position: 'top', fill: '#555', fontSize: 10, dy: -8, dx: 24, textAnchor: 'middle' }} />
-                  <Tooltip contentStyle={{ background: '#2E5E7E', border: '1px solid rgba(168, 196, 212, 0.2)', borderRadius: 8, fontSize: 12 }}
-                    labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                    formatter={(value, name) => [name === 'ratio' ? `${value} sites/万人` : value, name === 'ratio' ? 'Coverage Rate' : 'Total']} />
-                  <Bar dataKey="ratio" fill="#e03030" fillOpacity={0.85} maxBarSize={22} cursor="pointer"
-                    onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
-                    <LabelList dataKey="ratio" position="top" style={{ fill: '#ccc', fontSize: 9 }} formatter={v => v > 0 ? v : ''} />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-
-            {activeTab === 2 && districtContextStats.length > 0 && (
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={districtContextStats} margin={{ left: 4, right: 8, top: 16, bottom: 30 }} barCategoryGap="35%">
-                  <CartesianGrid vertical={false} horizontal={true} stroke="rgba(200,200,210,0.12)" strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
-                  <YAxis type="number" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} width={28}
-                    label={{ value: 'Sites (n)', angle: 0, position: 'top', fill: '#555', fontSize: 10, dy: -8, dx: 20, textAnchor: 'middle' }} />
-                  <Tooltip contentStyle={{ background: '#2E5E7E', border: '1px solid rgba(168, 196, 212, 0.2)', borderRadius: 8, fontSize: 12 }}
-                    labelStyle={{ color: '#aaa' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                    formatter={v => [v, POI_COLORS[contextChartType]?.label]} />
-                  <Bar dataKey={contextChartType} fill={POI_COLORS[contextChartType]?.hex} fillOpacity={0.85} maxBarSize={22} cursor="pointer"
-                    onClick={d => { const v = getDistrictView(d.name); if (v) setFocusDistrict(v); }}>
-                    <LabelList dataKey={contextChartType} position="top" style={{ fill: '#ccc', fontSize: 9 }} formatter={v => v > 0 ? v : ''} />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-
-          <div className="p3p-footer">
-            <span>Source: Shenzhen Transport Bureau, 2024</span>
-          </div>
-        </div>
-        </div>
       </div>
     </section>
   );

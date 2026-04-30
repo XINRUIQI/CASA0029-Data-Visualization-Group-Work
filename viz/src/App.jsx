@@ -212,13 +212,9 @@ function PageNav({ pages, onNavigate }) {
 }
 
 function MainNarrative() {
-  const [p2Key, setP2Key] = useState(0);
   const location = useLocation();
 
   const handleNavClick = useCallback((id) => {
-    if (id === 2) {
-      setP2Key(k => k + 1);
-    }
     setTimeout(() => {
       const el = document.getElementById(`page-${id}`);
       if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -285,7 +281,7 @@ function MainNarrative() {
 
       <Page0Cover />
       <LazyPage pageId="page-1" component={Page1Landing} />
-      <LazyPage pageId="page-2" component={Page2Entry} mountKey={p2Key} />
+      <LazyPage pageId="page-2" component={Page2Entry} />
       <LazyPage pageId="page-3" component={Page3Friction} />
       <LazyPage pageId="page-4" component={Page4Placeholder} />
       <LazyPage pageId="page-5" component={Page5Strategy} />
@@ -369,7 +365,6 @@ export default function App() {
   return (
     <>
       <div className="global-fixed-bg" aria-hidden />
-      <GlobalCursor />
       <Routes>
         <Route path="/" element={<MainNarrative />} />
         <Route

@@ -461,9 +461,9 @@ export function GroundFrictionBoxChart({ odData }) {
     const barriers = computeBoxStats(props.map(p => p.n_barrier_total));
 
     return [
-      { name: 'Detour ratio', ...detour, color: '#ff7a5c', unit: '×' },
-      { name: 'Congestion amp.', ...congestion, color: '#ffb07a', unit: '×' },
-      { name: 'Barriers / route', ...barriers, color: '#42a5f5', unit: '' },
+      { name: 'Detour (vs straight line)', ...detour, color: '#ff7a5c', unit: '×' },
+      { name: 'Delay from traffic', ...congestion, color: '#ffb07a', unit: '×' },
+      { name: 'Barriers per trip', ...barriers, color: '#4caf50', unit: '' },
       { name: 'Ground friction', ...friction, color: '#ab47bc', unit: '' },
     ];
   }, [odData]);
@@ -473,63 +473,35 @@ export function GroundFrictionBoxChart({ odData }) {
   const boxWidth = 680;
 
   return (
-    <div className="p4-chart">
-      <div className="p4-chart-kpis">
-        <div className="p4-kpi">
-          <div className="p4-kpi-val">{metrics[0].n}</div>
-          <div className="p4-kpi-lab">OD route pairs analysed</div>
-        </div>
-        <div className="p4-kpi">
-          <div className="p4-kpi-val" style={{ color: '#ff7a5c' }}>
-            {metrics[0].median.toFixed(2)}{metrics[0].unit}
-          </div>
-          <div className="p4-kpi-lab">Median detour ratio</div>
-        </div>
-        <div className="p4-kpi">
-          <div className="p4-kpi-val" style={{ color: '#ffb07a' }}>
-            {metrics[1].median.toFixed(2)}{metrics[1].unit}
-          </div>
-          <div className="p4-kpi-lab">Median congestion amplifier</div>
-        </div>
-      </div>
-
-      <div className="p4-box-chart">
-        {metrics.map(m => {
-          const scale = (v) => ((v - m.min) / (m.max - m.min)) * 100;
-          return (
-            <div className="p4-box-row" key={m.name}>
-              <div className="p4-box-label">{m.name}</div>
-              <div className="p4-box-track">
-                <div className="p4-box-whisker"
-                  style={{ left: `${scale(m.min)}%`, width: `${scale(m.max) - scale(m.min)}%` }}>
-                  <div className="p4-box-whisker-line" style={{ background: m.color }} />
-                </div>
-                <div className="p4-box-rect"
-                  style={{
-                    left: `${scale(m.q1)}%`,
-                    width: `${scale(m.q3) - scale(m.q1)}%`,
-                    background: m.color,
-                    opacity: 0.3,
-                  }} />
-                <div className="p4-box-median"
-                  style={{ left: `${scale(m.median)}%`, background: m.color }} />
+    <div className="p4-box-chart">
+      {metrics.map(m => {
+        const scale = (v) => ((v - m.min) / (m.max - m.min)) * 100;
+        return (
+          <div className="p4-box-row" key={m.name}>
+            <div className="p4-box-label">{m.name}</div>
+            <div className="p4-box-track">
+              <div className="p4-box-whisker"
+                style={{ left: `${scale(m.min)}%`, width: `${scale(m.max) - scale(m.min)}%` }}>
+                <div className="p4-box-whisker-line" style={{ background: m.color }} />
               </div>
-              <div className="p4-box-vals">
-                <span>Q1 {m.q1.toFixed(2)}</span>
-                <span style={{ fontWeight: 700 }}>Med {m.median.toFixed(2)}</span>
-                <span>Q3 {m.q3.toFixed(2)}</span>
-              </div>
+              <div className="p4-box-rect"
+                style={{
+                  left: `${scale(m.q1)}%`,
+                  width: `${scale(m.q3) - scale(m.q1)}%`,
+                  background: m.color,
+                  opacity: 0.3,
+                }} />
+              <div className="p4-box-median"
+                style={{ left: `${scale(m.median)}%`, background: m.color }} />
             </div>
-          );
-        })}
-      </div>
-
-      <p className="p4-chart-note">
-        Ground-level OD route metrics. Median detour ratio of <em>{metrics[0].median.toFixed(2)}×</em> means
-        ground couriers travel {((metrics[0].median - 1) * 100).toFixed(0)}% further than a straight line.
-        Peak-hour congestion amplifies travel time by <em>{metrics[1].median.toFixed(1)}×</em> —
-        exactly the gap drones can bypass.
-      </p>
+            <div className="p4-box-vals">
+              <span>Q1 {m.q1.toFixed(2)}</span>
+              <span style={{ fontWeight: 700 }}>Med {m.median.toFixed(2)}</span>
+              <span>Q3 {m.q3.toFixed(2)}</span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
