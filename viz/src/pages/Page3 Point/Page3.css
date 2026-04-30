@@ -32,7 +32,7 @@
 /* ─── Section-level title at the top of Page 3 ─── */
 .p3-section-header {
   position: absolute;
-  top: 52px;
+  top: 32px;
   left: 130px;
   right: 60px;
   z-index: 2;
@@ -40,20 +40,20 @@
 }
 
 .p3-section-title {
-  font-size: 1.7rem;
+  font-size: clamp(2rem, 5vw, 3.2rem);
   font-weight: 700;
   color: #F0EBE0;
   letter-spacing: 0.02em;
-  margin: 0 0 8px 0;
+  margin: 0 0 14px 0;
   line-height: 1.25;
 }
 
 .p3-section-subtitle {
-  font-size: 0.95rem;
+  font-size: 1.15rem;
   color: rgba(240, 235, 224, 0.6);
   margin: 0;
   line-height: 1.5;
-  max-width: calc(62vw - 164px);
+  white-space: nowrap;
 }
 
 /* ─── Hero header — top of right column ─── */
@@ -156,7 +156,7 @@
   width: 100%;
   position: relative;
   z-index: 1;
-  padding: 160px 60px 180px 8px;
+  padding: 180px 60px 180px 8px;
   gap: 16px;
 }
 

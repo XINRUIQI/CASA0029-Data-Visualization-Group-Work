@@ -5,7 +5,7 @@ import { H3HexagonLayer } from '@deck.gl/geo-layers';
 import { MAPBOX_TOKEN } from '../../config';
 import { publicDataUrl } from '../../config';
 import MapControls from '../../components/MapControls';
-import { AreaChart, Area, Cell,
+import { AreaChart, Area, PieChart, Pie, Cell,
          ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid,
          Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -14,7 +14,7 @@ import './Page6PostAnalysis.css';
 const FRICTION_REDUCTION = 0.7;
 
 const LAYER_MODES = [
-  { id: 'acc_demand', label: 'A − D',     color: '#5A89A6' },
+  { id: 'acc_demand', label: 'GAP',       color: '#64c8ff' },
   { id: 'friction',   label: 'Burden',    color: '#ff3264' },
   { id: 'composite',  label: 'Composite', color: '#c864ff' },
 ];
@@ -179,25 +179,24 @@ export default function Page7PostAnalysis() {
     return [before, after];
   }, [mergedHex, activeMode]);
 
-  const adDistData = useMemo(() => {
-    if (!mergedHex?.length) return [];
-    const bVals = mergedHex.map(d => d.acc_demand_before).filter(v => isFinite(v));
-    const aVals = mergedHex.map(d => d.acc_demand_after).filter(v => isFinite(v));
-    if (!bVals.length) return [];
-    const all = [...bVals, ...aVals];
-    const sorted = [...all].sort((a, b) => a - b);
-    const lo = sorted[sorted.length * 0.02 | 0];
-    const hi = sorted[sorted.length * 0.98 | 0];
-    const binW = (hi - lo) / 40;
-    if (binW <= 0) return [];
-    const nBin = 40;
-    const result = Array.from({ length: nBin }, (_, i) => ({
-      range: +(lo + (i + 0.5) * binW).toFixed(3), before: 0, after: 0,
-    }));
-    bVals.forEach(v => { const idx = Math.min(nBin - 1, Math.max(0, Math.floor((v - lo) / binW))); result[idx].before++; });
-    aVals.forEach(v => { const idx = Math.min(nBin - 1, Math.max(0, Math.floor((v - lo) / binW))); result[idx].after++; });
-    return result;
-  }, [mergedHex]);
+  const coverageComparison = useMemo(() => {
+    if (!precomputed?.budgets) return null;
+    const items = BUDGETS.map(b => {
+      const m = precomputed.budgets[b]?.metrics;
+      if (!m) return null;
+      const covered = +m.coveredHexes, total = +m.totalHexes;
+      if (!total) return null;
+      return {
+        budget: b, covered, uncovered: total - covered, total,
+        pct: +m.coveragePct,
+        data: [
+          { name: 'Covered', value: covered, fill: '#F2EBD9' },
+          { name: 'Uncovered', value: total - covered, fill: 'rgba(168,196,212,0.25)' },
+        ],
+      };
+    }).filter(Boolean);
+    return items.length ? items : null;
+  }, [precomputed]);
 
   const frDemandData = useMemo(() => {
     if (!mergedHex?.length) return null;
@@ -270,7 +269,7 @@ export default function Page7PostAnalysis() {
   }, [mergedHex, beforeColors, afterColors, selectedSites, splitLon]);
 
   return (
-    <section id="page-7" className="page page-7-post">
+    <section id="page-6" className="page page-7-post">
       {/* ═══ OPTIMIZATION RESULTS ═══ */}
       <div className="p6-opt-section">
         <h2 className="p6-opt-h2">Optimisation Results</h2>
@@ -282,43 +281,52 @@ export default function Page7PostAnalysis() {
               <ResponsiveContainer width="100%" height={180}>
                 <AreaChart data={frictionDistData} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.1)" />
-                  <XAxis dataKey="range" tick={{ fill: '#A09888', fontSize: 8 }}
+                  <XAxis dataKey="range" tick={{ fill: '#F2EBD9', fontSize: 8 }}
                     tickFormatter={v => v.toFixed(2)} interval="preserveStartEnd" />
-                  <YAxis tick={{ fill: '#A09888', fontSize: 8 }} />
+                  <YAxis tick={{ fill: '#F2EBD9', fontSize: 8 }} />
                   <Tooltip contentStyle={TT_STYLE}
                     labelFormatter={l => `Burden ${Number(l).toFixed(3)}`}
                     formatter={(v, name) => [v, name === 'before' ? 'Before' : 'After']} />
                   <Area type="monotone" dataKey="before" stroke="#ff3264" fill="#ff3264"
                     fillOpacity={0.2} strokeWidth={1.5} name="before" />
-                  <Area type="monotone" dataKey="after" stroke="#00e896" fill="#00e896"
+                  <Area type="monotone" dataKey="after" stroke="#F2EBD9" fill="#F2EBD9"
                     fillOpacity={0.2} strokeWidth={1.5} name="after" />
                   <Legend formatter={v => v === 'before' ? 'Before' : 'After'} />
                 </AreaChart>
               </ResponsiveContainer>
-              <p className="p6-xc-note">Green curve shifts left — burden reduced in covered hexagons.</p>
+              <p className="p6-xc-note">After-curve shifts left — burden reduced in drone-covered hexagons.</p>
             </div>
           )}
 
-          {adDistData.length > 0 && (
+          {coverageComparison && (
             <div className="p6-xc">
-              <h4 className="p6-xc-title">A − D Distribution</h4>
-              <ResponsiveContainer width="100%" height={180}>
-                <AreaChart data={adDistData} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.1)" />
-                  <XAxis dataKey="range" tick={{ fill: '#A09888', fontSize: 8 }}
-                    tickFormatter={v => v.toFixed(2)} interval="preserveStartEnd" />
-                  <YAxis tick={{ fill: '#A09888', fontSize: 8 }} />
-                  <Tooltip contentStyle={TT_STYLE}
-                    labelFormatter={l => `A − D: ${Number(l).toFixed(3)}`}
-                    formatter={(v, name) => [v, name === 'before' ? 'Before' : 'After']} />
-                  <Area type="monotone" dataKey="before" stroke="#ff3264" fill="#ff3264"
-                    fillOpacity={0.2} strokeWidth={1.5} name="before" />
-                  <Area type="monotone" dataKey="after" stroke="#00e896" fill="#00e896"
-                    fillOpacity={0.2} strokeWidth={1.5} name="after" />
-                  <Legend formatter={v => v === 'before' ? 'Before' : 'After'} />
-                </AreaChart>
-              </ResponsiveContainer>
-              <p className="p6-xc-note">Green curve shifts right — accessibility gap reduced after drone deployment.</p>
+              <h4 className="p6-xc-title">Drone Service Coverage</h4>
+              <div className="p6-cov-row">
+                {coverageComparison.map(item => (
+                  <div key={item.budget} className={`p6-cov-item ${budget === item.budget ? 'active' : ''}`}>
+                    <div className="p6-donut-wrap p6-donut-mini">
+                      <ResponsiveContainer width="100%" height={120}>
+                        <PieChart>
+                          <Pie data={item.data} cx="50%" cy="50%"
+                            innerRadius={30} outerRadius={48} paddingAngle={2} dataKey="value"
+                            startAngle={90} endAngle={-270}>
+                            {item.data.map((d, i) => (
+                              <Cell key={i} fill={d.fill} stroke="none" />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={TT_STYLE} formatter={(v, name) => [v, name]} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="p6-donut-center p6-donut-center-sm">{item.pct}%</div>
+                    </div>
+                    <div className="p6-cov-label">+{item.budget} sites</div>
+                    <div className="p6-cov-detail">{item.covered}/{item.total}</div>
+                  </div>
+                ))}
+              </div>
+              <p className="p6-xc-note">
+                Hexagons within 3 km of a drone site are counted as covered. Current budget highlighted.
+              </p>
             </div>
           )}
 
@@ -328,20 +336,20 @@ export default function Page7PostAnalysis() {
               <ResponsiveContainer width="100%" height={180}>
                 <ScatterChart margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.1)" />
-                  <XAxis dataKey="friction" type="number" name="Friction" tick={{ fill: '#A09888', fontSize: 8 }}
-                    label={{ value: 'Friction', position: 'bottom', fill: '#999', fontSize: 8, offset: -2 }} />
-                  <YAxis dataKey="demand" type="number" name="Demand" tick={{ fill: '#A09888', fontSize: 8 }}
-                    label={{ value: 'Demand', angle: -90, position: 'insideLeft', fill: '#999', fontSize: 8 }} />
+                  <XAxis dataKey="friction" type="number" name="Friction" tick={{ fill: '#F2EBD9', fontSize: 8 }}
+                    label={{ value: 'Friction', position: 'bottom', fill: '#F2EBD9', fontSize: 8, offset: -2 }} />
+                  <YAxis dataKey="demand" type="number" name="Demand" tick={{ fill: '#F2EBD9', fontSize: 8 }}
+                    label={{ value: 'Demand', angle: -90, position: 'insideLeft', fill: '#F2EBD9', fontSize: 8 }} />
                   <ZAxis range={[15, 15]} />
                   <Tooltip contentStyle={TT_STYLE} formatter={(v, n) => [v, n]} />
                   <Scatter data={frDemandData}>
                     {frDemandData.map((d, i) => (
-                      <Cell key={i} fill={d.covered ? '#00e896' : '#ff3264'} fillOpacity={0.6} />
+                      <Cell key={i} fill={d.covered ? '#F2EBD9' : '#ff3264'} fillOpacity={0.6} />
                     ))}
                   </Scatter>
                 </ScatterChart>
               </ResponsiveContainer>
-              <p className="p6-xc-note">Green = drone-covered. High-friction + high-demand = priority targets.</p>
+              <p className="p6-xc-note">Light dots = drone-covered. Top-right quadrant = highest priority for intervention.</p>
             </div>
           )}
 
@@ -359,7 +367,7 @@ export default function Page7PostAnalysis() {
                     {r.values.map((v, ci) => {
                       const intensity = budgetHeatmap.maxVals[ci] > 0 ? v / budgetHeatmap.maxVals[ci] : 0;
                       return (
-                        <div key={ci} className="p6-hm-cell" style={{ background: `rgba(0,232,150,${(0.1 + intensity * 0.5).toFixed(2)})` }}>
+                        <div key={ci} className="p6-hm-cell" style={{ background: `rgba(242,235,217,${(0.1 + intensity * 0.5).toFixed(2)})` }}>
                           {v.toFixed(1)}%
                         </div>
                       );
@@ -367,7 +375,7 @@ export default function Page7PostAnalysis() {
                   </div>
                 ))}
               </div>
-              <p className="p6-xc-note">Darker = stronger improvement. Compare metrics across deployment scales.</p>
+              <p className="p6-xc-note">Darker cells = stronger improvement. Compare coverage and burden reduction across budgets.</p>
             </div>
           )}
         </div>
@@ -428,32 +436,32 @@ export default function Page7PostAnalysis() {
           />
 
           {hoveredHex && (
-            <div className="p6-hex-tooltip" style={{ color: '#E5E7EB' }}>
+            <div className="p6-hex-tooltip" style={{ color: '#2E4A5E' }}>
               {activeMode === 'acc_demand' && (
                 <div className="p6-hv-row">
-                  <div className="p6-hv" style={{ color: '#E5E7EB' }}><span style={{ color: '#E5E7EB' }}>A − D</span> {hoveredHex.acc_demand_after?.toFixed(3) ?? '—'}</div>
+                  <div className="p6-hv" style={{ color: '#2E4A5E' }}><span style={{ color: '#2E4A5E' }}>GAP</span> {hoveredHex.acc_demand_after?.toFixed(3) ?? '—'}</div>
                   {hoveredHex.covered && (
-                    <div className="p6-hv p6-hv-strike" style={{ color: '#E5E7EB' }}><span style={{ color: '#E5E7EB' }}>Before</span> {hoveredHex.acc_demand_before?.toFixed(3) ?? '—'}</div>
+                    <div className="p6-hv p6-hv-strike" style={{ color: '#2E4A5E' }}><span style={{ color: '#2E4A5E' }}>Before</span> {hoveredHex.acc_demand_before?.toFixed(3) ?? '—'}</div>
                   )}
-                  {hoveredHex.covered && <div className="p6-hv-badge" style={{ color: '#E5E7EB' }}>Drone covered</div>}
+                  {hoveredHex.covered && <div className="p6-hv-badge" style={{ color: '#2E4A5E' }}>Drone covered</div>}
                 </div>
               )}
               {activeMode === 'friction' && (
                 <div className="p6-hv-row">
-                  <div className="p6-hv" style={{ color: '#E5E7EB' }}><span style={{ color: '#E5E7EB' }}>Burden</span> {hoveredHex.avg_friction?.toFixed(3) ?? '—'}</div>
+                  <div className="p6-hv" style={{ color: '#2E4A5E' }}><span style={{ color: '#2E4A5E' }}>Burden</span> {hoveredHex.avg_friction?.toFixed(3) ?? '—'}</div>
                   {hoveredHex.covered && (
-                    <div className="p6-hv p6-hv-strike" style={{ color: '#E5E7EB' }}><span style={{ color: '#E5E7EB' }}>Before</span> {hoveredHex.avg_friction_before?.toFixed(3) ?? '—'}</div>
+                    <div className="p6-hv p6-hv-strike" style={{ color: '#2E4A5E' }}><span style={{ color: '#2E4A5E' }}>Before</span> {hoveredHex.avg_friction_before?.toFixed(3) ?? '—'}</div>
                   )}
-                  {hoveredHex.covered && <div className="p6-hv-badge" style={{ color: '#E5E7EB' }}>Drone covered</div>}
+                  {hoveredHex.covered && <div className="p6-hv-badge" style={{ color: '#2E4A5E' }}>Drone covered</div>}
                 </div>
               )}
               {activeMode === 'composite' && (
                 <div className="p6-hv-row">
-                  <div className="p6-hv" style={{ color: '#E5E7EB' }}><span style={{ color: '#E5E7EB' }}>Gap</span> {hoveredHex.gap_index?.toFixed(4) ?? '—'}</div>
+                  <div className="p6-hv" style={{ color: '#2E4A5E' }}><span style={{ color: '#2E4A5E' }}>Gap</span> {hoveredHex.gap_index?.toFixed(4) ?? '—'}</div>
                   {hoveredHex.covered && (
-                    <div className="p6-hv p6-hv-strike" style={{ color: '#E5E7EB' }}><span style={{ color: '#E5E7EB' }}>Before</span> {hoveredHex.gap_index_before?.toFixed(4) ?? '—'}</div>
+                    <div className="p6-hv p6-hv-strike" style={{ color: '#2E4A5E' }}><span style={{ color: '#2E4A5E' }}>Before</span> {hoveredHex.gap_index_before?.toFixed(4) ?? '—'}</div>
                   )}
-                  {hoveredHex.covered && <div className="p6-hv-badge" style={{ color: '#E5E7EB' }}>Drone covered</div>}
+                  {hoveredHex.covered && <div className="p6-hv-badge" style={{ color: '#2E4A5E' }}>Drone covered</div>}
                 </div>
               )}
             </div>
@@ -588,7 +596,7 @@ export default function Page7PostAnalysis() {
           {metrics && (
             <div className="p6-metrics">
               <div className="p6-metric-card">
-                <div className="p6m-val" style={{ color: '#ff3264' }}>
+                <div className="p6m-val" style={{ color: '#E8A88B' }}>
                   {metrics.avgFrictionAfter}
                 </div>
                 <div className="p6m-lab">Avg Burden</div>
@@ -596,19 +604,19 @@ export default function Page7PostAnalysis() {
 
               <>
                   <div className="p6-metric-card">
-                    <div className="p6m-val" style={{ color: '#00e896' }}>
+                    <div className="p6m-val" style={{ color: '#E8A88B' }}>
                       -{metrics.frictionReduction}%
                     </div>
                     <div className="p6m-lab">Burden Reduction</div>
                   </div>
                   <div className="p6-metric-card">
-                    <div className="p6m-val" style={{ color: '#64c8ff' }}>
+                    <div className="p6m-val" style={{ color: '#E8A88B' }}>
                       {metrics.coveragePct}%
                     </div>
                     <div className="p6m-lab">Area Covered</div>
                   </div>
                   <div className="p6-metric-card">
-                    <div className="p6m-val" style={{ color: '#ffa028' }}>
+                    <div className="p6m-val" style={{ color: '#E8A88B' }}>
                       +{metrics.numSites}
                     </div>
                     <div className="p6m-lab">Drone Sites</div>

@@ -82,7 +82,7 @@ function MailIcon() {
 
 export default function Page7Summary() {
   return (
-    <section id="page-8" className="page page-summary">
+    <section id="page-7" className="page page-summary">
       <div className="s8-layout" aria-labelledby="s8-title">
         <article className="s8-video-card">
           <video

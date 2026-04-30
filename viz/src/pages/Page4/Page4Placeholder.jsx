@@ -10,7 +10,7 @@ import './Page4.css';
 
 const STRATEGIES = [
   { id: 'demand',   label: 'Demand-first',  desc: 'GAP = demand − supply (supply ≈ 1 − friction); rank high→low' },
-  { id: 'friction', label: 'Friction-first', desc: 'Rank by ground-friction intensity, high→low' },
+  { id: 'burden', label: 'Burden-first', desc: 'Rank by ground-level delivery burden, high→low' },
   { id: 'gap',      label: 'Composite',     desc: '0.4·D·F + 0.3·I·F + 0.3·D·I (urgent→not-urgent)' },
 ];
 
@@ -80,8 +80,8 @@ export default function Page4Placeholder() {
         <div className="p4-eyebrow">From Current Network to Optimisation Need</div>
 
         <div className="p4-section">
-          <h3 className="p4-col-title">The Gap at a Glance</h3>
-          <div className="p4-col-body">
+          <h3 className="p4-col-title" style={{ fontSize: 'clamp(2rem, 5vw, 3.2rem)', color: '#2E5E7E', marginTop: '-20px' }}>The Gap at a Glance</h3>
+          <div className="p4-col-body" style={{ marginTop: '16px' }}>
             <p>
               The existing drone network does not fully match Shenzhen's delivery demand.
               Many residents and high-demand areas remain outside the 3 km service range,
@@ -111,7 +111,7 @@ export default function Page4Placeholder() {
 
         {/* ── Section 5: Friction × Demand scatter ── */}
         <div className="p4-section">
-          <h3 className="p4-col-title">High Friction, High Demand — Zero Coverage</h3>
+          <h3 className="p4-col-title">High Burden, High Demand — Zero Coverage</h3>
           <div className="p4-col-body">
             <p>
               High-demand areas with difficult ground delivery are still not served by drones.
@@ -139,15 +139,15 @@ export default function Page4Placeholder() {
               <p>Each candidate site is scored using three normalised dimensions from the composite analysis pipeline:</p>
               <ul>
                 <li><strong>Demand-first</strong> — ranks by demand_norm (delivery demand pressure)</li>
-                <li><strong>Friction-first</strong> — ranks by friction_norm (ground-transport difficulty)</li>
+                <li><strong>Burden-first</strong> — ranks by burden_norm (ground-transport difficulty)</li>
                 <li><strong>Composite</strong> — 0.4·D·F + 0.3·I·F + 0.3·D·I, where D = demand, F = friction, I = intensity</li>
               </ul>
               <p>Sites are ranked high → low by strategy score; the top N (budget) are selected. All inputs are min-max normalised to [0, 1].</p>
             </div>
           )}
         </div>
-        <p className="p4-col-body" style={{ textAlign: 'center', marginBottom: 16 }}>
-          Select a strategy and budget to see which candidate locations best close the coverage gap.
+        <p className="p4-col-body" style={{ textAlign: 'center', marginTop: 16, marginBottom: 18 }}>
+        This interactive map shows optimal locations for adding new drone sites under different strategies and budget constraints. By comparing demand-driven, burden-based, and composite approaches, it highlights how additional sites can be added to improve spatial accessibility across the network.
         </p>
         <div className="p4-map-controls-bar">
           <div className="p4-ctrl-group">

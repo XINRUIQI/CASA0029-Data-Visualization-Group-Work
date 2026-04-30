@@ -255,11 +255,13 @@ function Page2FrictionCharts({
   const [ordersScatterInfoOpen, setOrdersScatterInfoOpen] = useState(false);
   const [treemapInfoOpen, setTreemapInfoOpen] = useState(false);
   const [bulletInfoOpen, setBulletInfoOpen] = useState(false);
+  const [congInfoOpen, setCongInfoOpen] = useState(false);
   const poiSupplyInfoRef = useRef(null);
   const demandDistInfoRef = useRef(null);
   const ordersScatterInfoRef = useRef(null);
   const treemapInfoRef = useRef(null);
   const bulletInfoRef = useRef(null);
+  const congInfoRef = useRef(null);
 
   const gapByH3 = useMemo(() => new Map((h3Gap || []).map(g => [g.h3, g])), [h3Gap]);
 
@@ -307,17 +309,18 @@ function Page2FrictionCharts({
   }, [activeMode]);
 
   useEffect(() => {
-    if (!poiSupplyInfoOpen && !demandDistInfoOpen && !ordersScatterInfoOpen && !treemapInfoOpen && !bulletInfoOpen) return;
+    if (!poiSupplyInfoOpen && !demandDistInfoOpen && !ordersScatterInfoOpen && !treemapInfoOpen && !bulletInfoOpen && !congInfoOpen) return;
     const onDoc = (e) => {
       if (poiSupplyInfoOpen && !poiSupplyInfoRef.current?.contains(e.target)) setPoiSupplyInfoOpen(false);
       if (demandDistInfoOpen && !demandDistInfoRef.current?.contains(e.target)) setDemandDistInfoOpen(false);
       if (ordersScatterInfoOpen && !ordersScatterInfoRef.current?.contains(e.target)) setOrdersScatterInfoOpen(false);
       if (treemapInfoOpen && !treemapInfoRef.current?.contains(e.target)) setTreemapInfoOpen(false);
       if (bulletInfoOpen && !bulletInfoRef.current?.contains(e.target)) setBulletInfoOpen(false);
+      if (congInfoOpen && !congInfoRef.current?.contains(e.target)) setCongInfoOpen(false);
     };
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
-  }, [poiSupplyInfoOpen, demandDistInfoOpen, ordersScatterInfoOpen, treemapInfoOpen, bulletInfoOpen]);
+  }, [poiSupplyInfoOpen, demandDistInfoOpen, ordersScatterInfoOpen, treemapInfoOpen, bulletInfoOpen, congInfoOpen]);
 
   const demandCoverage = useMemo(() => {
     if (!h3Takeout?.length) return null;
@@ -765,7 +768,25 @@ function Page2FrictionCharts({
 
           {congestionDensity && (
             <div className="p2c-section">
-              <h4>How Much Congestion Increases Travel Time</h4>
+              <div ref={congInfoRef}>
+                <h4 className="p2c-title-with-info">
+                  How Much Congestion Increases Travel Time
+                  <button
+                    type="button"
+                    className="p2c-info-icon"
+                    aria-label="About this chart"
+                    aria-expanded={congInfoOpen}
+                    onClick={(e) => { e.stopPropagation(); setCongInfoOpen(o => !o); }}
+                  >
+                    i
+                  </button>
+                  {congInfoOpen && (
+                    <div className="p2c-info-popover" role="tooltip">
+                      Peak-to-free-flow ratio measures how much longer a trip takes during peak hours versus free-flow conditions. A ratio of 1.0 means no delay; values above 1.5 indicate significant congestion impact.
+                    </div>
+                  )}
+                </h4>
+              </div>
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={congestionDensity.bins} margin={{ left: 5, right: 10, top: 22, bottom: 20 }}>
                   <defs>

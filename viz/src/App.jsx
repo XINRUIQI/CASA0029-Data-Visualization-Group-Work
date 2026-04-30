@@ -65,8 +65,8 @@ const NAV_PAGES = [
   { id: 3, label: 'Current Drone Sites' },
   { id: 4, label: 'Gap & Optimisation' },
   { id: 5, label: 'Drone Route' },
-  { id: 7, label: 'After Siting' },
-  { id: 8, label: 'Conclusion' },
+  { id: 6, label: 'After Siting' },
+  { id: 7, label: 'Conclusion' },
 ];
 
 const NAV_LINKS = [
@@ -75,8 +75,8 @@ const NAV_LINKS = [
   { target: 'page-3', label: 'Current Drone Sites' },
   { target: 'page-4', label: 'Gap & Optimisation' },
   { target: 'page-5', label: 'Drone Route' },
-  { target: 'page-7', label: 'After Siting' },
-  { target: 'page-8', label: 'Conclusion' },
+  { target: 'page-6', label: 'After Siting' },
+  { target: 'page-7', label: 'Conclusion' },
 ];
 
 function GlobalTopbar() {
@@ -284,8 +284,8 @@ function MainNarrative() {
       <LazyPage pageId="page-3" component={Page3Friction} />
       <LazyPage pageId="page-4" component={Page4Placeholder} />
       <LazyPage pageId="page-5" component={Page5Strategy} />
-      <LazyPage pageId="page-7" component={Page7PostAnalysis} />
-      <LazyPage pageId="page-8" component={Page8Summary} />
+      <LazyPage pageId="page-6" component={Page7PostAnalysis} />
+      <LazyPage pageId="page-7" component={Page8Summary} />
     </div>
   );
 }

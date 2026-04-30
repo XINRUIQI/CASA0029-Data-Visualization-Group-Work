@@ -292,7 +292,7 @@ export function DistanceDistributionChart({ gapZones }) {
   return (
     <div className="p4-chart">
       <div style={{ display: 'flex', justifyContent: 'center', margin: '12px 0' }}>
-        <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: 600, height: 'auto' }}>
+        <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: 660, height: 'auto' }}>
           {/* Y-axis grid + labels */}
           {yCountTicks.map(v => {
             const y = countToY(v);
@@ -337,9 +337,9 @@ export function DistanceDistributionChart({ gapZones }) {
 
           {/* 3 km vertical threshold */}
           <line x1={x3km} x2={x3km} y1={padTop} y2={padTop + plotH}
-            stroke="#2E5E7E" strokeWidth="1.5" strokeDasharray="6 4" />
+            stroke="#ff7a5c" strokeWidth="1.5" strokeDasharray="6 4" />
           <text x={x3km + 6} y={padTop + 14}
-            fill="#2E5E7E" fontSize="10" fontWeight="600">
+            fill="#ff7a5c" fontSize="10" fontWeight="600">
             3 km drone range
           </text>
 
@@ -351,7 +351,7 @@ export function DistanceDistributionChart({ gapZones }) {
         </svg>
       </div>
 
-      <p className="p4-chart-note">
+      <p className="p4-col-body p4-accent-note">
         Each area is measured by its distance to the nearest drone site. The dashed line shows the
         3 km drone range. All <em>{beyond3Pct}%</em> of areas are beyond this range, with an
         average distance of <em>{avg.toFixed(1)} km</em>. This highlights a major coverage gap in the current drone delivery network.
@@ -441,7 +441,7 @@ export function FrictionDemandScatter({ h3Gap }) {
         </ScatterChart>
       </ResponsiveContainer>
 
-      <p className="p4-chart-note">
+      <p className="p4-col-body p4-accent-note">
         Each dot represents one H3 hexagon. <span style={{ color: '#ff7a5c', fontWeight: 600 }}>Orange dots</span> are
         areas not served by current drone sites. The top-right area highlights places with both high demand and high
         ground difficulty — <em style={{ color: '#ff7a5c' }}>these are the strongest candidates for new drone sites</em>.
@@ -513,6 +513,86 @@ export function GroundFrictionBoxChart({ odData }) {
               <span>Q1 {m.q1.toFixed(2)}</span>
               <span style={{ fontWeight: 700 }}>Med {m.median.toFixed(2)}</span>
               <span>Q3 {m.q3.toFixed(2)}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   6b · H3DimensionBoxChart — Demand / Supply / Burden / Composite
+   ═══════════════════════════════════════════════════════════ */
+const H3_BOX_NOTES = {
+  'Demand Index': 'Delivery demand is concentrated in a few hotspot areas.',
+  'Supply Count': 'Supply distribution is highly uneven across the city.',
+  'Ground Burden': 'Most areas face a moderate level of ground delivery burden.',
+  'Composite Score': 'Priority zones stand out clearly from the citywide baseline.',
+};
+
+export function H3DimensionBoxChart({ h3Demand, h3Takeout, h3Gap }) {
+  const metrics = useMemo(() => {
+    const rows = [];
+
+    const demandVals = (h3Takeout || [])
+      .map(d => d.takeout_demand_index ?? 0)
+      .filter(v => v > 0);
+    if (demandVals.length > 4)
+      rows.push({ name: 'Demand Index', ...computeBoxStats(demandVals), color: '#81D8D0' });
+
+    const supplyVals = (h3Demand || [])
+      .map(d => d.dp ?? 0)
+      .filter(v => v > 0);
+    if (supplyVals.length > 4)
+      rows.push({ name: 'Supply Count', ...computeBoxStats(supplyVals), color: '#e0c260' });
+
+    const burdenVals = (h3Gap || [])
+      .map(d => d.avg_friction ?? 0)
+      .filter(v => v > 0);
+    if (burdenVals.length > 4)
+      rows.push({ name: 'Ground Burden', ...computeBoxStats(burdenVals), color: '#ff8c00' });
+
+    const gapVals = (h3Gap || [])
+      .map(d => d.gap_index ?? 0)
+      .filter(v => v > 0);
+    if (gapVals.length > 4)
+      rows.push({ name: 'Composite Score', ...computeBoxStats(gapVals), color: '#42a5f5' });
+
+    return rows.length ? rows : null;
+  }, [h3Demand, h3Takeout, h3Gap]);
+
+  if (!metrics) return null;
+
+  return (
+    <div className="p4-box-chart">
+      {metrics.map(m => {
+        const scale = (v) => ((v - m.min) / (m.max - m.min)) * 100;
+        return (
+          <div className="p4-box-row" key={m.name}>
+            <div className="p4-box-label">{m.name}</div>
+            {H3_BOX_NOTES[m.name] && (
+              <div className="p4-box-note">{H3_BOX_NOTES[m.name]}</div>
+            )}
+            <div className="p4-box-track">
+              <div className="p4-box-whisker"
+                style={{ left: `${scale(m.min)}%`, width: `${scale(m.max) - scale(m.min)}%` }}>
+                <div className="p4-box-whisker-line" style={{ background: m.color }} />
+              </div>
+              <div className="p4-box-rect"
+                style={{
+                  left: `${scale(m.q1)}%`,
+                  width: `${scale(m.q3) - scale(m.q1)}%`,
+                  background: m.color,
+                  opacity: 0.3,
+                }} />
+              <div className="p4-box-median"
+                style={{ left: `${scale(m.median)}%`, background: m.color }} />
+            </div>
+            <div className="p4-box-vals">
+              <span>25% ——{m.q1.toFixed(2)}</span>
+              <span>50% ——{m.median.toFixed(2)}</span>
+              <span>75% ——{m.q3.toFixed(2)}</span>
             </div>
           </div>
         );
@@ -675,7 +755,7 @@ export function EnhancedKpiCards({ coverage, gapZones, h3Gap }) {
           </div>
         ))}
       </div>
-      <p className="p4-chart-note">
+      <p className="p4-col-body p4-accent-note">
         Together, these indicators show that the next step is not simply to add more drone sites,
         but to place them where demand, friction, and coverage gaps overlap.
       </p>

@@ -6,6 +6,7 @@ import { FlyToInterpolator, WebMercatorViewport } from '@deck.gl/core';
 import { SimpleMeshLayer } from '@deck.gl/mesh-layers';
 import { MAPBOX_TOKEN } from '../../config';
 import { createDroneMesh, createPersonMesh, createRiderMesh, createPinMesh } from './meshes';
+import MapControls from '../../components/MapControls';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 function interpPath(coords, t) {
@@ -439,6 +440,30 @@ export default function Page5Map({ buildingData, routes, comparisonRoute, pickMo
         getCursor={() => pickMode ? 'crosshair' : 'grab'}>
         <Map mapboxAccessToken={MAPBOX_TOKEN} mapStyle={MAP_STYLE} onLoad={onMapLoad} />
       </DeckGL>
+
+      <MapControls
+        viewState={viewState}
+        onResetView={() => setViewState(vs => ({
+          ...vs, ...INIT_VIEW,
+          transitionDuration: 1200,
+          transitionInterpolator: new FlyToInterpolator(),
+        }))}
+        onResetBearing={() => setViewState(vs => ({
+          ...vs, bearing: 0, pitch: 0,
+          transitionDuration: 400,
+        }))}
+      />
+
+      <button
+        className="p5-next-page-btn"
+        onClick={() => document.getElementById('page-6')?.scrollIntoView({ behavior: 'smooth' })}
+      >
+        Next Page
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M7 2l10 10-10 10" />
+        </svg>
+      </button>
     </div>
   );
 }

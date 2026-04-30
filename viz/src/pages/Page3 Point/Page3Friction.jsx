@@ -72,7 +72,7 @@ const TAB_HERO = {
   },
   2: {
     title: 'What Surrounds Existing Drone Sites?',
-    desc: 'We analysed POIs within an X-metre catchment around each take-off and landing hubs. For each site, the dominant POI category is used to describe its surrounding urban function.',
+    desc: 'We analysed Supply count (POIs) within a 500m catchment around each take-off and landing hubs. For each site, the dominant POI category is used to describe its surrounding urban function.',
   },
   3: {
     title: 'Which Landing Points Can Each Departure Hub Reach?',
@@ -439,30 +439,39 @@ export default function Page3Friction() {
             {(activeTab === 2 || activeTab === 4) && (
                 <div className="p3-inline-legend">
                   {activeTab === 2 && (
-                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 6 }}>
+                    <div style={{ width: '100%', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6 }}>
                       <span style={{ fontSize: 11, color: 'rgba(240,235,224,0.75)', fontWeight: 500 }}>
-                        Dominant POI type — Based on POIs within X metres of each drone site
+                        Dominant Supply Type
                       </span>
                       <span style={{ fontSize: 10, color: 'rgba(240,235,224,0.4)' }}>
                         Click a category to filter drone hubs and update the district chart.
                       </span>
                     </div>
                   )}
-                  {activeTab === 4 && [
-                    { color: '#111118', label: '0' },
-                    { color: '#0d3060', label: '< 50' },
-                    { color: '#0a5a8a', label: '50–100' },
-                    { color: '#0b7a6a', label: '100–200' },
-                    { color: '#1a9640', label: '200–400' },
-                    { color: '#c8a200', label: '400–800' },
-                    { color: '#d04800', label: '800–1500' },
-                    { color: '#b50000', label: '> 1500' },
-                  ].map(({ color, label }) => (
-                    <div key={label} className="p3-il-btn" style={{ cursor: 'default', gap: 6 }}>
-                      <span style={{ width: 14, height: 14, borderRadius: 3, background: color, display: 'inline-block', flexShrink: 0, border: '1px solid rgba(255,255,255,0.2)' }} />
-                      <span style={{ fontSize: 11, color: '#ccc', whiteSpace: 'nowrap' }}>{label}</span>
+                  {activeTab === 4 && <>
+                    <span style={{ width: '100%', fontSize: 11, color: 'rgba(240,235,224,0.75)', fontWeight: 500, marginBottom: 2 }}>
+                      Coverage (10k persons per site)
+                    </span>
+                  </>}
+                  {activeTab === 4 && (
+                    <div style={{ width: '100%', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
+                      {[
+                        { color: '#111118', label: '0' },
+                        { color: '#0d3060', label: '< 50' },
+                        { color: '#0a5a8a', label: '50–100' },
+                        { color: '#0b7a6a', label: '100–200' },
+                        { color: '#1a9640', label: '200–400' },
+                        { color: '#c8a200', label: '400–800' },
+                        { color: '#d04800', label: '800–1500' },
+                        { color: '#b50000', label: '> 1500' },
+                      ].map(({ color, label }) => (
+                        <div key={label} className="p3-il-btn" style={{ cursor: 'default', gap: 6, justifyContent: 'center' }}>
+                          <span style={{ width: 14, height: 14, borderRadius: 3, background: color, display: 'inline-block', flexShrink: 0, border: '1px solid rgba(255,255,255,0.2)' }} />
+                          <span style={{ fontSize: 11, color: '#ccc', whiteSpace: 'nowrap' }}>{label}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                   {activeTab === 2 && Object.entries(POI_COLORS).filter(([k]) => k !== 'medical').map(([k, v]) => (
                     <button key={k}
                       className={`p3-il-btn ${compoundFilter === k ? 'active' : compoundFilter === 'all' ? '' : 'dim'}`}
