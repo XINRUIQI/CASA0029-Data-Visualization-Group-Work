@@ -9,7 +9,7 @@ const STATS = [
   { value: '490K+', label: 'Demand Locations', color: '#ff8c00' },
   { value: '1818', label: 'Routes analysed', color: '#64c8ff' },
   { value: '1.39×', label: 'Typical detour', color: '#c864ff' },
-  { value: '1.79×', label: 'Typical traffic delay', color: '#ff3264' },
+  { value: '1.79×', label: 'Traffic delay', color: '#ff3264' },
 ];
 
 const SECTION_TITLE = 'Where Is Ground Delivery Most Constrained?';

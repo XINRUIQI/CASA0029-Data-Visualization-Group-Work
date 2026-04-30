@@ -24,8 +24,9 @@
   height: 80px;
   background: linear-gradient(to bottom, transparent 0%, rgba(90, 137, 166, 0.6) 50%, #5a89a6 100%);
   pointer-events: none;
-  z-index: 3;
+  z-index: 0;
 }
+
 
 /* ─── Hero title overlay — right side, vertically centered ─── */
 .p3-hero-text {
@@ -201,8 +202,7 @@
 .p3-chart-section {
   flex: 1;
   min-height: 0;
-  background: rgba(46, 94, 126, 0.6);
-  backdrop-filter: blur(8px);
+  background: #2E5E7E;
   border: 1px solid rgba(168, 196, 212, 0.12);
   border-radius: 8px;
   padding: 8px 12px;
@@ -220,6 +220,103 @@
   font-size: 0.82rem;
   color: rgba(240, 235, 224, 0.4);
   letter-spacing: 0.05em;
+}
+
+/* ─── OD Heatmap Matrix ─── */
+.p3-od-matrix {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.p3-od-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(240, 235, 224, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  flex-shrink: 0;
+}
+
+.p3-od-grid {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  gap: 2px;
+}
+
+.p3-od-corner {
+  /* empty top-left cell */
+}
+
+.p3-od-col-label {
+  font-size: 0.58rem;
+  color: rgba(240, 235, 224, 0.55);
+  text-align: center;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.p3-od-row-label {
+  font-size: 0.62rem;
+  color: rgba(240, 235, 224, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 6px;
+  white-space: nowrap;
+}
+
+.p3-od-cell {
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  cursor: default;
+  min-width: 0;
+}
+
+.p3-od-cell:hover {
+  outline: 1px solid rgba(255, 255, 255, 0.4);
+  z-index: 1;
+}
+
+.p3-od-val {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.p3-od-caption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.p3-od-cap-label {
+  font-size: 0.6rem;
+  color: rgba(240, 235, 224, 0.4);
+}
+
+.p3-od-scale {
+  display: flex;
+  gap: 1px;
+}
+
+.p3-od-scale span {
+  width: 20px;
+  height: 8px;
+  border-radius: 2px;
 }
 
 /* ─── 左侧：4 个切页 Tab（与地图卡片垂直居中） ─── */

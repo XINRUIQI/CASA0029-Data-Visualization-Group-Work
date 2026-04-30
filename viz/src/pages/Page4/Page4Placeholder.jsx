@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import Page4Map from './Page4Map';
 import {
   DistanceDistributionChart,
@@ -32,11 +32,21 @@ export default function Page4Placeholder() {
   const [coverage, setCoverage]   = useState(null);
   const [gapZones, setGapZones]       = useState(null);
   const [h3Gap, setH3Gap]             = useState(null);
-  const [odData, setOdData]                   = useState(null);
   const [allCandidates, setAllCandidates]     = useState(null);
 
   const [strategy, setStrategy] = useState('gap');
   const [budget, setBudget]     = useState(20);
+  const [algoInfoOpen, setAlgoInfoOpen] = useState(false);
+  const algoInfoRef = useRef(null);
+
+  useEffect(() => {
+    if (!algoInfoOpen) return;
+    const onDoc = (e) => {
+      if (!algoInfoRef.current?.contains(e.target)) setAlgoInfoOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [algoInfoOpen]);
 
   useEffect(() => {
     fetch(publicDataUrl('data/vertiport_sites.json'))
@@ -51,8 +61,6 @@ export default function Page4Placeholder() {
       .then(r => r.json()).then(setGapZones).catch(() => {});
     fetch(publicDataUrl('data/h3_gap.json'))
       .then(r => r.json()).then(setH3Gap).catch(() => {});
-    fetch(publicDataUrl('data/page2_od_analysis.json'))
-      .then(r => r.json()).then(setOdData).catch(() => {});
     fetch(publicDataUrl('data/page6_candidate_sites.json'))
       .then(r => r.json()).then(setAllCandidates).catch(() => {});
   }, []);
@@ -75,13 +83,12 @@ export default function Page4Placeholder() {
           <h3 className="p4-col-title">The Gap at a Glance</h3>
           <div className="p4-col-body">
             <p>
-              Six numbers that expose the mismatch between Shenzhen's drone
-              infrastructure and its real delivery demand — from population
-              coverage to ground-level detour penalties.
+              Four numbers that bridge the findings from demand analysis and
+              infrastructure mapping — quantifying the gap that optimisation must close.
             </p>
           </div>
           <EnhancedKpiCards coverage={coverage} gapZones={gapZones}
-            h3Gap={h3Gap} odData={odData} />
+            h3Gap={h3Gap} />
         </div>
 
         <div className="p4-divider" />
@@ -105,11 +112,7 @@ export default function Page4Placeholder() {
           <h3 className="p4-col-title">High Friction, High Demand — Zero Coverage</h3>
           <div className="p4-col-body">
             <p>
-              Each dot represents one H3 hexagon. The horizontal axis measures
-              ground-level friction (detours, barriers, congestion) while the
-              vertical axis measures delivery demand pressure.
-              <strong> Red dots in the top-right quadrant mark areas with the
-              greatest need for drones — yet no vertiport serves them</strong>.
+              High-demand areas with difficult ground delivery are still not served by drones.
             </p>
           </div>
           <FrictionDemandScatter h3Gap={h3Gap} />
@@ -120,6 +123,30 @@ export default function Page4Placeholder() {
 
       {/* ── BOTTOM: strategy / budget selectors + map ── */}
       <div className="p4-map-wrap">
+        <div className="p4-map-title-row" ref={algoInfoRef}>
+          <h3 className="p4-col-title" style={{ marginBottom: 0 }}>Where to Add Sites?</h3>
+          <button
+            className="p4-algo-info-btn"
+            onClick={() => setAlgoInfoOpen(o => !o)}
+            aria-label="Algorithm info"
+            aria-expanded={algoInfoOpen}
+          >i</button>
+          {algoInfoOpen && (
+            <div className="p4-algo-info-popover">
+              <strong>Site selection algorithm</strong>
+              <p>Each candidate site is scored using three normalised dimensions from the composite analysis pipeline:</p>
+              <ul>
+                <li><strong>Demand-first</strong> — ranks by demand_norm (delivery demand pressure)</li>
+                <li><strong>Friction-first</strong> — ranks by friction_norm (ground-transport difficulty)</li>
+                <li><strong>Composite</strong> — 0.4·D·F + 0.3·I·F + 0.3·D·I, where D = demand, F = friction, I = intensity</li>
+              </ul>
+              <p>Sites are ranked high → low by strategy score; the top N (budget) are selected. All inputs are min-max normalised to [0, 1].</p>
+            </div>
+          )}
+        </div>
+        <p className="p4-col-body" style={{ textAlign: 'center', marginBottom: 16 }}>
+          Select a strategy and budget to see which candidate locations best close the coverage gap.
+        </p>
         <div className="p4-map-controls-bar">
           <div className="p4-ctrl-group">
             <span className="p4-ctrl-label">Strategy</span>

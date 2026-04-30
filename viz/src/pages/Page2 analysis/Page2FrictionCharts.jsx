@@ -164,7 +164,7 @@ function Page2FrictionCharts({
   const FRICTION_DIMS = [
     { key: 'avg_detour', label: 'Detour', color: '#ff8c00' },
     { key: 'avg_congestion', label: 'Congestion', color: '#ff3264' },
-    { key: 'avg_friction', label: 'Overall friction', color: '#c864ff' },
+    { key: 'avg_friction', label: 'Overall burden', color: '#c864ff' },
     { key: 'demand_pressure', label: 'Supply pressure', color: '#6c8cff' },
     { key: 'intensity_index', label: 'Intensity', color: '#00e896' },
   ];
@@ -641,10 +641,10 @@ function Page2FrictionCharts({
         </div>
       )}
 
-      {/* Priority: supply vs friction scatter */}
+      {/* Priority: supply vs burden scatter */}
       {isPriority && scatterData.length > 0 && (
         <div className="p2c-section">
-          <h4>Supply vs Friction (per hex) <span className="p2c-click-hint">click to highlight</span></h4>
+          <h4>Supply vs Burden (per hex) <span className="p2c-click-hint">click to highlight</span></h4>
           <ResponsiveContainer width="100%" height={210}>
             <ScatterChart margin={{ left: 5, right: 10, top: 5, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e2040" />
@@ -652,13 +652,17 @@ function Page2FrictionCharts({
                 tick={{ fill: '#A09888', fontSize: 9 }} axisLine={{ stroke: 'rgba(168, 196, 212, 0.15)' }}
                 label={{ value: 'Supply', position: 'bottom', fill: '#555', fontSize: 10, offset: 2 }}
               />
-              <YAxis dataKey="friction" type="number" name="Friction"
+              <YAxis dataKey="friction" type="number" name="Burden"
                 tick={{ fill: '#A09888', fontSize: 9 }} axisLine={{ stroke: 'rgba(168, 196, 212, 0.15)' }}
-                label={{ value: 'Friction', angle: -90, position: 'insideLeft', fill: '#555', fontSize: 10 }}
+                label={{ value: 'Burden', angle: -90, position: 'insideLeft', fill: '#555', fontSize: 10 }}
               />
               <ZAxis dataKey="gap" range={[8, 8]} />
-              <Tooltip contentStyle={TT_STYLE}
-                formatter={(v, name) => [typeof v === 'number' ? v.toFixed(3) : v, name]}
+              <Tooltip
+                contentStyle={TT_STYLE}
+                formatter={(v, name) => [
+                  typeof v === 'number' ? v.toFixed(3) : v,
+                  name === 'friction' ? 'Burden' : name,
+                ]}
               />
               <ReferenceArea
                 x1={scatterData.reduce((m, d) => Math.max(m, d.demand), 0) * 0.5}
@@ -706,13 +710,13 @@ function Page2FrictionCharts({
         </div>
       )}
 
-      {/* Friction mode charts */}
+      {/* Burden mode charts */}
       {isFriction && (
         <>
           {frictionDiverging && (
             <div className="p2c-section p2c-diverging-section">
               <h4>
-                Friction vs City Average
+                Burden vs City Average
                 {frictionDiverging.hasHex ? (
                   <span className="p2c-fa-badge">Hovered H3</span>
                 ) : (
@@ -754,7 +758,7 @@ function Page2FrictionCharts({
               <p className="p2c-note">
                 {frictionDiverging.hasHex
                   ? 'Centre = city mean; bar direction = how this hex deviates.'
-                  : 'Hover a hexagon to compare its friction profile against the city average.'}
+                  : 'Hover a hexagon to compare its burden profile against the city average.'}
               </p>
             </div>
           )}

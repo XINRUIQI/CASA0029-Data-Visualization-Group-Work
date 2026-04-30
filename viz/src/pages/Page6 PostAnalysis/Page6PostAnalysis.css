@@ -21,8 +21,10 @@
   justify-content: center;
   gap: 1.5rem;
   padding: 0.6rem 1rem;
-  background: rgba(46, 94, 126, 0.9);
-  border-bottom: 1px solid rgba(168, 196, 212, 0.1);
+  background: rgba(46, 94, 126, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(168, 196, 212, 0.12);
   z-index: 20;
 }
 
@@ -304,7 +306,9 @@
 .p6-panel {
   flex: 1;
   min-height: 0;
-  background: linear-gradient(160deg, #2E5E7E 0%, #3A6E8A 50%, #2A4A5E 100%);
+  background: linear-gradient(160deg, rgba(46, 94, 126, 0.88) 0%, rgba(58, 110, 138, 0.85) 50%, rgba(42, 74, 94, 0.88) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(168, 196, 212, 0.12);
   border-radius: 8px;
   display: flex;

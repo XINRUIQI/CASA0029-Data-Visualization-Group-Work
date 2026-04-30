@@ -1,293 +1,182 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { publicDataUrl } from '../../config';
 import './Page7Summary.css';
 
-/* ═══ Animated Number Counter ═══ */
-function AnimatedNumber({ value, suffix = '', prefix = '', duration = 2000, decimals = 0 }) {
-  const [display, setDisplay] = useState('0');
-  const ref = useRef(null);
-  const animated = useRef(false);
+const CONCLUSION_CARDS = [
+  {
+    kicker: '01',
+    title: 'Conclusions',
+    body:
+      'This project explores how drone-based urban air mobility (UAM) can reshape ground delivery systems by introducing a three-dimensional logistics network. Through spatial analysis of landing & departure hubs distribution, coverage accessibility, and simulated flight routes, we have demonstrated that drone delivery has the potential to alleviate urban friction and significantly improve the efficiency of delivery services.',
+  },
+  {
+    kicker: '02',
+    title: 'Limitations',
+    body:
+      'This study relies on simplified assumptions and does not consider real-world constraints. The analysis focuses on spatial efficiency, without fully addressing cost, environmental impact, or social acceptance, which are essential for real-world implementation.',
+  },
+  {
+    kicker: '03',
+    title: 'Outlook',
+    body:
+      'Future work could integrate real-time data and demand prediction to improve simulation accuracy. Expanding the framework to include cost, environment, and equity would support more comprehensive planning. The project could also evolve into an interactive decision-support tool, helping planners test different scenarios for the low-altitude economy.',
+  },
+];
 
-  const animate = useCallback(() => {
-    if (animated.current) return;
-    animated.current = true;
+const TEAM_MEMBERS = [
+  {
+    name: 'Peiyao Zhang',
+    initials: 'PZ',
+    image: 'images/Peiyao.jpeg',
+    github: 'https://github.com/PeiyaoPearl',
+    email: 'peiyaoz77@gmail.com',
+  },
+  {
+    name: 'Xinrui Qi',
+    initials: 'XQ',
+    image: 'images/xinrui.png',
+    github: 'https://github.com/XINRUIQI',
+    email: 'xinruiqi7@gmail.com',
+  },
+  {
+    name: 'Zixuan Deng',
+    initials: 'ZD',
+    image: 'images/zixuan.png',
+    github: 'https://github.com/ZixuanDeng-UCL',
+    email: 'ucfnzd0@ucl.ac.uk',
+  },
+  {
+    name: 'Jiayi Jing',
+    initials: 'JJ',
+    image: 'images/jiayi.png',
+    github: 'https://github.com/ChloeJing0616',
+    email: 'jiayijing616@gmail.com',
+  },
+];
 
-    const start = performance.now();
-    const numValue = parseFloat(value);
+const FOOTER_LINKS = [
+  {
+    label: 'Dataset',
+    href: 'https://github.com/XINRUIQI/CASA0029-Data-Visualization-Group-Work/tree/main/Data',
+  },
+  {
+    label: 'GitHub',
+    href: 'https://github.com/XINRUIQI/CASA0029-Data-Visualization-Group-Work',
+  },
+];
 
-    const tick = (now) => {
-      const elapsed = now - start;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const current = numValue * eased;
-
-      if (decimals > 0) {
-        setDisplay(current.toFixed(decimals));
-      } else {
-        setDisplay(Math.round(current).toLocaleString());
-      }
-
-      if (progress < 1) {
-        requestAnimationFrame(tick);
-      }
-    };
-
-    requestAnimationFrame(tick);
-  }, [value, duration, decimals]);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          animate();
-          obs.disconnect();
-        }
-      },
-      { threshold: 0.3 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [animate]);
-
+function GitHubIcon() {
   return (
-    <span ref={ref} className="animated-number">
-      {prefix}{display}{suffix}
-    </span>
+    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+      <path d="M12 2C6.48 2 2 6.58 2 12.24c0 4.52 2.87 8.35 6.84 9.7.5.1.68-.22.68-.49v-1.72c-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.49-1.11-1.49-.91-.63.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.37-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.31.1-2.71 0 0 .84-.28 2.75 1.05A9.34 9.34 0 0 1 12 6.98c.85 0 1.7.12 2.5.34 1.91-1.33 2.75-1.05 2.75-1.05.55 1.4.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.8-4.57 5.05.36.32.68.94.68 1.9v2.82c0 .27.18.59.69.49A10.16 10.16 0 0 0 22 12.24C22 6.58 17.52 2 12 2Z" />
+    </svg>
   );
 }
 
-/* ═══ Scroll-triggered fade-in hook ═══ */
-function useReveal(threshold = 0.15) {
-  const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          obs.disconnect();
-        }
-      },
-      { threshold }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [threshold]);
-
-  return [ref, visible];
+function MailIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+      <path d="M4.25 5.5h15.5c.69 0 1.25.56 1.25 1.25v10.5c0 .69-.56 1.25-1.25 1.25H4.25C3.56 18.5 3 17.94 3 17.25V6.75c0-.69.56-1.25 1.25-1.25Zm.4 2.1v9.3h14.7V7.6L12 12.74 4.65 7.6Zm1.5-.6L12 11.1 17.85 7H6.15Z" />
+    </svg>
+  );
 }
 
-/* ═══ Stats Data ═══ */
-const STATS = [
-  { value: 490, suffix: 'K+', label: 'POI delivery destinations', decimals: 0 },
-  { value: 1.5, suffix: 'x', label: 'Average ground detour ratio', decimals: 1 },
-  { value: 1.8, suffix: 'x', label: 'Peak congestion amplifier', decimals: 1 },
-  { value: 93, suffix: '%', label: 'OD pairs cross water barriers', decimals: 0 },
-];
-
-/* ═══ Ground vs Drone comparison ═══ */
-const COMPARISONS = [
-  {
-    ground: { icon: '↪', label: 'Detour ratio 1.5x', bar: 85 },
-    drone:  { icon: '→', label: 'Straight-line flight', bar: 30 },
-  },
-  {
-    ground: { icon: '⊘', label: 'Barrier crossings (water, rail, highway)', bar: 90 },
-    drone:  { icon: '↑', label: 'Barrier-free air corridor', bar: 10 },
-  },
-  {
-    ground: { icon: '◎', label: 'Peak congestion 1.8x delay', bar: 75 },
-    drone:  { icon: '◇', label: 'Unaffected by traffic', bar: 15 },
-  },
-  {
-    ground: { icon: '═', label: 'Constrained by road network', bar: 80 },
-    drone:  { icon: '◎', label: '3 km radius coverage per pad', bar: 20 },
-  },
-];
-
-/* ═══ Limitation Cards ═══ */
-const LIMITATIONS = [
-  {
-    icon: '⏱',
-    title: 'Data Scope',
-    desc: 'Takeout demand sampled from a single operator over a limited temporal window; spatial coverage is incomplete.',
-  },
-  {
-    icon: '📊',
-    title: 'Demand Proxy',
-    desc: 'Food delivery orders used as a proxy for total last-mile demand — other parcel types not captured.',
-  },
-  {
-    icon: '⚙',
-    title: 'Simplified Model',
-    desc: 'Uniform 3 km flight range, no airspace restrictions, and static demand assumptions abstract away real operational constraints.',
-  },
-  {
-    icon: '🌦',
-    title: 'External Factors',
-    desc: 'Weather variability, noise regulations, battery degradation, and evolving UAM policy are not modelled.',
-  },
-  {
-    icon: '🏙',
-    title: 'Vertical Complexity',
-    desc: 'Shenzhen\'s high-rise environment creates vertical last-metre challenges not addressed by horizontal coverage analysis.',
-  },
-];
-
-/* ═══ Roadmap Timeline ═══ */
-const ROADMAP = [
-  {
-    phase: 'Now',
-    title: 'Pilot Demonstrations',
-    desc: 'Meituan & SF Express operating drone deliveries in designated Shenzhen corridors since 2023.',
-  },
-  {
-    phase: 'Near',
-    title: 'Real-time Airspace Integration',
-    desc: 'Connect drone routing with live UTM (Unmanned Traffic Management) and CAAC low-altitude data.',
-  },
-  {
-    phase: 'Mid',
-    title: 'Multi-operator Demand Modeling',
-    desc: 'Aggregate cross-platform delivery demand for dynamic dispatch and multi-modal optimization.',
-  },
-  {
-    phase: 'Long',
-    title: 'Ground-Aerial Coupled Network',
-    desc: 'Hybrid logistics where drones handle high-friction segments and ground vehicles cover dense corridors.',
-  },
-  {
-    phase: 'Vision',
-    title: 'Resilient Last-Mile System',
-    desc: 'A fully integrated, low-friction urban delivery network adaptive to weather, demand spikes, and regulation.',
-  },
-];
-
 export default function Page7Summary() {
-  const [heroRef, heroVisible] = useReveal(0.2);
-  const [compRef, compVisible] = useReveal(0.15);
-  const [limRef, limVisible] = useReveal(0.1);
-  const [roadRef, roadVisible] = useReveal(0.1);
-
   return (
     <section id="page-8" className="page page-summary">
-      {/* ═══ HERO — Stats ═══ */}
-      <div className={`s8-hero ${heroVisible ? 'revealed' : ''}`} ref={heroRef}>
-        <h1 className="s8-title">Conclusion</h1>
-        <p className="s8-subtitle">
-          From barrier mapping to drone strategy — key takeaways from our analysis of
-          Shenzhen's last-mile delivery friction.
-        </p>
-        <div className="s8-stats-grid">
-          {STATS.map((s, i) => (
-            <div className="s8-stat-card" key={i} style={{ '--delay': `${i * 0.12}s` }}>
-              <div className="s8-stat-number">
-                <AnimatedNumber
-                  value={s.value}
-                  suffix={s.suffix}
-                  decimals={s.decimals}
-                  duration={1800 + i * 200}
-                />
-              </div>
-              <div className="s8-stat-label">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <div className="s8-layout" aria-labelledby="s8-title">
+        <article className="s8-video-card">
+          <video
+            className="s8-video"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            poster={publicDataUrl('shenzhen-poster.jpg')}
+          >
+            <source
+              src={publicDataUrl(
+                'Delivery_Drone_Footage_A_white_drone_carries_a_brown_package_through_a_4bTItNS5.mp4'
+              )}
+              type="video/mp4"
+            />
+          </video>
 
-      {/* ═══ Summary Text ═══ */}
-      <div className="s8-summary-text">
-        <p>
-          Shenzhen's dense urban fabric, fragmented by water, railways, and expressways,
-          creates systematic ground delivery friction. Drone logistics can bypass these
-          barriers entirely — flying straight where vehicles must detour.
-        </p>
-        <p>
-          With strategic placement of just 10 launch pads, drone coverage can reach
-          a significant portion of the city's delivery demand. This is not a future
-          vision — Shenzhen is already building it.
-        </p>
-      </div>
-
-      {/* ═══ Ground vs Drone ═══ */}
-      <div className={`s8-comparison ${compVisible ? 'revealed' : ''}`} ref={compRef}>
-        <h2 className="s8-section-title">Ground vs Drone Delivery</h2>
-        <div className="s8-comp-table">
-          <div className="s8-comp-header">
-            <span className="s8-comp-h ground">Ground Delivery</span>
-            <span className="s8-comp-vs">VS</span>
-            <span className="s8-comp-h drone">Drone Delivery</span>
+          <div className="s8-video-overlay" />
+          <div className="s8-video-copy">
+            <p className="s8-eyebrow">Conclusion</p>
+            <h1 id="s8-title">Delivery, elevated.</h1>
+            <p>
+              Drone logistics can reduce Shenzhen's ground friction when it is deployed
+              around real barriers, demand clusters, and coordinated urban infrastructure.
+            </p>
           </div>
-          {COMPARISONS.map((row, i) => (
-            <div className="s8-comp-row" key={i} style={{ '--delay': `${i * 0.1}s` }}>
-              <div className="s8-comp-cell ground">
-                <span className="s8-comp-icon">{row.ground.icon}</span>
-                <span className="s8-comp-text">{row.ground.label}</span>
-                <div className="s8-comp-bar">
-                  <div
-                    className="s8-comp-bar-fill ground"
-                    style={{ '--bar-width': `${row.ground.bar}%` }}
-                  />
+        </article>
+
+        <div className="s8-card-grid" aria-label="Conclusion key messages">
+          {CONCLUSION_CARDS.map((card) => (
+            <article className="s8-text-card" key={card.title}>
+              <span>{card.kicker}</span>
+              <h2>{card.title}</h2>
+              <p>{card.body}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+
+      <div className="s8-about-section">
+        <div className="about-panel">
+          <div className="about-heading">
+            <p className="about-eyebrow">About the Team</p>
+            <h1>Credits</h1>
+            <p>
+              CASA0029 Data Visualization group work on drone delivery, urban friction,
+              and low-altitude logistics planning.
+            </p>
+          </div>
+
+          <div className="about-team-grid">
+            {TEAM_MEMBERS.map((member, index) => (
+              <article className="about-member-card" key={member.email} style={{ '--i': index }}>
+                <div className="about-avatar" aria-hidden="true">
+                  {member.image ? (
+                    <img src={publicDataUrl(member.image)} alt="" />
+                  ) : (
+                    member.initials
+                  )}
                 </div>
-              </div>
-              <div className="s8-comp-divider" />
-              <div className="s8-comp-cell drone">
-                <span className="s8-comp-icon">{row.drone.icon}</span>
-                <span className="s8-comp-text">{row.drone.label}</span>
-                <div className="s8-comp-bar">
-                  <div
-                    className="s8-comp-bar-fill drone"
-                    style={{ '--bar-width': `${row.drone.bar}%` }}
-                  />
+                <h2>{member.name}</h2>
+                <p className="about-role">Co-Producer</p>
+
+                <div className="about-links">
+                  <a href={member.github} target="_blank" rel="noreferrer">
+                    <GitHubIcon />
+                    <span>{member.github.replace('https://github.com/', '')}</span>
+                  </a>
+                  <a href={`mailto:${member.email}`}>
+                    <MailIcon />
+                    <span>{member.email}</span>
+                  </a>
                 </div>
-              </div>
-            </div>
-          ))}
+              </article>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* ═══ Limitations ═══ */}
-      <div className={`s8-limitations ${limVisible ? 'revealed' : ''}`} ref={limRef}>
-        <h2 className="s8-section-title">Limitations</h2>
-        <div className="s8-lim-grid">
-          {LIMITATIONS.map((lim, i) => (
-            <div className="s8-lim-card" key={i} style={{ '--delay': `${i * 0.08}s` }}>
-              <div className="s8-lim-icon">{lim.icon}</div>
-              <h3 className="s8-lim-title">{lim.title}</h3>
-              <p className="s8-lim-desc">{lim.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ═══ Roadmap ═══ */}
-      <div className={`s8-roadmap ${roadVisible ? 'revealed' : ''}`} ref={roadRef}>
-        <h2 className="s8-section-title">Future Outlook</h2>
-        <div className="s8-timeline">
-          {ROADMAP.map((node, i) => (
-            <div className="s8-tl-node" key={i} style={{ '--delay': `${i * 0.15}s` }}>
-              <div className="s8-tl-line">
-                <div className="s8-tl-dot" />
-                {i < ROADMAP.length - 1 && <div className="s8-tl-connector" />}
-              </div>
-              <div className="s8-tl-content">
-                <span className="s8-tl-phase">{node.phase}</span>
-                <h3 className="s8-tl-title">{node.title}</h3>
-                <p className="s8-tl-desc">{node.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ═══ Footer ═══ */}
-      <div className="s8-footer">
-        <p>CASA0029 Data Visualization — Group Work</p>
-        <p>University College London, 2025</p>
+        <footer className="about-footer">
+          <div className="about-footer-actions" aria-label="Project resources">
+            {FOOTER_LINKS.map((link) => (
+              <a href={link.href} target="_blank" rel="noreferrer" key={link.label}>
+                {link.label}
+              </a>
+            ))}
+          </div>
+          <p>
+            Copyright Peiyao Zhang, Xinrui Qi, Zixuan Deng, Jiayi Jing from
+            University College London.
+          </p>
+          <p>The Bartlett Centre for Advanced Spatial Analysis</p>
+        </footer>
       </div>
     </section>
   );

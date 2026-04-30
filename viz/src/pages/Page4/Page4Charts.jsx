@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, Legend, BarChart, Bar, ScatterChart, Scatter,
-  ZAxis, Cell, AreaChart, Area,
+  ZAxis, Cell, AreaChart, Area, ReferenceArea, Label,
 } from 'recharts';
 
 const TT_STYLE = {
@@ -215,8 +215,8 @@ export function ZoneTypeMismatchChart({ zoneSummary, demandData }) {
    4 · DistanceDistributionChart — violin plot with threshold
    ═══════════════════════════════════════════════════════════ */
 
-function gaussianKDE(data, bandwidth, nPoints = 80) {
-  const min = Math.min(...data);
+function gaussianKDE(data, bandwidth, nPoints = 80, forceMin) {
+  const min = forceMin ?? Math.min(...data);
   const max = Math.max(...data);
   const step = (max - min) / (nPoints - 1);
   const points = [];
@@ -250,16 +250,21 @@ export function DistanceDistributionChart({ gapZones }) {
       iqr / 1.34
     ) * Math.pow(n, -0.2);
 
-    const kde = gaussianKDE(distances, bandwidth || 1);
+    const kde = gaussianKDE(distances, bandwidth || 1, 100, 0);
     const maxDensity = Math.max(...kde.map(p => p.density));
     const maxX = Math.ceil(sorted[n - 1] / 2) * 2;
+    const maxCount = Math.ceil(maxDensity * n * (sorted[n - 1] / 100));
 
-    return { kde, maxDensity, maxX, avg, n, beyond3, beyond3Pct };
+    return { kde, maxDensity, maxX, avg, n, beyond3, beyond3Pct, maxCount };
   }, [gapZones]);
 
   if (!chartData) return null;
 
   const { kde, maxDensity, maxX, avg, n, beyond3Pct } = chartData;
+
+  const binWidth = (Math.max(...kde.map(p => p.x)) - Math.min(...kde.map(p => p.x))) / (kde.length - 1);
+  const maxCountDisplay = Math.ceil(maxDensity * n * binWidth);
+  const yTickStep = Math.max(1, Math.ceil(maxCountDisplay / 4 / 10) * 10);
 
   const W = 600, H = 300;
   const padTop = 20, padBot = 50, padLeft = 60, padRight = 20;
@@ -268,31 +273,37 @@ export function DistanceDistributionChart({ gapZones }) {
 
   const xScale = (val) => padLeft + (val / maxX) * plotW;
   const yScale = (density) => padTop + plotH - (density / maxDensity) * plotH;
+  const countToY = (count) => padTop + plotH - (count / maxCountDisplay) * plotH;
 
   const areaPath = kde.map((p, i) => {
     const x = xScale(p.x);
     const y = yScale(p.density);
     return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-  }).join(' ') + ` L ${xScale(kde[kde.length - 1].x)} ${padTop + plotH} L ${xScale(kde[0].x)} ${padTop + plotH} Z`;
+  }).join(' ') + ` L ${xScale(kde[kde.length - 1].x)} ${padTop + plotH} L ${xScale(0)} ${padTop + plotH} Z`;
 
   const x3km = xScale(3);
 
   const xTicks = [];
-  for (let v = 0; v <= maxX; v += 2) xTicks.push(v);
+  for (let v = 0; v <= maxX; v += 1) xTicks.push(v);
 
-  const yTicks = [0, 0.25, 0.5, 0.75, 1];
+  const yCountTicks = [];
+  for (let v = 0; v <= maxCountDisplay; v += yTickStep) yCountTicks.push(v);
 
   return (
     <div className="p4-chart">
       <div style={{ display: 'flex', justifyContent: 'center', margin: '12px 0' }}>
         <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: 600, height: 'auto' }}>
           {/* Y-axis grid + labels */}
-          {yTicks.map(frac => {
-            const y = padTop + plotH - frac * plotH;
+          {yCountTicks.map(v => {
+            const y = countToY(v);
             return (
-              <g key={frac}>
+              <g key={v}>
                 <line x1={padLeft} x2={padLeft + plotW} y1={y} y2={y}
                   stroke="rgba(46,94,126,0.08)" strokeWidth="1" />
+                <text x={padLeft - 8} y={y + 4}
+                  textAnchor="end" fill="#6B6050" fontSize="9">
+                  {v}
+                </text>
               </g>
             );
           })}
@@ -312,12 +323,12 @@ export function DistanceDistributionChart({ gapZones }) {
           {/* Axis labels */}
           <text x={padLeft + plotW / 2} y={H - 6}
             textAnchor="middle" fill="#6B6050" fontSize="11">
-            Distance to nearest vertiport (km)
+            Distance to nearest site (km)
           </text>
           <text x={16} y={padTop + plotH / 2}
             textAnchor="middle" fill="#6B6050" fontSize="11"
             transform={`rotate(-90, 16, ${padTop + plotH / 2})`}>
-            Underserved hexagons / Gap zones
+            Gap zone number
           </text>
 
           {/* KDE area */}
@@ -343,7 +354,7 @@ export function DistanceDistributionChart({ gapZones }) {
       <p className="p4-chart-note">
         Each area is measured by its distance to the nearest drone site. The dashed line shows the
         3 km drone range. All <em>{beyond3Pct}%</em> of areas are beyond this range, with an
-        average distance of <em>{avg.toFixed(1)} km</em>.
+        average distance of <em>{avg.toFixed(1)} km</em>. This highlights a major coverage gap in the current drone delivery network.
       </p>
     </div>
   );
@@ -357,18 +368,23 @@ export function FrictionDemandScatter({ h3Gap }) {
     if (!h3Gap?.length) return {};
     const filtered = h3Gap.filter(d => d.demand_pressure > 0 || d.avg_friction > 0);
     const maxDp = Math.max(...filtered.map(d => d.demand_pressure));
+    const minDp = Math.min(...filtered.map(d => d.demand_pressure));
+    const dpRange = maxDp - minDp || 1;
     const maxFr = Math.max(...filtered.map(d => d.avg_friction));
 
     const points = filtered.map(d => ({
       friction: +d.avg_friction.toFixed(3),
-      demand: +d.demand_pressure.toFixed(1),
+      demand: +((d.demand_pressure - minDp) / dpRange).toFixed(4),
       pop: Math.round(d.pop_count),
       covered: d.covered_by_10,
     }));
 
     const highNeed = filtered.filter(d =>
-      d.demand_pressure > maxDp * 0.3 && d.avg_friction > maxFr * 0.3 && !d.covered_by_10
+      (d.demand_pressure - minDp) / dpRange > 0.3 && d.avg_friction > maxFr * 0.3 && !d.covered_by_10
     );
+
+    const frThreshold = +(maxFr * 0.3).toFixed(3);
+    const dpThreshold = 0.3;
 
     return {
       data: points,
@@ -376,8 +392,10 @@ export function FrictionDemandScatter({ h3Gap }) {
         total: filtered.length,
         uncovered: filtered.filter(d => !d.covered_by_10).length,
         highNeed: highNeed.length,
-        maxDp: Math.ceil(maxDp),
+        maxDp: 1,
         maxFr: +maxFr.toFixed(2),
+        frThreshold,
+        dpThreshold,
       },
     };
   }, [h3Gap]);
@@ -386,50 +404,47 @@ export function FrictionDemandScatter({ h3Gap }) {
 
   return (
     <div className="p4-chart">
-      <div className="p4-chart-kpis">
-        <div className="p4-kpi">
-          <div className="p4-kpi-val">{stats.total}</div>
-          <div className="p4-kpi-lab">Active hexagons</div>
-        </div>
-        <div className="p4-kpi">
-          <div className="p4-kpi-val" style={{ color: '#ff7a5c' }}>{stats.uncovered}</div>
-          <div className="p4-kpi-lab">Not covered by vertiports</div>
-        </div>
-        <div className="p4-kpi">
-          <div className="p4-kpi-val" style={{ color: '#ff7a5c' }}>{stats.highNeed}</div>
-          <div className="p4-kpi-lab">High demand + high friction</div>
-        </div>
-      </div>
-
       <ResponsiveContainer width="100%" height={280}>
         <ScatterChart margin={{ top: 14, right: 20, bottom: 32, left: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.08)" />
-          <XAxis dataKey="friction" type="number" name="Ground friction"
+          <XAxis dataKey="friction" type="number" name="Ground burden"
             domain={[0, 'auto']}
             tick={{ fill: '#888', fontSize: 11 }}
             axisLine={{ stroke: 'rgba(168, 196, 212, 0.15)' }} tickLine={false}
-            label={{ value: 'Ground friction index', position: 'bottom', fill: '#666', fontSize: 11, offset: 10 }} />
-          <YAxis dataKey="demand" type="number" name="Demand pressure"
-            domain={[0, 'auto']}
+            label={{ value: 'Ground burden', position: 'bottom', fill: '#666', fontSize: 11, offset: 10 }} />
+          <YAxis dataKey="demand" type="number" name="Demand index"
+            domain={[0, 1]}
             tick={{ fill: '#888', fontSize: 11 }}
             axisLine={{ stroke: 'rgba(168, 196, 212, 0.15)' }} tickLine={false} width={48}
-            label={{ value: 'Demand pressure', angle: -90, position: 'insideLeft', fill: '#666', fontSize: 11, offset: 4 }} />
+            label={{ value: 'Demand index', angle: -90, position: 'insideLeft', fill: '#666', fontSize: 11, offset: 4 }} />
           <ZAxis dataKey="pop" range={[20, 200]} name="Population" />
+          <ReferenceArea
+            x1={stats.frThreshold} x2={stats.maxFr}
+            y1={stats.dpThreshold} y2={stats.maxDp}
+            fill="#ff7a5c" fillOpacity={0.06}
+            stroke="#ff7a5c" strokeOpacity={0.5} strokeDasharray="4 3"
+          >
+            <Label
+              value={`Priority zone (${stats.highNeed})`}
+              position="insideTopRight"
+              style={{ fill: '#ff7a5c', fontSize: 11, fontWeight: 700 }}
+            />
+          </ReferenceArea>
           <Tooltip contentStyle={TT_STYLE} cursor={{ strokeDasharray: '3 3' }}
             formatter={(v, name) => {
-              if (name === 'Ground friction') return [v.toFixed(3), name];
-              if (name === 'Demand pressure') return [v.toFixed(1), name];
+              if (name === 'Ground burden') return [v.toFixed(3), name];
+              if (name === 'Demand index') return [v.toFixed(3), name];
               return [v.toLocaleString(), name];
             }} />
-          <Scatter name="Covered" data={data.filter(d => d.covered)} fill="rgba(168,196,212,0.2)" />
+          <Scatter name="Covered" data={data.filter(d => d.covered)} fill="#5A89A6" fillOpacity={0.45} />
           <Scatter name="Not covered" data={data.filter(d => !d.covered)} fill="#ff7a5c" fillOpacity={0.6} />
         </ScatterChart>
       </ResponsiveContainer>
 
       <p className="p4-chart-note">
-        Each dot is a H3 hexagon. <em>Red</em> = not covered by any existing vertiport.
-        The top-right quadrant — high demand pressure <strong>and</strong> high ground friction
-        — represents areas that <em>need drones most but have none</em>.
+        Each dot represents one H3 hexagon. <span style={{ color: '#ff7a5c', fontWeight: 600 }}>Orange dots</span> are
+        areas not served by current drone sites. The top-right area highlights places with both high demand and high
+        ground difficulty — <em style={{ color: '#ff7a5c' }}>these are the strongest candidates for new drone sites</em>.
       </p>
     </div>
   );
@@ -462,9 +477,9 @@ export function GroundFrictionBoxChart({ odData }) {
 
     return [
       { name: 'Detour (vs straight line)', ...detour, color: '#ff7a5c', unit: '×' },
-      { name: 'Delay from traffic', ...congestion, color: '#ffb07a', unit: '×' },
+      { name: 'Traffic Delay', ...congestion, color: '#ffb07a', unit: '×' },
       { name: 'Barriers per trip', ...barriers, color: '#4caf50', unit: '' },
-      { name: 'Ground friction', ...friction, color: '#ab47bc', unit: '' },
+      { name: 'Ground burden', ...friction, color: '#ab47bc', unit: '' },
     ];
   }, [odData]);
 
@@ -596,7 +611,7 @@ export function DemandVulnerabilityBubble({ h3Gap }) {
 /* ═══════════════════════════════════════════════════════════
    8 · EnhancedKpiCards — augmented headline KPIs
    ═══════════════════════════════════════════════════════════ */
-export function EnhancedKpiCards({ coverage, gapZones, h3Gap, odData }) {
+export function EnhancedKpiCards({ coverage, gapZones, h3Gap }) {
   const kpis = useMemo(() => {
     const items = [];
 
@@ -604,7 +619,7 @@ export function EnhancedKpiCards({ coverage, gapZones, h3Gap, odData }) {
       const r3 = coverage.radii['3km'];
       items.push({
         val: `${(100 - r3.population_coverage_pct).toFixed(0)}%`,
-        lab: 'Population outside 3 km',
+        lab: 'Population beyond 3 km',
         accent: true,
       });
     }
@@ -614,7 +629,7 @@ export function EnhancedKpiCards({ coverage, gapZones, h3Gap, odData }) {
       const avg = distances.reduce((a, b) => a + b, 0) / distances.length;
       items.push({
         val: `${avg.toFixed(1)} km`,
-        lab: 'Avg. distance to nearest site',
+        lab: 'Avg. gap distance',
         accent: true,
       });
     }
@@ -630,36 +645,21 @@ export function EnhancedKpiCards({ coverage, gapZones, h3Gap, odData }) {
       });
     }
 
-    if (odData?.features?.length) {
-      const props = odData.features.map(f => f.properties);
-      const avgDetour = props.reduce((s, p) => s + p.detour_ratio, 0) / props.length;
+    if (h3Gap?.length) {
+      const maxDp = Math.max(...h3Gap.map(d => d.demand_pressure));
+      const maxFr = Math.max(...h3Gap.map(d => d.avg_friction));
+      const critical = h3Gap.filter(d =>
+        d.demand_pressure > maxDp * 0.3 && d.avg_friction > maxFr * 0.3 && !d.covered_by_10
+      );
       items.push({
-        val: `${avgDetour.toFixed(2)}×`,
-        lab: 'Avg. ground detour ratio',
-        accent: false,
-      });
-    }
-
-    if (odData?.features?.length) {
-      const props = odData.features.map(f => f.properties);
-      const avgCong = props.reduce((s, p) => s + p.congestion_amplifier, 0) / props.length;
-      items.push({
-        val: `${avgCong.toFixed(1)}×`,
-        lab: 'Avg. peak congestion multiplier',
-        accent: false,
-      });
-    }
-
-    if (coverage) {
-      items.push({
-        val: coverage.site_count,
-        lab: 'Existing vertiport sites',
-        accent: false,
+        val: critical.length,
+        lab: 'Critical zones',
+        accent: true,
       });
     }
 
     return items;
-  }, [coverage, gapZones, h3Gap, odData]);
+  }, [coverage, gapZones, h3Gap]);
 
   if (!kpis.length) return null;
 
@@ -676,7 +676,8 @@ export function EnhancedKpiCards({ coverage, gapZones, h3Gap, odData }) {
         ))}
       </div>
       <p className="p4-chart-note">
-        Key metrics quantifying the gap between Shenzhen's drone infrastructure and actual delivery demand.
+        Four numbers that bridge the findings from demand analysis and infrastructure mapping —
+        quantifying the gap that optimisation must close.
       </p>
     </div>
   );

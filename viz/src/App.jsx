@@ -61,13 +61,12 @@ function LazyPage({ pageId, component: Component, rootMargin = '600px', mountKey
 const NAV_PAGES = [
   { id: 0, label: 'Cover' },
   { id: 1, label: 'Overview' },
-  { id: 2, label: 'Friction' },
+  { id: 2, label: 'Burden' },
   { id: 3, label: 'Sites' },
   { id: 4, label: 'Page 4' },
   { id: 5, label: 'Strategy' },
   { id: 7, label: 'Post-Analysis' },
-  { id: 8, label: 'Summary' },
-  { id: 9, label: 'Drone Hero' },
+  { id: 8, label: 'Conclusion' },
 ];
 
 const NAV_LINKS = [
@@ -77,7 +76,7 @@ const NAV_LINKS = [
   { target: 'page-4', label: 'Optimisation' },
   { target: 'page-5', label: 'Strategy' },
   { target: 'page-7', label: 'Post-Analysis' },
-  { target: 'page-8', label: 'Summary' },
+  { target: 'page-8', label: 'Conclusion' },
 ];
 
 function GlobalTopbar() {
@@ -287,7 +286,6 @@ function MainNarrative() {
       <LazyPage pageId="page-5" component={Page5Strategy} />
       <LazyPage pageId="page-7" component={Page7PostAnalysis} />
       <LazyPage pageId="page-8" component={Page8Summary} />
-      {/* <LazyPage pageId="page-9" component={Page9DroneHero} /> */}
     </div>
   );
 }

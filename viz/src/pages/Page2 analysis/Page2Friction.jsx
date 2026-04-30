@@ -6,7 +6,7 @@ import './Page2Friction.css';
 
 const LAYER_MODES = [
   { id: 'demand', label: 'Demand', color: '#ff8c00' },
-  { id: 'friction', label: 'Friction', color: '#ff3264' },
+  { id: 'friction', label: 'Burden', color: '#ff3264' },
   { id: 'overlap', label: 'Overlap', color: '#c864ff' },
   { id: 'observed', label: 'Observed vs Random', color: '#00e896' },
 ];
@@ -117,7 +117,7 @@ export default function Page2Friction() {
           {hoveredHex && (
             <div className="p2-hex-tooltip">
               <div className="hex-val"><span>Demand</span> {hoveredHex.demand?.toFixed(1) ?? '—'}</div>
-              <div className="hex-val"><span>Friction</span> {hoveredHex.friction?.toFixed(3) ?? '—'}</div>
+              <div className="hex-val"><span>Burden</span> {hoveredHex.friction?.toFixed(3) ?? '—'}</div>
               <div className="hex-val"><span>Gap</span> {hoveredHex.gap?.toFixed(4) ?? '—'}</div>
             </div>
           )}
@@ -144,12 +144,12 @@ export default function Page2Friction() {
 
           <div className="p2-summary-bar">
             {activeMode === 'overlap'
-              ? 'High demand + high friction = where drones create the most value'
+              ? 'High demand + high burden = where drones create the most value'
               : activeMode === 'demand'
               ? '490K POIs reveal delivery pressure — darker = higher demand'
               : activeMode === 'friction'
-              ? 'Detour, barriers, congestion compound into ground friction'
-              : 'Observed sites cluster in high-friction overlap zones, not in demand-only areas'}
+              ? 'Detour, barriers, congestion compound into ground burden'
+              : 'Observed sites cluster in high-burden overlap zones, not in demand-only areas'}
           </div>
         </div>
 

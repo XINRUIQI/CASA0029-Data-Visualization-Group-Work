@@ -9,7 +9,7 @@ import './Page2FullMap.css';
 const LAYER_MODES = [
   { id: 'demand', label: 'Demand', color: '#81D8D0' },
   { id: 'supply', label: 'Supply', color: '#5A89A6' },
-  { id: 'friction', label: 'Friction', color: '#ff4500' },
+  { id: 'friction', label: 'Burden', color: '#ff4500' },
   { id: 'priority', label: 'Composite', color: '#9C68C0' },
 ];
 
@@ -224,7 +224,7 @@ export default function Page2FullMap() {
                   : undefined
               }
             >
-              <div className="p2f-tt-mode">{activeMode === 'supply' ? 'Supply Count' : activeMode === 'priority' ? 'Composite' : activeMode}</div>
+              <div className="p2f-tt-mode">{activeMode === 'supply' ? 'Supply Count' : activeMode === 'priority' ? 'Composite' : activeMode === 'friction' ? 'Burden' : activeMode}</div>
               {activeMode === 'demand' && (
                 <div className="p2f-tt-grid">
                   <div className="p2f-tt-item">
@@ -256,7 +256,7 @@ export default function Page2FullMap() {
                 <div className="p2f-tt-grid p2f-tt-grid--single">
                   <div className="p2f-tt-item">
                     <span className="p2f-tt-val">{hoveredHex.avg_friction?.toFixed(3) ?? '—'}</span>
-                    <span className="p2f-tt-label">Friction</span>
+                    <span className="p2f-tt-label">Burden</span>
                   </div>
                 </div>
               )}
@@ -327,7 +327,7 @@ export default function Page2FullMap() {
 
           {activeMode === 'friction' && (
             <div className="p2f-demand-legend" aria-hidden="false">
-              <div className="p2f-dl-title">Ground friction</div>
+              <div className="p2f-dl-title">Ground burden</div>
               <div className="p2f-dl-bar p2f-dl-bar--friction" />
               <div className="p2f-dl-labels">
                 <span>0</span>
@@ -430,8 +430,8 @@ export default function Page2FullMap() {
             )}
             {activeMode === 'friction' && (
               <div className="p2f-panel-formula">
-                <p><strong>Ground Friction</strong> is a normalised composite of route-level barriers:</p>
-                <p className="p2f-panel-formula-eq">Friction = w₁·Detour + w₂·Barrier + w₃·Congestion + w₄·Bridge + w₅·Tunnel</p>
+                <p><strong>Ground Burden</strong> is a normalised composite of route-level barriers:</p>
+                <p className="p2f-panel-formula-eq">Burden = w₁·Detour + w₂·Barrier + w₃·Congestion + w₄·Bridge + w₅·Tunnel</p>
                 <p>Each component is min-max normalised to [0, 1]. Per-hex value = mean of all route samples passing through.</p>
               </div>
             )}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LabelList,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
@@ -67,6 +67,17 @@ const RADAR_DATA = [
 
 const TABS = [
   {
+    id: 3, label: 'Routes',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 17c3-3 6-5 9-5s6 2 9-2"/>
+        <path d="M3 7c3 3 6 5 9 5s6-2 9 2"/>
+        <circle cx="3" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+        <circle cx="21" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+      </svg>
+    ),
+  },
+  {
     id: 1, label: 'Sites',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -83,17 +94,6 @@ const TABS = [
         <rect x="14" y="3" width="7" height="7" rx="1"/>
         <rect x="3" y="14" width="7" height="7" rx="1"/>
         <rect x="14" y="14" width="7" height="7" rx="1"/>
-      </svg>
-    ),
-  },
-  {
-    id: 3, label: 'Routes',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 17c3-3 6-5 9-5s6 2 9-2"/>
-        <path d="M3 7c3 3 6 5 9 5s6-2 9 2"/>
-        <circle cx="3" cy="12" r="1.5" fill="currentColor" stroke="none"/>
-        <circle cx="21" cy="12" r="1.5" fill="currentColor" stroke="none"/>
       </svg>
     ),
   },
@@ -116,7 +116,7 @@ export default function Page3Friction() {
   const [boundary, setBoundary]     = useState(null);
   const [hexGrid, setHexGrid]       = useState(null);
   const [loadError, setLoadError]   = useState(null);
-  const [activeTab, setActiveTab]   = useState(1);
+  const [activeTab, setActiveTab]   = useState(3);
   const [showCommercial, setShowCommercial] = useState(true);
   const [showLastMile, setShowLastMile]     = useState(true);
   const [compoundFilter, setCompoundFilter] = useState('all');
@@ -310,6 +310,55 @@ export default function Page3Friction() {
       }));
   }, [siteStats]);
 
+  const FLIGHT_RADIUS_KM = 3;
+  function haversineKm(a, b) {
+    const R = 6371;
+    const toRad = x => x * Math.PI / 180;
+    const dLat = toRad(b[1] - a[1]);
+    const dLon = toRad(b[0] - a[0]);
+    const s = Math.sin(dLat / 2) ** 2
+      + Math.cos(toRad(a[1])) * Math.cos(toRad(b[1])) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(s));
+  }
+
+  const odMatrix = useMemo(() => {
+    if (!sites || !boundary) return null;
+    const names = boundary.features.map(f =>
+      DISTRICT_EN[f.properties.name] || f.properties.name.replace('区', '')
+    );
+    const siteDistrict = (s) => {
+      const pt = turfPoint([s.lon, s.lat]);
+      for (const f of boundary.features) {
+        if (booleanPointInPolygon(pt, f))
+          return DISTRICT_EN[f.properties.name] || f.properties.name.replace('区', '');
+      }
+      return null;
+    };
+    const hubs = sites.filter(s => s.zone_type === 'commercial');
+    const lms  = sites.filter(s => s.zone_type === 'last_mile');
+    const matrix = {};
+    names.forEach(o => { matrix[o] = {}; names.forEach(d => { matrix[o][d] = 0; }); });
+    let maxVal = 0;
+    hubs.forEach(hub => {
+      const oName = siteDistrict(hub);
+      if (!oName) return;
+      lms.forEach(lm => {
+        if (haversineKm([hub.lon, hub.lat], [lm.lon, lm.lat]) <= FLIGHT_RADIUS_KM) {
+          const dName = siteDistrict(lm);
+          if (!dName) return;
+          matrix[oName][dName]++;
+          if (matrix[oName][dName] > maxVal) maxVal = matrix[oName][dName];
+        }
+      });
+    });
+    const sorted = [...names].sort((a, b) => {
+      const sumA = names.reduce((s, n) => s + matrix[a][n] + matrix[n][a], 0);
+      const sumB = names.reduce((s, n) => s + matrix[b][n] + matrix[n][b], 0);
+      return sumB - sumA;
+    });
+    return { names: sorted, matrix, maxVal };
+  }, [sites, boundary]);
+
   return (
     <section id="page-3" className="page page-3" style={{ position: 'relative' }}>
       <div className="p3-hero-text">
@@ -454,9 +503,50 @@ export default function Page3Friction() {
                 </ResponsiveContainer>
               )}
 
-              {activeTab === 3 && (
-                <div className="p3-chart-placeholder">
-                  <span className="p3-chart-placeholder-text">Route statistics will appear here</span>
+              {activeTab === 3 && odMatrix && (
+                <div className="p3-od-matrix">
+                  <div className="p3-od-title">Inter-District Route Connections</div>
+                  <div className="p3-od-grid" style={{
+                    gridTemplateColumns: `80px repeat(${odMatrix.names.length}, 1fr)`,
+                    gridTemplateRows: `24px repeat(${odMatrix.names.length}, 1fr)`,
+                  }}>
+                    <div className="p3-od-corner" />
+                    {odMatrix.names.map(n => (
+                      <div key={`h-${n}`} className="p3-od-col-label">{n}</div>
+                    ))}
+                    {odMatrix.names.map(origin => (
+                      <React.Fragment key={origin}>
+                        <div className="p3-od-row-label">{origin}</div>
+                        {odMatrix.names.map(dest => {
+                          const val = odMatrix.matrix[origin][dest];
+                          const intensity = odMatrix.maxVal > 0 ? val / odMatrix.maxVal : 0;
+                          return (
+                            <div
+                              key={`${origin}-${dest}`}
+                              className="p3-od-cell"
+                              style={{
+                                background: val === 0
+                                  ? 'rgba(168,196,212,0.06)'
+                                  : `rgba(255,122,92,${0.15 + intensity * 0.85})`,
+                              }}
+                              title={`${origin} → ${dest}: ${val} routes`}
+                            >
+                              {val > 0 && <span className="p3-od-val">{val}</span>}
+                            </div>
+                          );
+                        })}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                  <div className="p3-od-caption">
+                    <span className="p3-od-cap-label">Origin (Departure Hub) →</span>
+                    <div className="p3-od-scale">
+                      <span style={{ background: 'rgba(255,122,92,0.15)' }} />
+                      <span style={{ background: 'rgba(255,122,92,0.5)' }} />
+                      <span style={{ background: 'rgba(255,122,92,1)' }} />
+                    </div>
+                    <span className="p3-od-cap-label">0 — {odMatrix.maxVal} routes</span>
+                  </div>
                 </div>
               )}
 
