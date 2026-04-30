@@ -1012,8 +1012,8 @@
 }
 
 .p6-cov-item.active {
-  border-color: rgba(0, 232, 150, 0.4);
-  background: rgba(0, 232, 150, 0.04);
+  border-color: rgba(232, 168, 139, 0.6);
+  background: rgba(232, 168, 139, 0.08);
 }
 
 .p6-donut-mini {

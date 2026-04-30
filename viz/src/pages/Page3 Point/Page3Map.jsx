@@ -9,8 +9,8 @@ import MapControls from '../../components/MapControls';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 const INITIAL_VIEW = {
-  longitude: 114.19,
-  latitude: 22.63,
+  longitude: 114.06,
+  latitude: 22.55,
   zoom: 9.5,
   pitch: 0,
   bearing: 0,

@@ -367,7 +367,7 @@ export default function Page7PostAnalysis() {
                     {r.values.map((v, ci) => {
                       const intensity = budgetHeatmap.maxVals[ci] > 0 ? v / budgetHeatmap.maxVals[ci] : 0;
                       return (
-                        <div key={ci} className="p6-hm-cell" style={{ background: `rgba(242,235,217,${(0.1 + intensity * 0.5).toFixed(2)})` }}>
+                        <div key={ci} className="p6-hm-cell" style={{ background: `rgba(242,235,217,${(0.3 + intensity * 0.6).toFixed(2)})` }}>
                           {v.toFixed(1)}%
                         </div>
                       );

@@ -139,7 +139,7 @@ export default function Page3Friction() {
   const [viewResetKey, setViewResetKey] = useState(0);
   const [showCommercial, setShowCommercial] = useState(true);
   const [showLastMile, setShowLastMile]     = useState(true);
-  const [compoundFilter, setCompoundFilter] = useState('retail');
+  const [compoundFilter, setCompoundFilter] = useState('all');
   const [contextChartType, setContextChartType] = useState('retail');
   const [focusDistrict, setFocusDistrict] = useState(null);
 

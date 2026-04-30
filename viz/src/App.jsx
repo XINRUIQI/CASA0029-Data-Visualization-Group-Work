@@ -14,6 +14,7 @@ const Page4Placeholder = lazy(() => import('./pages/Page4/Page4Placeholder'));
 const Page5Strategy    = lazy(() => import('./pages/Page5/Page5Strategy'));
 const Page7PostAnalysis = lazy(() => import('./pages/Page6 PostAnalysis/Page6PostAnalysis'));
 const Page8Summary     = lazy(() => import('./pages/Page7 Conclusion/Page7Summary'));
+const Page8About       = lazy(() => import('./pages/Page8 About/Page8About'));
 // const Page9DroneHero   = lazy(() => import('./pages/Page9/Page9DroneHero'));
 
 /**
@@ -67,6 +68,7 @@ const NAV_PAGES = [
   { id: 5, label: 'Drone Route' },
   { id: 6, label: 'After Siting' },
   { id: 7, label: 'Conclusion' },
+  { id: 8, label: 'About' },
 ];
 
 const NAV_LINKS = [
@@ -77,6 +79,7 @@ const NAV_LINKS = [
   { target: 'page-5', label: 'Drone Route' },
   { target: 'page-6', label: 'After Siting' },
   { target: 'page-7', label: 'Conclusion' },
+  { target: 'page-8', label: 'About' },
 ];
 
 function GlobalTopbar() {
@@ -286,6 +289,7 @@ function MainNarrative() {
       <LazyPage pageId="page-5" component={Page5Strategy} />
       <LazyPage pageId="page-6" component={Page7PostAnalysis} />
       <LazyPage pageId="page-7" component={Page8Summary} />
+      <LazyPage pageId="page-8" component={Page8About} />
     </div>
   );
 }
