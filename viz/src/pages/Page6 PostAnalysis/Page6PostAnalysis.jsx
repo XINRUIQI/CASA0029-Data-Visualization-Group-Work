@@ -539,7 +539,7 @@ export default function Page7PostAnalysis() {
         </div>
         </div>
 
-        {/* ─── RIGHT: panel (33.33%) ─── */
+        {/* ─── RIGHT: panel (33.33%) ─── */}
         <div className="p6-panel-half">
         <div className="p6-panel">
           <h3 className="p6-panel-title">
