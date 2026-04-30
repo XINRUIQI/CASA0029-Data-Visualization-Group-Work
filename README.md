@@ -15,19 +15,19 @@ The project integrates multiple spatial and non-spatial datasets, unified on an 
 | Dataset | Source | Purpose |
 |---|---|---|
 | Administrative boundaries | [Tianditu (National Geomatics Centre of China)](https://cloudcenter.tianditu.gov.cn/dataSource) | Study area definition |
-| [H3 hexagonal grid](https://h3geo.org/docs/) (resolution 8) | Uber H3 | Unified spatial unit for all analytical layers |
+| H3 hexagonal grid (resolution 8) | [Uber H3](https://h3geo.org/docs/) | Unified spatial unit for all analytical layers |
 | POI (490k+ records, 8 types) | [Baidu Maps Place API](https://lbsyun.baidu.com/faq/api?title=webapi/guide/webservice-placeapi) | Delivery demand proxy |
 | Population (100 m grid) | [WorldPop](https://hub.worldpop.org/geodata/summary?id=49919) | Residential demand density |
 | Building footprints & morphology | [Shenzhen Open Data Platform](https://opendata.sz.gov.cn/data/dataSet/toDataDetails/29200_00300237) | Urban morphology indicators |
 | Road network, barriers (water, rail, highway) | [OpenStreetMap via Geofabrik (Guangdong)](https://download.geofabrik.de/asia/china/guangdong.html) | Ground friction & detour modelling |
 | Metro stations | [Shenzhen Open Data Platform](https://opendata.sz.gov.cn/data/dataSet/toDataDetails/29200_00403624) | Public transport accessibility |
 | Bus stops / routes | [Bus stops](https://opendata.sz.gov.cn/data/dataSet/toDataDetails/29200_00403628); [Route-station relationship](https://opendata.sz.gov.cn/data/dataSet/toDataDetails/29200_00403599) | Public transport accessibility |
-| Traffic congestion | *Shenzhen Comprehensive Transport Management Work Plan 2023–2024* | Congestion amplifier |
+| Traffic congestion | [*Shenzhen Comprehensive Transport Management Work Plan 2023–2024*](https://www.news.cn/fortune/20240107/6e78f59f463d4dc78672549da01863eb/c.html) | Congestion amplifier |
 | Parks, compounds & land use | [OpenStreetMap via Geofabrik (Guangdong)](https://download.geofabrik.de/asia/china/guangdong.html) | Access constraints & land-use context |
 | Vertiport sites (206: 34 existing + 172 planned) | [Shenzhen Low-Altitude Facilities Plan 2026–2035](http://pnr.sz.gov.cn/xxgk/gggs/content/post_12469261.html); Meituan | Site evaluation & optimisation |
 | OD routes (1,818 pairs) | OSM road network + routing API | Detour ratio & barrier crossing analysis |
-| Real delivery orders | RL-Dispatch dataset; Meituan platform | Demand validation & takeout index |
-| Policy timeline & case studies | Official planning documents; Xinhua (2024) | Narrative context |
+| Real delivery orders | [RL-Dispatch dataset](https://tianchi.aliyun.com/dataset/106807); [Meituan INFORMS TSL Research Challenge](https://github.com/meituan/Meituan-INFORMS-TSL-Research-Challenge) | Demand validation & takeout index |
+| Policy timeline & case studies | [*Shenzhen Low-Altitude Facilities Plan 2026–2035*](http://pnr.sz.gov.cn/xxgk/gggs/content/post_12469261.html); [Xinhua (2024)](https://www.news.cn/fortune/20240107/6e78f59f463d4dc78672549da01863eb/c.html) | Narrative context |
 | Cover video | [Zipline](https://www.flyzipline.com/) — [`hero video`](https://res.cloudinary.com/flyzipline/video/upload/q_auto:best,f_auto/v1776784625/homepage_hero_desktop_21042026_rw2jvh.mp4) | Landing page background |
 
 ### 3. Methodology
@@ -126,8 +126,8 @@ Some raw/intermediate datasets exceed file-transfer limits. Notebooks in `Data/`
 | `Data/08 POI Demand/` | ~113 MB | [Baidu Maps Place API](https://lbsyun.baidu.com/faq/api?title=webapi/guide/webservice-placeapi) |
 | `Data/09 Population/` | ~661 MB | [WorldPop — China constrained 2020](https://hub.worldpop.org/geodata/summary?id=49919) |
 | `Data/10 OD & Ground Friction/` | ~786 MB | Computed from OSM road network + barrier analysis |
-| `Data/12 RL-Dispatch/` | ~71 MB | RL-Dispatch dataset (Shenzhen subset) |
-| `Data/13 Meituan-TSL/` | ~175 MB | Meituan TSL research dataset |
+| `Data/12 RL-Dispatch/` | ~71 MB | [RL-Dispatch dataset (Shenzhen subset)](https://tianchi.aliyun.com/dataset/106807) |
+| `Data/13 Meituan-TSL/` | ~175 MB | [Meituan INFORMS TSL Research Challenge](https://github.com/meituan/Meituan-INFORMS-TSL-Research-Challenge) |
 
 ### 8. Online Libraries & Dependencies
 
