@@ -74,8 +74,12 @@ The front-end is built with **React 19** and **Vite**, using **deck.gl** (H3Hexa
 ```bash
 cd viz
 npm install        # install all dependencies (~547 MB, not included in submission)
-npm run dev        # start development server at http://localhost:5173
+npm run dev        # start development server
 ```
+
+> **Note:** The `base` path in `vite.config.js` is set for GitHub Pages deployment.
+> When running locally, open the URL printed in the terminal — it will be
+> `http://localhost:5173/CASA0029-Data-Visualization-Group-Work/`, not the root `/`.
 
 #### Production Build
 
