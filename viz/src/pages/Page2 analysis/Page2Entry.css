@@ -1,0 +1,137 @@
+/* ── Page 2 Entry ── */
+.page-2-entry {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+  background: transparent;
+}
+
+.p2e-surface {
+  position: relative;
+  z-index: 1;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+/* ── Main block copy ── */
+.p2e-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  max-width: 900px;
+  width: 100%;
+  padding: 2rem 2rem;
+  padding-top: 4rem;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.p2e-title {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 1.6rem;
+  color: #f0f4f8;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
+}
+
+.p2e-subtitle {
+  font-size: 1.05rem;
+  color: rgba(200, 225, 238, 0.88);
+  letter-spacing: 0.12em;
+  margin-bottom: 1rem;
+}
+
+.p2e-desc {
+  font-size: 0.95rem;
+  color: rgba(200, 220, 235, 0.82);
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+}
+
+/* ── Stat cards ── */
+.p2e-stats {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: nowrap;
+}
+
+.p2e-stat-card {
+  background: none;
+  border: none;
+  padding: 0.8rem 1rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.p2e-stat-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.25);
+}
+
+.p2e-stat-label {
+  font-size: 0.75rem;
+  color: rgba(210, 230, 242, 0.75);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── CTA ── */
+.p2e-enter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1.1rem 3rem;
+  border: 2px solid rgba(210, 200, 180, 0.5);
+  border-radius: 50px;
+  background: #F2EBD9;
+  color: #1a1a1a;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: transform 0.25s, box-shadow 0.25s, background 0.3s, border-color 0.3s;
+  box-shadow: 0 4px 28px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(242, 235, 217, 0.2);
+}
+
+.p2e-enter-btn:hover {
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(242, 235, 217, 0.3);
+  background: #ebe4d0;
+  border-color: rgba(200, 190, 165, 0.7);
+}
+
+.p2e-enter-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.p2e-btn-arrow {
+  font-size: 1.3rem;
+  transition: transform 0.25s;
+}
+
+.p2e-enter-btn:hover .p2e-btn-arrow {
+  transform: translateX(4px);
+}
+
+@media (max-width: 768px) {
+  .p2e-stats {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .p2e-stat-card {
+    flex: 0 0 calc(50% - 0.5rem);
+  }
+}
+
+.p2e-box-chart-wrap {
+  margin-bottom: 3.5rem;
+}

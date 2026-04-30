@@ -1,0 +1,302 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: transparent;
+}
+
+/* Full-viewport art layer: stays fixed while scrolling and across route changes */
+.global-fixed-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: #5a89a6;
+  background-image: url('/images/Page3background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Placeholder for pages that have not yet been lazy-mounted.
+   Keeps the page anchor (#page-N) in the DOM so nav dots / topbar links
+   and scroll-anchoring still work, and reserves full-viewport height so
+   the document size is stable before the real page boots up. */
+.lazy-placeholder {
+  display: block;
+  min-height: 100vh;
+  width: 100%;
+  background: transparent;
+}
+
+
+#page-5 {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: transparent;
+  color: #F2EBD9;
+}
+
+.app {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Cinematic teal film aesthetic ── */
+.page video,
+.page-0 video {
+  filter: contrast(0.88) brightness(1.08) saturate(1.12) hue-rotate(-12deg);
+}
+
+.video-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at center, transparent 60%, rgba(15, 27, 31, 0.4)),
+    linear-gradient(to top, rgba(15, 27, 31, 0.6), transparent);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.page-nav {
+  position: fixed;
+  left: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 10px;
+  background: rgba(46, 94, 126, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(168, 196, 212, 0.12);
+  border-radius: 999px;
+}
+
+.nav-dot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(168, 196, 212, 0.35);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.25s, transform 0.25s, box-shadow 0.25s;
+}
+
+.nav-dot:hover {
+  background: rgba(168, 196, 212, 0.7);
+  transform: scale(1.25);
+}
+
+.nav-dot.active {
+  background: #E8A88B;
+  box-shadow: 0 0 0 4px rgba(168, 196, 212, 0.25);
+}
+
+.nav-dot-label {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-6px);
+  background: #E8A88B;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  line-height: 1.2;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 3px 10px rgba(168, 196, 212, 0.3);
+}
+
+.nav-dot-label::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  width: 6px;
+  height: 6px;
+  background: #E8A88B;
+  border-radius: 1px;
+}
+
+.nav-dot:hover .nav-dot-label,
+.nav-dot:focus-visible .nav-dot-label {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+.loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: #A09888;
+}
+
+/* ── Global Menu Toggle (top-right hamburger) ── */
+
+.global-menu-toggle {
+  position: fixed;
+  top: 22px;
+  right: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: rgba(46, 94, 126, 0.65);
+  border: 1px solid rgba(168, 196, 212, 0.12);
+  border-radius: 10px;
+  cursor: pointer;
+  padding: 10px 11px;
+  z-index: 1020;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: background 0.25s, border-color 0.25s, transform 0.25s;
+}
+
+.global-menu-toggle:hover {
+  background: rgba(46, 94, 126, 0.85);
+  border-color: rgba(168, 196, 212, 0.4);
+}
+
+.global-menu-toggle.on-page0 {
+  background: rgba(8, 14, 26, 0.4);
+  border-color: rgba(100, 180, 255, 0.2);
+}
+
+.global-menu-toggle.on-page0 span {
+  background: rgba(180, 215, 255, 0.8);
+}
+
+.global-menu-toggle span {
+  display: block;
+  width: 22px;
+  height: 1.5px;
+  background: rgba(15, 27, 31, 0.85);
+  transition: all 0.3s;
+  transform-origin: center;
+}
+
+.global-menu-toggle.open {
+  background: rgba(46, 94, 126, 0.92);
+  border-color: rgba(168, 196, 212, 0.5);
+}
+
+.global-menu-toggle.open span:nth-child(1) {
+  transform: translateY(6.5px) rotate(45deg);
+}
+
+.global-menu-toggle.open span:nth-child(2) {
+  opacity: 0;
+}
+
+.global-menu-toggle.open span:nth-child(3) {
+  transform: translateY(-6.5px) rotate(-45deg);
+}
+
+/* ── Right-side drawer nav ── */
+
+.global-topbar-nav {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(320px, 82vw);
+  height: 100vh;
+  background: rgba(46, 94, 126, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(168, 196, 212, 0.1);
+  display: flex;
+  flex-direction: column;
+  padding: 110px 40px 40px;
+  gap: 8px;
+  transform: translateX(100%);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1010;
+  pointer-events: none;
+}
+
+.global-topbar-nav.open {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.global-topbar-nav a {
+  color: rgba(15, 27, 31, 0.7);
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  position: relative;
+  transition: color 0.3s, padding-left 0.3s;
+  padding: 14px 0 14px 0;
+  border-bottom: 1px solid rgba(168, 196, 212, 0.1);
+}
+
+.global-topbar-nav a::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 0;
+  height: 1px;
+  background: #E8A88B;
+  transition: width 0.3s ease;
+  transform: translateY(-50%);
+}
+
+.global-topbar-nav a:hover {
+  color: #E8A88B;
+  padding-left: 14px;
+}
+
+.global-topbar-nav a:hover::before {
+  width: 8px;
+}
+
+/* ── Overlay behind drawer ── */
+
+.global-nav-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 40, 80, 0.2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 1005;
+}
+
+.global-nav-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (max-width: 768px) {
+  .global-menu-toggle {
+    top: 16px;
+    right: 18px;
+    padding: 9px 10px;
+  }
+}
