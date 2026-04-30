@@ -34,7 +34,6 @@ export default function Page7Summary() {
             loop
             playsInline
             preload="metadata"
-            poster={publicDataUrl('shenzhen-poster.jpg')}
           >
             <source
               src={publicDataUrl(

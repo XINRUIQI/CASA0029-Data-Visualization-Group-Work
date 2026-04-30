@@ -122,7 +122,6 @@ export default function Page0Cover() {
           playsInline
           preload="metadata"
           src="https://res.cloudinary.com/flyzipline/video/upload/q_auto:best,f_auto/v1776784625/homepage_hero_desktop_21042026_rw2jvh.mp4"
-          poster={`${import.meta.env.BASE_URL}shenzhen-poster.jpg`}
         />
         <div className="p0-bg-overlay" />
         <div className="p0-bg-grain" />

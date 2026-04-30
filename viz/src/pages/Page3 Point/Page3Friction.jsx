@@ -131,7 +131,6 @@ const TABS = [
 
 export default function Page3Friction() {
   const [sites, setSites]           = useState(null);
-  const [routes, setRoutes]         = useState(null);
   const [boundary, setBoundary]     = useState(null);
   const [hexGrid, setHexGrid]       = useState(null);
   const [loadError, setLoadError]   = useState(null);
@@ -165,14 +164,6 @@ export default function Page3Friction() {
       .catch(e => console.error('[hexGrid] failed:', e));
   }, []);
 
-  useEffect(() => {
-    if (activeTab === 3 && !routes) {
-      fetch(publicDataUrl('data/routes.json'))
-        .then(r => r.json())
-        .then(setRoutes)
-        .catch(() => {});
-    }
-  }, [activeTab, routes]);
 
   const filteredSites = useMemo(() => {
     if (!sites) return null;
@@ -491,7 +482,6 @@ export default function Page3Friction() {
             <div className="p3-map-card">
               <Page3Map
                 data={filteredSites}
-                routes={routes}
                 boundary={boundary}
                 hexGrid={hexGrid}
                 activeTab={activeTab}

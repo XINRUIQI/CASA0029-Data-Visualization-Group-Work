@@ -68,6 +68,95 @@ The post-analysis section simulates what Shenzhen's delivery landscape would loo
 
 The front-end is built with **React 19** and **Vite**, using **deck.gl** (H3HexagonLayer, GeoJsonLayer, ArcLayer, ScatterplotLayer) over **Mapbox GL** basemaps for GPU-accelerated geospatial rendering. Statistical charts use **Recharts** (bar, radar, scatter, area, and pie charts). Scroll-driven storytelling is implemented with **Scrollama** and **GSAP** for animation. The cover page features a **Three.js** 3D drone scene. The site uses route-based code-splitting and lazy loading for performance, and is deployed via GitHub Pages.
 
-### 5. Limitations
+### 5. Getting Started
+
+#### Prerequisites
+
+- [Node.js](https://nodejs.org/) (v18 or later recommended)
+- npm (included with Node.js)
+
+#### Installation & Development
+
+```bash
+cd viz
+npm install        # install all dependencies (~547 MB, not included in submission)
+npm run dev        # start development server at http://localhost:5173
+```
+
+#### Production Build
+
+```bash
+npm run build      # generates viz/dist/ (not included in submission)
+npm run preview    # preview the production build locally
+```
+
+### 6. Repository Structure
+
+```
+├── viz/                        # Interactive scrollytelling website
+│   ├── src/                    # React source code (41 files)
+│   ├── public/                 # Static assets: data JSON, images, video
+│   ├── scripts/                # Python helpers (H3 conversion, data prep)
+│   ├── package.json            # npm dependencies & scripts
+│   ├── vite.config.js          # Vite build configuration
+│   └── index.html              # Entry HTML
+├── Data/                       # Analysis notebooks & datasets
+│   ├── 01–14 (numbered dirs)   # Each contains Jupyter notebooks + data
+│   └── (see Data Sources below for large files)
+├── .github/workflows/          # GitHub Actions CI/CD for GitHub Pages
+├── README.md                   # This file
+└── Project_Methodology_Summary.md
+```
+
+### 7. Files Not Included in Submission
+
+The following files are excluded from the submission archive to comply with size constraints. They can be regenerated or downloaded as described below.
+
+| Excluded item | How to restore |
+|---|---|
+| `viz/node_modules/` | Run `npm install` inside `viz/` |
+| `viz/dist/` | Run `npm run build` inside `viz/` |
+
+#### Large Spatial Datasets
+
+Some intermediate and raw spatial datasets exceed practical file-transfer sizes. The Jupyter notebooks in `Data/` document how each dataset was obtained and processed. Source links are listed below.
+
+| Dataset (folder) | Size | Source |
+|---|---|---|
+| Transport network & road graph (`Data/04 Transport/`) | ~680 MB | OpenStreetMap via [Geofabrik](https://download.geofabrik.de/asia/china.html) (Guangdong extract); routing via OSM network |
+| Barrier layers (`Data/05 Barrier Layers/`) | ~23 MB | OpenStreetMap (water, waterways, railways, highways) |
+| Building footprints & morphology (`Data/06 Buildings/`) | ~824 MB | [Shenzhen Open Data Platform](https://opendata.sz.gov.cn/) |
+| Parks & compounds (`Data/07 Parks & Compounds/`) | ~13 MB | OpenStreetMap |
+| POI demand (`Data/08 POI Demand/`) | ~113 MB | [Baidu Maps Place API](https://lbsyun.baidu.com/faq/api?title=webapi/guide/webservice-placeapi) |
+| Population grid (`Data/09 Population/`) | ~661 MB | [WorldPop](https://www.worldpop.org/) — `chn_ppp_2020_constrained.tif` |
+| OD routes & ground friction (`Data/10 OD & Ground Friction/`) | ~786 MB | Computed from OSM road network + barrier analysis |
+| RL-Dispatch order data (`Data/12 RL-Dispatch/`) | ~71 MB | [RL-Dispatch dataset](https://github.com/RL-Dispatch) (Shenzhen subset) |
+| Meituan delivery data (`Data/13 Meituan-TSL/`) | ~175 MB | Meituan TSL research dataset |
+
+### 8. Online Libraries & Dependencies
+
+The website uses the following open-source libraries (installed automatically via `npm install`):
+
+**Mapping & Geospatial**
+- [deck.gl](https://deck.gl/) 9.2 — GPU-accelerated geospatial layers (H3Hexagon, GeoJson, Arc, Scatterplot, SimpleMesh)
+- [Mapbox GL JS](https://docs.mapbox.com/mapbox-gl-js/) 3.21 — vector basemaps
+- [react-map-gl](https://visgl.github.io/react-map-gl/) 8.1 — React wrapper for Mapbox GL
+- [h3-js](https://github.com/uber/h3-js) 4.4 — Uber H3 hexagonal spatial indexing
+- [Turf.js](https://turfjs.org/) 7.3 — geospatial analysis helpers (`boolean-point-in-polygon`, `helpers`)
+
+**3D & Animation**
+- [Three.js](https://threejs.org/) 0.183 — WebGL 3D rendering
+- [@react-three/fiber](https://docs.pmnd.rs/react-three-fiber) 9.5 + [@react-three/drei](https://github.com/pmndrs/drei) 10.7 — React Three.js integration
+- [GSAP](https://gsap.com/) 3.14 — scroll-driven animation
+
+**Charts & Scrollytelling**
+- [Recharts](https://recharts.org/) 3.8 — statistical charts (bar, radar, scatter, area, pie)
+- [Scrollama](https://github.com/russellsamora/scrollama) 3.2 + [react-scrollama](https://github.com/jsonkao/react-scrollama) 2.4 — scroll-triggered narrative
+
+**Framework**
+- [React](https://react.dev/) 19 + [React Router](https://reactrouter.com/) 7 — SPA framework & routing
+- [Vite](https://vite.dev/) 8 — build tool & dev server
+
+### 9. Limitations
 
 This study relies on simplified assumptions: friction is modelled from static network topology and average traffic conditions rather than real-time GPS traces; coverage radii assume uniform circular service areas without accounting for airspace restrictions or building obstructions; and the demand model uses POI density and order counts as proxies rather than true revealed demand. Environmental impact, operational cost, and social acceptance factors are not incorporated.
