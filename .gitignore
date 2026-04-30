@@ -1,0 +1,9 @@
+Data/04 Transport/data_out/sz_drive.graphml
+Data/04 Transport/data_out/sz_drive_edges.gpkg
+Data/04 Transport/data_raw/guangdong.osm.pbf
+Data/06 Buildings/data_out/sz_buildings.gpkg
+Data/06 Buildings/data_raw/Shenzen_Buildings_General/Shenzen_Buildings_General.dbf
+Data/06 Buildings/data_raw/Shenzen_Buildings_General/Shenzen_Buildings_General.shp
+Data/09 Population/data_raw/chn_ppp_2020_constrained.tif
+Data/10 OD & Ground Friction/data_out/sz_routes.gpkg
+Data/13 Meituan-TSL/data_raw/all_waybill_info_meituan_0322.csv
