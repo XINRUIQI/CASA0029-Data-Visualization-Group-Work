@@ -332,7 +332,7 @@ export default function Page7PostAnalysis() {
 
           {frDemandData && (
             <div className="p6-xc">
-              <h4 className="p6-xc-title">Friction vs Demand (by Coverage)</h4>
+              <h4 className="p6-xc-title">Burden  vs Demand (by Coverage)</h4>
               <ResponsiveContainer width="100%" height={180}>
                 <ScatterChart margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,196,212,0.1)" />
@@ -539,56 +539,38 @@ export default function Page7PostAnalysis() {
         </div>
         </div>
 
-        {/* ─── RIGHT: panel (33.33%) ─── */}
+        {/* ─── RIGHT: panel (33.33%) ─── */
         <div className="p6-panel-half">
         <div className="p6-panel">
           <h3 className="p6-panel-title">
             {activeMode === 'acc_demand' && 'Accessibility − Demand Gap'}
-            {activeMode === 'friction' && 'Ground Friction Burden'}
+            {activeMode === 'friction' && 'Ground Burden'}
             {activeMode === 'composite' && 'Composite Gap Index'}
           </h3>
 
           <div className="p6-method-note">
             {activeMode === 'acc_demand' && (
               <p>
-                This view identifies <strong>spatial mismatch</strong>: zones
-                where delivery demand exceeds local service accessibility.
-                It is calculated as the difference between a cell's accessibility
-                (total POIs reachable within a 3 km buffer) and its normalised
-                demand index. A <strong>positive value</strong> means supply
-                exceeds demand, while a <strong>negative value</strong> marks
-                under-served areas where demand outstrips available services.
-                By adding drone sites, we extend each cell's reachable supply
-                pool, shifting A − D toward positive values and reducing
-                service deserts.
+                This view compares <strong>local delivery demand</strong> with <strong>accessibility to nearby drone sites</strong>. The gap is calculated as <strong>A − D</strong>, where <strong>A</strong> represents accessibility to drone sites within a <strong>3 km service range</strong>, and <strong>D</strong> represents the <strong>normalised demand index</strong>.
+                <br /><br />
+                Areas with <strong>lower values</strong> indicate <strong>under-served zones</strong> where demand is stronger than current drone-site accessibility.
+                <br /><br />
+                After adding <strong>optimised drone sites</strong>, more high-demand cells become reachable, reducing the <strong>accessibility-demand gap</strong>.
               </p>
             )}
             {activeMode === 'friction' && (
               <p>
-                This view maps <strong>ground-level delivery burden</strong> —
-                the physical difficulty of last-mile travel caused by terrain
-                slope, building density, and road network barriers.
-                It is calculated as a normalised friction cost (0 – 1) averaged
-                across each H3 cell. A <strong>higher value</strong> means
-                deliveries in that zone face greater obstacles, while a
-                <strong> value near zero</strong> indicates smooth, low-cost
-                ground access. By deploying drone sites, we bypass
-                ground-level barriers entirely, reducing average burden
-                by up to 70 % in covered areas.
+                This view maps the physical burden of <strong>road-based delivery</strong>. The burden score combines <strong>detour ratio, barrier crossings, congestion effects</strong>, and dependence on <strong>bridges or tunnels</strong>. <strong>Higher values</strong> indicate areas where ground delivery is more difficult, costly, or indirect.
+                <br /><br />
+                After adding <strong>optimised drone sites</strong>, covered areas are assumed to experience lower ground burden because part of the delivery route can shift from the <strong>road network</strong> to <strong>aerial movement</strong>.
               </p>
             )}
             {activeMode === 'composite' && (
               <p>
-                This view combines accessibility gap and friction burden into
-                a single <strong>composite priority score</strong>, highlighting
-                zones that suffer from both poor access and high delivery cost.
-                It is calculated as a weighted product of demand, friction,
-                and inverse accessibility (0.4 · D · F + 0.3 · I · F + 0.3 · D · I).
-                A <strong>higher value</strong> flags the most critical
-                intervention zones, while a <strong>value near zero</strong> indicates
-                the area is already well-served. By placing drone hubs in
-                high-composite cells, we simultaneously improve accessibility
-                and reduce ground friction where it matters most.
+                This view combines <strong>accessibility gap</strong> and <strong>ground burden</strong> into a single <strong>priority score</strong>. <strong>High composite values</strong> indicate areas where delivery demand is poorly served and ground delivery is difficult. These are the zones where new drone sites may provide the <strong>greatest spatial benefit</strong>.
+                <br /><br />
+                By placing drone sites in <strong>high-priority cells</strong>, the optimisation aims to improve accessibility while reducing ground burden in areas where the need is strongest.
+
               </p>
             )}
           </div>

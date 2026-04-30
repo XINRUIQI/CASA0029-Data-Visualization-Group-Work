@@ -757,7 +757,7 @@ export function EnhancedKpiCards({ coverage, gapZones, h3Gap }) {
       </div>
       <p className="p4-col-body p4-accent-note">
         Together, these indicators show that the next step is not simply to add more drone sites,
-        but to place them where demand, friction, and coverage gaps overlap.
+        but to place them where demand, ground burden, and coverage gaps overlap.
       </p>
     </div>
   );

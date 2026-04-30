@@ -34,6 +34,8 @@ The project integrates multiple spatial and non-spatial datasets covering Shenzh
 
 - **Narrative Context:** Case study cards and a low-altitude economy policy timeline, compiled from official planning documents and news sources — including the *Shenzhen Comprehensive Transport Management Work Plan for 2023–2024*, Xinhua's report on Shenzhen's low-altitude economy development (Xinhua, 7 Jan 2024), and the *Shenzhen Low-Altitude Aircraft Take-off and Landing Facilities Layout Plan (2026–2035)* — used for the opening narrative and policy background sections of the website.
 
+- **Cover Video:** Homepage hero background video sourced from [Zipline](https://www.flyzipline.com/): [`homepage_hero_desktop_21042026_rw2jvh.mp4`](https://res.cloudinary.com/flyzipline/video/upload/q_auto:best,f_auto/v1776784625/homepage_hero_desktop_21042026_rw2jvh.mp4), used on the landing page to introduce the drone delivery theme.
+
 ### 3. Methodology
 
 #### 3.1 Spatial Grid Framework
