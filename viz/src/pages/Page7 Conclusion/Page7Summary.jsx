@@ -12,7 +12,7 @@ const CONCLUSION_CARDS = [
     kicker: '02',
     title: 'Limitations',
     body:
-      'This study relies on simplified assumptions and does not consider real-world constraints. The analysis focuses on spatial efficiency, without fully addressing cost, environmental impact, or social acceptance, which are essential for real-world implementation.',
+      'This study relies on simplified assumptions and does not consider real-world constraints. The analysis focuses on spatial efficiency, without fully addressing cost, environmental impact, or social acceptance, which are essential for real-world implementation.Additionally, airspace management considerations are not incorporated, potentially limiting the applicability of the results in real-world contexts.',
   },
   {
     kicker: '03',
